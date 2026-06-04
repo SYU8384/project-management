@@ -19,7 +19,7 @@ Use this skill for three intents:
 
 The three most common actions:
 
-**1. Log a change** — say "log this" or "I just finished <feature>". The agent reads the project's `README.md` and the relevant `system/<topic>.md` (current behavior), updates the docs that need to change, then appends a bullet to `history/HISTORY-YYYY-MM-DD.md`.
+**1. Log a change** — say "log this" or "I just finished <feature>". The agent reads the project's `README.md` and the relevant `system/<topic>.md` (current behavior), updates the docs that need to change, then appends a Conventional Commits-prefixed bullet to `history/YYYY-MM/HISTORY-YYYY-MM-DD.md` (e.g., `history/2026-05/HISTORY-2026-05-04.md`).
 
 **2. Initialize a new project's PM folder** — say "initialize the PM folder for <name>". The agent asks for 5 fields (project name, code_repo, pm_folder, phase, access, notes), writes them to `<skill_dir>/projects.json`, then runs the 11-step Bootstrap Workflow in REFERENCE.md.
 
@@ -43,6 +43,7 @@ Match user phrases to the right intent. If multiple intents apply, do all of the
 | "register <project> as authoritative", "mark <project> as read-only", "set access for <project>" | Config update | Configuration (REFERENCE) |
 | "add a new project", "register a new project", "add <Project> to projects.json" | Config update | Configuration → Adding a new project (REFERENCE) |
 | "I just opened a PR", "I just merged a PR", "review a PR for PM impact" | Contributor | Contributor Workflow (REFERENCE) |
+| "this is a big task", "multi-session", "plan this out", "let me plan this", or the change has multi-step work / multi-session work / many rounds of fixes | Big task → plan first | Big Tasks Must Be Planned (REFERENCE) |
 
 ---
 
@@ -59,7 +60,7 @@ Always read the project `README.md` first. If it exists, it wins over this gener
 | `planning/` | Concrete implementation plans and design decisions for a set of features or initiatives |
 | `features/` | Curated per-feature pages. Each page is a "tell me everything about X" index that points into `system/` and `planning/`. **Required** for any project past initial planning; pre-alpha projects have an empty index. |
 | `roadmap/` | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending status, and ideas |
-| `history/` | Brief chronological logs of completed meaningful work, by date |
+| `history/` | Brief chronological logs of completed meaningful work, organized by year-month |
 | `archive/` | Superseded material replaced by current product, system, roadmap, or planning docs |
 | `CURRENT_STATUS.md` | Weekly snapshot | Top priorities, blocked, recent wins, major risks, stale docs |
 

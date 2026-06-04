@@ -33,9 +33,9 @@ owner: PM
 
 ## Recent Wins
 
-- **<Win 1>** (<Project>/history/HISTORY-YYYY-MM-DD). <one-sentence description>.
-- **<Win 2>** (<Project>/history/HISTORY-YYYY-MM-DD). <one-sentence description>.
-- **<Win 3>** (<Project>/history/HISTORY-YYYY-MM-DD). <one-sentence description>.
+- **<Win 1>** (<Project>/history/<YYYY-MM>/HISTORY-YYYY-MM-DD). <one-sentence description>.
+- **<Win 2>** (<Project>/history/<YYYY-MM>/HISTORY-YYYY-MM-DD). <one-sentence description>.
+- **<Win 3>** (<Project>/history/<YYYY-MM>/HISTORY-YYYY-MM-DD). <one-sentence description>.
 
 ## Major Risks
 

@@ -62,7 +62,8 @@ owner: PM
 │   └── <feature>.md
 ├── history/
 │   ├── history.md
-│   └── HISTORY-YYYY-MM-DD.md
+│   └── YYYY-MM/
+│       └── HISTORY-YYYY-MM-DD.md
 ├── planning/
 │   ├── planning.md
 │   ├── decisions/
@@ -87,7 +88,7 @@ owner: PM
 
 | What happened | Where to log |
 |---|---|
-| Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/HISTORY-YYYY-MM-DD.md` |
+| Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/YYYY-MM/HISTORY-YYYY-MM-DD.md` |
 | User-facing behavior changed | Relevant `docs/User Guide/`, relevant `system/` doc, roadmap status if applicable, then `history/` |
 | Admin or developer workflow changed | Relevant `docs/Admin Guide/`, `docs/Developer Guide/`, or `docs/Quick Commands/`, then `history/` |
 | New concrete plan or decision not fully implemented | `planning/YYYY-MM-DD_slug.md`, then add/update a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md` |
@@ -124,7 +125,7 @@ Planning notes use **date-prefixed filenames** at creation time: `planning/YYYY-
 | Folders | lowercase or clear title-case guide folders | `history/`, `User Guide/` |
 | Key root docs | uppercase or title-case | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md` |
 | Section docs (system/) | slug (no prefix; `created:` frontmatter carries the date) | `architecture.md` |
-| Date-stamped logs | `HISTORY-YYYY-MM-DD.md` | `HISTORY-2026-06-04.md` |
+| Date-stamped logs | `YYYY-MM/HISTORY-YYYY-MM-DD.md` (organized by year-month) | `2026-06/HISTORY-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
 | ADRs | `ADR-NNN_slug.md` (numbered within decisions/) | `ADR-001_<decision-slug>.md` |
 | Archived files | `<slug>-archived.md` (date prefix and number dropped) | `m3-return-path-archived.md` |
