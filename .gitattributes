@@ -1,0 +1,5 @@
+# Normalize line endings for cross-platform compatibility
+* text=auto eol=lf
+
+# Explicitly handle markdown files
+*.md text eol=lf

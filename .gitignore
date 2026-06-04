@@ -1,0 +1,17 @@
+# User's actual config (contains personal info; not for version control)
+projects.json
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Editor / IDE temp files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build / runtime
+node_modules/
+*.log

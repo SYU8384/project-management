@@ -1,0 +1,13 @@
+{
+  "vault_root": "",
+  "skill_dir": "",
+  "projects": {
+    "<ProjectName>": {
+      "code_repo": "",
+      "pm_folder": "",
+      "phase": "",
+      "notes": "",
+      "access": ""
+    }
+  }
+}
