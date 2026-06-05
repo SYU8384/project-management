@@ -1,6 +1,25 @@
-# project-logging skill
+# project-management skill
 
-A portable, host-agnostic skill for managing PM folders (Obsidian vaults) for any project. Log work, initialize new project folders, repair inconsistencies, and keep code repos in sync with their PM folders.
+A portable, host-agnostic skill for managing PM folders (I recommend putting it in Obsidian vaults) for any project. Log work, initialize new project folders, repair inconsistencies, and keep code repos in sync with their PM folders.
+
+## The pain in project managing
+- messey folders and files
+- got lost track of priorities
+- takes time to write down notes
+- etc.
+
+  
+## How this skill solves the problems
+- structuralize folders and files
+- keep histories of every work and categorize them into feat, fix, chore, etc.
+- easy for agents to find a recurring bug and solution
+- track prs and issues that the team is working on and connect to github
+- simultaneously update User Guide (including FAQs), Admin Guide, Dev Guide while developing the project
+- archive plans/ideas smartly and mark their status
+- record brainstorming ideas and classify them
+- record big plans and create done-pending sections automatically
+- track every todo item by section in the done-pending file and archive them once down automatically
+- etc.
 
 ## Where to start
 
