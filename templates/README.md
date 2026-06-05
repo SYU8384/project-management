@@ -124,9 +124,9 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 | Top-level PM lanes | lowercase, no spaces | `archive/`, `history/`, `system/` |
 | Docs guide folders | Title Case category labels | `Admin Guide/`, `Quick Commands/` |
 | Folder notes | exactly match the folder name | `Admin Guide/Admin Guide.md`, `history/history.md` |
-| Content notes | lowercase slug, no numeric prefix | `architecture.md`, `background-jobs.md` |
+| Content notes | neutral lowercase kebab-case slug, no numeric prefix | `architecture.md`, `background-jobs.md` |
 | Root canonical docs | uppercase special files | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md` |
-| Docs guide notes | lowercase slug, no numeric prefix | `user-manual.md`, `cloudflare-tunnel.md` |
+| Docs guide notes | neutral lowercase kebab-case slug, no numeric prefix | `user-manual.md`, `cloudflare-tunnel.md` |
 | Date-stamped logs | `YYYY-MM/history-YYYY-MM-DD.md` (organized by year-month) | `2026-06/history-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
 | ADRs | `ADR-NNN_slug.md` (numbered within decisions/) | `ADR-001_<decision-slug>.md` |
@@ -157,6 +157,7 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 - **Known bugs:** `docs/Developer Guide/known-bugs.md` is the required engineering bug knowledge base. Keep active tracking in `roadmap/known-issues.md`, but record symptoms, root cause, solution, verification, recurrence patterns, and history links in `known-bugs.md`.
 - **Quick Commands:** copy-pasteable commands only; link to Admin or Developer Guide when explanation is needed.
 - **Renames:** legacy numbered filenames like `01_USER_MANUAL.md` are deprecated. Rename to lowercase slugs and update all wiki links.
+- **Personal prefixes:** collaborator-name prefixes such as `haoyou_` are discouraged in canonical PM folders. They may be useful during handoff, but validators report them as warnings so they can be renamed to neutral lowercase kebab-case slugs later.
 
 ### Roadmap notes (`roadmap/*.md`)
 
@@ -172,6 +173,7 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 - **H1:** slug only, no number, no date prefix — `# initial-decisions`, not `# 01_initial-decisions` or `# 2026-05-22_initial-decisions`.
 - **Status values:** `proposed` (under discussion, not yet approved), `active` (in flight), `shipped` (work done, file kept for historical reference), `rejected` (proposal declined), `superseded` (replaced by a newer plan or ADR). These are planning-specific; the global schema documents them in `SKILL.md` "Frontmatter Schema → Planning".
 - **`archived:` field:** when a planning file moves to `archive/`, set `archived: <date>` (the move date) in the frontmatter; keep the original `created:` field. `status:` and `archived:` are **orthogonal** — a shipped-then-archived plan keeps `status: shipped`; a rejected-then-archived plan keeps `status: rejected`; a superseded-then-archived plan keeps `status: superseded`.
+- **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
 - **Archive rename:** when retiring, `mv planning/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). Then update `planning/planning.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file.

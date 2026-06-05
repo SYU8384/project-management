@@ -29,9 +29,10 @@
  * `--config` is set without `--project`, the script iterates over all
  * projects in the config and prints one report per project.
  *
- * If `--config` is not given, the script walks up from its own location
- * looking for a sibling SKILL.md; the projects.json next to that SKILL.md
- * is used as the default config. Explicit `--config` always wins.
+ * If a <vault> path is provided, that folder is scanned directly. If no
+ * <vault> path or `--config` is given, the script walks up from its own
+ * location looking for a sibling SKILL.md; the projects.json next to that
+ * SKILL.md is used as the default config. Explicit `--config` always wins.
  */
 
 import { existsSync } from "node:fs";
@@ -76,10 +77,28 @@ const CLI = parseArgs(process.argv);
 async function loadConfig() {
   const configPath = CLI.config
     ? resolve(CLI.config)
+    : CLI.vault
+      ? null
     : (DEFAULT_CONFIG && existsSync(DEFAULT_CONFIG) ? DEFAULT_CONFIG : null);
   if (!configPath) return null;
   const raw = await readFile(configPath, "utf8");
   return { config: JSON.parse(raw), source: configPath };
+}
+
+function isTemplateConfig(config) {
+  const projects = config.projects ?? {};
+  return Object.keys(projects).length === 0 || Object.prototype.hasOwnProperty.call(projects, "<ProjectName>");
+}
+
+function configSetupError(project, source, config, reason) {
+  const setupHint = isTemplateConfig(config)
+    ? "This looks like the default empty projects.json template. "
+    : "";
+  return (
+    `ERROR: ${reason} in ${source}\n` +
+    `${setupHint}Run the project-management skill and say "setup as collaborator" or "setup this repo", ` +
+    `or add a real projects.${project} entry with access and pm_folder.`
+  );
 }
 
 async function resolveTargets() {
@@ -99,7 +118,7 @@ async function resolveTargets() {
   if (CLI.project) {
     const proj = config.projects?.[CLI.project];
     if (!proj) {
-      console.error(`ERROR: project '${CLI.project}' not found in ${source}`);
+      console.error(configSetupError(CLI.project, source, config, `project '${CLI.project}' not found`));
       process.exit(2);
     }
     if (proj.access === "unavailable") {
@@ -108,6 +127,10 @@ async function resolveTargets() {
       console.log("");
       console.log(`PM folder unavailable for this collaborator checkout; no stale-doc scan was run.`);
       return [];
+    }
+    if (!proj.pm_folder) {
+      console.error(configSetupError(CLI.project, source, config, `project '${CLI.project}' has no pm_folder`));
+      process.exit(2);
     }
     return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})` }];
   }

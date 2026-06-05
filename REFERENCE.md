@@ -52,7 +52,7 @@ Then check the schema and content dimensions:
 4. **CURRENT_STATUS freshness** — the weekly snapshot exists and is not stale.
 5. **Planning ↔ roadmap mirror** — each `planning/*.md` has a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md`.
 6. **History `kind:`** — every `history/YYYY-MM/history-YYYY-MM-DD.md` has a `kind: changelog | worklog | mixed` field.
-7. **Archive `archived:` field** — every `archive/*-archived.md` has both a meaningful `status:` (lifecycle) and an `archived: <date>` field.
+7. **Archive `archived:` field** — every moved archive file named `archive/*-archived.md` has both a meaningful `status:` (lifecycle) and an `archived: <date>` field. Folder indexes such as `archive/archive.md` must not carry `archived:`.
 8. **Folder structure** — all required folders and root files exist; feature/ADR/roadmap index pages exist where needed.
 9. **Feature pages** — coherent features have pages; technical components stay in `system/`.
 10. **Docs guide indexes** — `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md` are folder-note indexes only; durable content lives in independent notes.
@@ -212,7 +212,7 @@ The four standard docs guide folders are stable lanes. Their folder notes are in
 - `docs/Developer Guide/` — coding-engineer procedures: local setup, codebase structure, testing, APIs, schemas, migrations, prompt/reference material, implementation notes, adding/changing background jobs, release mechanics, contribution workflow, and required `known-bugs.md`.
 - `docs/Quick Commands/` — short command recipes only. If a command needs explanation, troubleshooting, or policy, keep the explanation in Admin or Developer Guide and link to it.
 
-Active docs-guide content notes use lowercase slug filenames with no numeric prefixes (`user-manual.md`, `faq.md`, `cloudflare-tunnel.md`). Legacy numbered names such as `01_USER_MANUAL.md` should be renamed during repair, with all wiki links updated.
+Active docs-guide content notes use neutral lowercase kebab-case filenames with no numeric prefixes (`user-manual.md`, `faq.md`, `cloudflare-tunnel.md`). Legacy numbered names such as `01_USER_MANUAL.md` should be renamed during repair, with all wiki links updated. Personal/collaborator prefixes such as `haoyou_getting-started.md` are discouraged in canonical PM folders and should be surfaced as warnings, not hard validation failures.
 
 Casing is semantic, not uniform. Top-level PM lanes stay lowercase (`archive/`, `docs/`, `history/`, `system/`). The four standard docs guide folders use Title Case (`Admin Guide/`, `Developer Guide/`, `Quick Commands/`, `User Guide/`) because they are user-facing category labels. Folder notes exactly match their folder names, content notes use lowercase slugs, and uppercase filenames are reserved for root artifacts (`README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`) plus the `ADR-NNN_` prefix.
 
@@ -353,7 +353,7 @@ These are planning-specific values. The base `archived:` field is used separatel
 
 `status` is the note's lifecycle. The valid values depend on `pageType` (see the pageType-specific sections above).
 
-`archived: <date>` is a separate optional frontmatter field meaning "this file has been moved to `archive/`". It is set on the day the file is archived.
+`archived: <date>` is a separate optional frontmatter field meaning "this file has been moved to `archive/`". It is set on the day the file is archived. It is only valid on moved archive files named `archive/*-archived.md`; folder indexes such as `archive/archive.md` were created in place and must not carry `archived:`.
 
 `status` and `archived` are **orthogonal**: an archived file still has its lifecycle status. A shipped-then-archived plan keeps `status: shipped` and adds `archived: <date>`. A rejected-then-archived plan keeps `status: rejected` and adds `archived: <date>`. A deprecated-then-archived system doc keeps `status: deprecated` and adds `archived: <date>`.
 
@@ -491,6 +491,8 @@ The user's project paths live in a separate config file, not in the skill text. 
 
 **Auto-bootstrap on first use.** If `<skill_dir>/projects.json` is missing when the agent starts work, copy `templates/projects.template.json` to `<skill_dir>/projects.json` and walk the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
+**Validation requires registration.** If a collaborator runs `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` while `projects.json` is still the empty template, the validators must stop with an actionable setup message. The correct next step is to use the skill and say "setup as collaborator" or "setup this repo" so the agent can register `access`, `code_repo`, and `pm_folder` (unless access is unavailable).
+
 **When the agent should update `projects.json`:**
 
 **Adding a new project:** the user says "setup", "add a new project", "register a new project", "initialize the PM folder for <name>", or similar. The agent collects the required fields (in this order) and adds the entry to the `projects` object:
@@ -576,7 +578,7 @@ Never create a private "canonical" PM folder for a collaborator unless the user 
 - A project's one-line description should change.
 - A project's access level changes (e.g., promoting a read-only contributor to authoritative, or a collaborator's project becoming read-only because you no longer maintain it).
 
-**Script auto-discovery.** The bundled validation scripts (`<skill_dir>/scripts/check-pm.mjs` plus the focused checks it runs) walk up from their own location looking for a sibling `SKILL.md`; the `projects.json` next to that `SKILL.md` is the default config. Explicit `--config <path>` always wins. This means running `node <skill_dir>/scripts/check-pm.mjs` with no arguments validates every available project registered in the skill's local config.
+**Script auto-discovery.** The bundled validation scripts (`<skill_dir>/scripts/check-pm.mjs` plus the focused checks it runs) walk up from their own location looking for a sibling `SKILL.md`; the `projects.json` next to that `SKILL.md` is the default config. Explicit `--config <path>` always wins. An explicit PM-folder path scans that folder directly and bypasses auto-discovered config. Running `node <skill_dir>/scripts/check-pm.mjs` with no arguments validates every available project registered in the skill's local config.
 
 **Why a config file instead of placeholders in the skill text?** Placeholders like `<vault_root>` would require the agent or scripts to substitute them, and would clutter the skill prose. A config file is the right abstraction for "user-specific runtime state" — the skill describes the *convention*; the config holds the *user's instance*.
 
@@ -798,7 +800,7 @@ Management folders are live. Agents may create notes inside the right folder whe
 | Update `CURRENT_STATUS.md` at the project root | No | Weekly snapshot of where the project is now; PM agent maintains |
 | Create a new note inside `docs/` existing guide folders | Usually no | Use when behavior/workflow docs need a clear page |
 | Create a new note inside `roadmap/` | Yes | Prefer the four standard roadmap notes |
-| Create a new note inside `archive/` | No | Don't. `archive/` is for moved files only. Move a file there with the rename convention `<slug>-archived.md` and add an `archived: <date>` field |
+| Create a new content note inside `archive/` | No | Don't. `archive/` is for moved files only. The only in-place note is the folder index `archive/archive.md`, and it must not have `archived:`. Move retired content there with the rename convention `<slug>-archived.md` and add an `archived: <date>` field |
 | Create a new root note | Yes | Root should almost always stay limited to `<Project>.md`, `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md` |
 | Create a new top-level folder | Yes | Explain why existing lanes do not fit |
 | Create a new docs guide category | Yes | Prefer Admin, Developer, Quick Commands, or User Guide |

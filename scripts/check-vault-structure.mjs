@@ -32,9 +32,10 @@
  * `--config` is set without `--project`, the script iterates over all
  * projects in the config and prints one report per project.
  *
- * If `--config` is not given, the script walks up from its own location
- * looking for a sibling SKILL.md; the projects.json next to that SKILL.md
- * is used as the default config. Explicit `--config` always wins.
+ * If a <vault> path is provided, that folder is scanned directly. If no
+ * <vault> path or `--config` is given, the script walks up from its own
+ * location looking for a sibling SKILL.md; the projects.json next to that
+ * SKILL.md is used as the default config. Explicit `--config` always wins.
  *
  * Exit codes:
  *   0 = all required present
@@ -83,8 +84,25 @@ const CLI = parseArgs(process.argv);
 
 function loadConfigPath() {
   if (CLI.config) return resolve(CLI.config);
+  if (CLI.vault) return null;
   if (DEFAULT_CONFIG && existsSync(DEFAULT_CONFIG)) return DEFAULT_CONFIG;
   return null;
+}
+
+function isTemplateConfig(cfg) {
+  const projects = cfg.projects ?? {};
+  return Object.keys(projects).length === 0 || Object.prototype.hasOwnProperty.call(projects, "<ProjectName>");
+}
+
+function configSetupError(project, configPath, cfg, reason) {
+  const setupHint = isTemplateConfig(cfg)
+    ? "This looks like the default empty projects.json template. "
+    : "";
+  return (
+    `ERROR: ${reason} in ${configPath}\n` +
+    `${setupHint}Run the project-management skill and say "setup as collaborator" or "setup this repo", ` +
+    `or add a real projects.${project} entry with access and pm_folder.`
+  );
 }
 
 function resolveTargets() {
@@ -105,7 +123,7 @@ function resolveTargets() {
   if (CLI.project) {
     const proj = cfg.projects?.[CLI.project];
     if (!proj) {
-      console.error(`ERROR: project '${CLI.project}' not found in ${configPath}`);
+      console.error(configSetupError(CLI.project, configPath, cfg, `project '${CLI.project}' not found`));
       process.exit(2);
     }
     if (proj.access === "unavailable") {
@@ -116,7 +134,7 @@ function resolveTargets() {
       return [];
     }
     if (!proj.pm_folder) {
-      console.error(`ERROR: project '${CLI.project}' has no pm_folder in ${configPath}`);
+      console.error(configSetupError(CLI.project, configPath, cfg, `project '${CLI.project}' has no pm_folder`));
       process.exit(2);
     }
     return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})` }];
@@ -214,6 +232,7 @@ const findings = {
   folderNames: { violations: [] },
   folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [] },
   docsNames: { violations: [] },
+  docsNameWarnings: { warnings: [] },
   historyNames: { violations: [] },
   roadmapShape: { violations: [] },
 };
@@ -444,6 +463,8 @@ function checkDocsNames() {
     if (stem === parent || filename === "docs.md") continue;
     if (/^\d+[_ -]/.test(filename)) {
       findings.docsNames.violations.push(rel);
+    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(stem)) {
+      findings.docsNameWarnings.warnings.push(rel);
     }
   }
 }
@@ -626,6 +647,17 @@ function emit() {
     lines.push("");
   }
 
+  if (findings.docsNameWarnings.warnings.length > 0) {
+    lines.push("## Docs Filename Warnings");
+    lines.push("");
+    lines.push("Canonical docs-guide content notes should use neutral lowercase kebab-case slugs. Personal/collaborator prefixes such as `haoyou_` are discouraged but do not fail validation.");
+    lines.push("");
+    for (const rel of findings.docsNameWarnings.warnings) {
+      lines.push(`- \`${rel}\`: consider renaming to a neutral lowercase kebab-case slug and updating wiki links.`);
+    }
+    lines.push("");
+  }
+
   if (findings.historyNames.violations.length > 0) {
     lines.push("## History Filename Violations");
     lines.push("");
@@ -673,6 +705,7 @@ function runFor(target) {
   findings.folderNames = { violations: [] };
   findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [] };
   findings.docsNames = { violations: [] };
+  findings.docsNameWarnings = { warnings: [] };
   findings.historyNames = { violations: [] };
   findings.roadmapShape = { violations: [] };
 

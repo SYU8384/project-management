@@ -158,6 +158,8 @@ It auto-discovers `projects.json` when run from this skill repo. You can also sc
 node scripts/check-pm.mjs --project MyProject --config projects.json
 ```
 
+Run `setup this repo` or `setup as collaborator` before project-scoped validation so `projects.json` has a real entry for the project.
+
 Pass a real config file path for `--config`; shell file descriptors such as `/dev/fd/*` are not a supported public interface.
 
 The wrapper runs all three focused checks and exits nonzero if any check fails:
@@ -170,6 +172,8 @@ The wrapper runs all three focused checks and exits nonzero if any check fails:
 | `check-pm-consistency.mjs` | Visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and sync-conflict cleanup. |
 
 Use the individual scripts directly when debugging a specific class of failure.
+
+When using an individual script, an explicit PM-folder path scans that folder directly. Auto-discovered `projects.json` is used only when no path is provided or when `--config` is passed.
 
 Projects registered with `access: unavailable` are skipped cleanly because the collaborator has no local PM folder yet.
 
@@ -233,6 +237,7 @@ Most users do not need to edit this manually after setup. The guided `setup this
 - **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
 - **Bugs become knowledge.** Active bug tracking stays in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
 - **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md`.
+- **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
 - **The skill is portable.** `projects.json` is local and gitignored; the repo itself contains only reusable conventions, templates, and scripts.

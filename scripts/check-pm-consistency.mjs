@@ -39,8 +39,25 @@ const CLI = parseArgs(process.argv);
 
 function loadConfigPath() {
   if (CLI.config) return resolve(CLI.config);
+  if (CLI.vault) return null;
   if (DEFAULT_CONFIG && existsSync(DEFAULT_CONFIG)) return DEFAULT_CONFIG;
   return null;
+}
+
+function isTemplateConfig(cfg) {
+  const projects = cfg.projects ?? {};
+  return Object.keys(projects).length === 0 || Object.prototype.hasOwnProperty.call(projects, "<ProjectName>");
+}
+
+function configSetupError(project, configPath, reason) {
+  const setupHint = isTemplateConfig(JSON.parse(readFileSync(configPath, "utf8")))
+    ? "This looks like the default empty projects.json template. "
+    : "";
+  return (
+    `ERROR: ${reason} in ${configPath}\n` +
+    `${setupHint}Run the project-management skill and say "setup as collaborator" or "setup this repo", ` +
+    `or add a real projects.${project} entry with access and pm_folder.`
+  );
 }
 
 function resolveTargets() {
@@ -57,7 +74,10 @@ function resolveTargets() {
       return [];
     }
     if (!proj?.pm_folder) {
-      console.error(`ERROR: project '${CLI.project}' not found or has no pm_folder in ${configPath}`);
+      const reason = proj
+        ? `project '${CLI.project}' has no pm_folder`
+        : `project '${CLI.project}' not found`;
+      console.error(configSetupError(CLI.project, configPath, reason));
       process.exit(2);
     }
     return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project }];
@@ -168,6 +188,9 @@ function runFor(target) {
     }
     if (rel.startsWith("archive/") && rel.endsWith("-archived.md") && !fm.archived) {
       issues.push(`${rel}: archived file missing archived date`);
+    }
+    if (fm.archived && !(rel.startsWith("archive/") && rel.endsWith("-archived.md"))) {
+      issues.push(`${rel}: archived field is only valid on moved archive files matching archive/*-archived.md`);
     }
     if (rel.includes("sync-conflict")) issues.push(`${rel}: sync-conflict file should be resolved or removed`);
     if (rel.startsWith("archive/") && !isFolderNote(rel, project) && rel !== "archive/archive.md" && !rel.endsWith("-archived.md")) {

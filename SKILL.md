@@ -25,7 +25,7 @@ The five most common actions:
 
 **3. Initialize a new project's PM folder directly** — say "initialize the PM folder for <name>". The agent asks for the missing fields (project name, code_repo, pm_folder, phase, access, notes), writes them to `<skill_dir>/projects.json`, then runs the Bootstrap Workflow in REFERENCE.md.
 
-**4. Verify a PM folder** — say "verify PM folder", "validate PM folder", "check PM folder", "audit PM folder", or "run PM checks". The agent runs `node <skill_dir>/scripts/check-pm.mjs` with any relevant `--project` / `--config` args, reports failures clearly, and only fixes files when the user asked to repair or the project has authoritative PM access.
+**4. Verify a PM folder** — say "verify PM folder", "validate PM folder", "check PM folder", "audit PM folder", or "run PM checks". The agent first confirms the project is registered in `projects.json`, then runs `node <skill_dir>/scripts/check-pm.mjs` with any relevant `--project` / `--config` args, reports failures clearly, and only fixes files when the user asked to repair or the project has authoritative PM access.
 
 **5. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md`, `AGENTS_PM_SECTION_READONLY.md`, or `AGENTS_PM_SECTION_UNAVAILABLE.md`) into the project's `AGENTS.md`.
 
@@ -73,7 +73,9 @@ Always read the project `README.md` first. If it exists, it wins over this gener
 | `archive/` | Superseded material replaced by current product, system, roadmap, or planning docs |
 | `CURRENT_STATUS.md` | Weekly snapshot | Top priorities, blocked, recent wins, major risks, stale docs |
 
-Naming is semantic: top-level PM lanes are lowercase, docs guide folders use Title Case, folder notes exactly match their folder name, content notes use lowercase slugs, and uppercase filenames are reserved for root artifacts (`README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`) plus ADR prefixes.
+Naming is semantic: top-level PM lanes are lowercase, docs guide folders use Title Case, folder notes exactly match their folder name, content notes use neutral lowercase kebab-case slugs, and uppercase filenames are reserved for root artifacts (`README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`) plus ADR prefixes. Personal/collaborator prefixes such as `haoyou_` are discouraged in canonical PM folders and should be treated as warnings, not hard failures.
+
+Archive marker rule: `archived: <date>` appears only on moved archive files named `archive/*-archived.md`. Folder indexes such as `archive/archive.md` must not carry `archived:`.
 
 Bug routing: `roadmap/known-issues.md` tracks active bugs, risks, and blockers; `docs/Developer Guide/known-bugs.md` is required for engineering bug knowledge, including active/fixed status, symptoms, root cause, solution, verification, recurrence patterns, and links to history or known issues.
 
