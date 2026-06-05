@@ -21,9 +21,9 @@ owner: PM
 - [[#Folder Structure]]
 - [[#Quick Rules]]
 - [[#Live PM Folder Rule]]
-- [[#Planning Convention]]
 - [[#Naming Conventions]]
 - [[#Update Frequency]]
+- [[#Conventions by Page Type]]
 - [[#Navigation Context]]
 
 ## What Goes Where
@@ -32,7 +32,10 @@ owner: PM
 |---|---|---|
 | `PRODUCT.md` | Product | Product vision, target users, core loop, current product shape, principles, boundaries, future goals |
 | `system/` | Current state | Current architecture, auth, database, runtime, integrations, deployment, behavior |
-| `docs/` | User/admin/dev docs | User manual, admin guide, developer guide, quick commands |
+| `docs/User Guide/` | End-user docs | User manual, FAQ, and product reference notes |
+| `docs/Admin Guide/` | Admin/operator docs | Runbooks, monitoring, deployment, data repair, and production procedures |
+| `docs/Developer Guide/` | Developer docs | Setup, testing, APIs, schemas, prompts, implementation notes, contribution workflow |
+| `docs/Quick Commands/` | Command recipes | Copy-pasteable commands; longer explanation belongs in Admin or Developer Guide |
 | `roadmap/` | Future and active PM state | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending, ideas |
 | `planning/` | Concrete plans and decisions | Implementation plans, architecture decisions, design strategies not fully shipped yet |
 | `planning/decisions/` | Architecture Decision Records | ADRs — short records of why a decision was made |
@@ -54,16 +57,21 @@ owner: PM
 ├── docs/
 │   ├── docs.md
 │   ├── Admin Guide/
+│   │   └── Admin Guide.md
 │   ├── Developer Guide/
+│   │   └── Developer Guide.md
 │   ├── Quick Commands/
+│   │   └── Quick Commands.md
 │   └── User Guide/
+│       └── User Guide.md
 ├── features/
 │   ├── features.md
 │   └── <feature>.md
 ├── history/
 │   ├── history.md
 │   └── YYYY-MM/
-│       └── HISTORY-YYYY-MM-DD.md
+│       ├── YYYY-MM.md
+│       └── history-YYYY-MM-DD.md
 ├── planning/
 │   ├── planning.md
 │   ├── decisions/
@@ -88,35 +96,27 @@ owner: PM
 
 | What happened | Where to log |
 |---|---|
-| Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/YYYY-MM/HISTORY-YYYY-MM-DD.md` |
-| User-facing behavior changed | Relevant `docs/User Guide/`, relevant `system/` doc, roadmap status if applicable, then `history/` |
-| Admin or developer workflow changed | Relevant `docs/Admin Guide/`, `docs/Developer Guide/`, or `docs/Quick Commands/`, then `history/` |
+| Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/YYYY-MM/history-YYYY-MM-DD.md` |
+| User-facing behavior or UX changed | Relevant `docs/User Guide/`, relevant `system/` doc, affected `features/<feature>.md`, roadmap status if applicable, then `history/` |
+| Admin/operator workflow changed | Relevant `docs/Admin Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
+| Developer workflow, API, schema, prompt, test, build, or local setup changed | Relevant `docs/Developer Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | New concrete plan or decision not fully implemented | `planning/YYYY-MM-DD_slug.md`, then add/update a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md` |
 | Significant architecture decision made | New `ADR-NNN` in `planning/decisions/` (see `templates/ADR.md`) |
 | New feature enters design phase (coherent user-facing capability) | Create `features/<feature>.md` (from `templates/feature.md`); link to relevant `system/` and `planning/` docs |
 | Feature's scope, availability, or known issues changed | Update the matching `features/<feature>.md` (not just the system/ doc it points to) |
-| Bug or risk found | `roadmap/known-issues.md` |
+| Bug, risk, or blocker found or changed status | `roadmap/known-issues.md` |
 | New idea or declined proposal | `roadmap/ideas.md` |
 | Roadmap item completed | Mark the relevant roadmap item done and add a brief `history/` entry |
 | Entire `roadmap/done-pending.md` section completed | Distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the completed section; if it mirrors a completed planning file, archive that planning file too |
 | Product positioning or target user changed | `PRODUCT.md`, then `history/` |
 
-**When to write a feature page** (vs only a `system/` doc): if it's a coherent user-facing capability an agent could ask "tell me about X" end-to-end, write a `features/<feature>.md`. If it's a technical component (auth, runtime, multi-tenancy) that informs multiple features, keep it in `system/` only and let feature pages link to it. See `templates/feature.md` for the page shape and `templates/features.md` "When to add a feature page" for the full decision rule.
+**When to write a feature page** (vs only a `system/` doc): if it's a coherent user-facing capability an agent could ask "tell me about X" end-to-end, write a `features/<feature>.md`. If it's a technical component (auth, runtime, multi-tenancy) that informs multiple features, keep it in `system/` only and let feature pages link to it. Full decision rule, body shape, and frontmatter fields in [Conventions by Page Type → Feature pages](#feature-pages-featuresfeaturemd).
 
 ## Live PM Folder Rule
 
-The management folders are live. Agents may create notes in existing folders when needed, but must use the right lane and update folder indexes in the same session.
+The management folders are live. Agents may create notes in existing folders when needed, but must use the right lane and update folder indexes in the same session. Every visible PM folder has a matching folder note; hidden dot-folders used by sync/tooling are ignored.
 
 Ask before creating root notes, new roadmap notes, new top-level folders, or new docs guide categories.
-
-## Planning Convention
-
-Planning notes use **date-prefixed filenames** at creation time: `planning/YYYY-MM-DD_slug.md` (the date is the file's `created:` frontmatter date). The numbered `NN_slug.md` convention is deprecated.
-
-- H1 of each planning note is the slug only (no number, no date prefix): `# initial-decisions` (not `# 01_initial-decisions` or `# 2026-05-22_initial-decisions`).
-- When archiving: `mv planning/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix; preserve the slug; append `-archived`). Add an `archived: <date>` field to the frontmatter; keep the original `created:` field.
-- Update `planning/planning.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
-- No renumbering. Active planning notes keep their original date-prefixed filenames; archive numbers are historical and do not need to be consecutive.
 
 ## Naming Conventions
 
@@ -124,8 +124,10 @@ Planning notes use **date-prefixed filenames** at creation time: `planning/YYYY-
 |---|---|---|
 | Folders | lowercase or clear title-case guide folders | `history/`, `User Guide/` |
 | Key root docs | uppercase or title-case | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md` |
+| Folder notes | match the folder name | `history/history.md`, `history/2026-06/2026-06.md` |
 | Section docs (system/) | slug (no prefix; `created:` frontmatter carries the date) | `architecture.md` |
-| Date-stamped logs | `YYYY-MM/HISTORY-YYYY-MM-DD.md` (organized by year-month) | `2026-06/HISTORY-2026-06-04.md` |
+| Docs guide notes | lowercase slug, no numeric prefix | `user-manual.md`, `cloudflare-tunnel.md` |
+| Date-stamped logs | `YYYY-MM/history-YYYY-MM-DD.md` (organized by year-month) | `2026-06/history-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
 | ADRs | `ADR-NNN_slug.md` (numbered within decisions/) | `ADR-001_<decision-slug>.md` |
 | Archived files | `<slug>-archived.md` (date prefix and number dropped) | `m3-return-path-archived.md` |
@@ -138,9 +140,51 @@ Planning notes use **date-prefixed filenames** at creation time: `planning/YYYY-
 - `planning/`: update when a plan, architecture decision, or implementation strategy is created or revised before fully shipped.
 - `planning/decisions/`: add a new ADR when a significant architecture decision is made. Update existing ADRs if their assumptions change.
 - `features/`: update when a feature's current behavior, known issues, or roadmap changes.
-- `history/`: update last with brief chronological bullets after meaningful work is finished.
+- `history/`: update last with brief chronological bullets after meaningful work is finished. New month folders must include `YYYY-MM/YYYY-MM.md` and be linked from `history/history.md`.
 - `CURRENT_STATUS.md` (at root): update weekly with the current snapshot — top priorities, blocked, recent wins, major risks, stale docs. PM agent maintains.
 - `README.md`: update when folder structure or logging rules change.
+
+## Conventions by Page Type
+
+Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `planning/planning.md`, `features/features.md`, `history/2026-06/2026-06.md`) follow the universal shape in `templates/folder-note.md` — they hold the index block, not the conventions.
+
+### Docs guide notes (`docs/<Guide>/<slug>.md`)
+
+- **Folder notes:** `Admin Guide.md`, `Developer Guide.md`, `Quick Commands.md`, and `User Guide.md` are indexes only. Do not put manual, runbook, FAQ, command, or reference content in guide folder notes.
+- **User Guide:** use independent notes such as `user-manual.md`, `faq.md`, and `reference.md` when the project has shipped user-facing behavior.
+- **Admin Guide:** runbooks, monitoring, deployment, data repair, access, and production procedures.
+- **Developer Guide:** local setup, testing, APIs, schemas, prompts, implementation notes, and contribution workflow.
+- **Quick Commands:** copy-pasteable commands only; link to Admin or Developer Guide when explanation is needed.
+- **Renames:** legacy numbered filenames like `01_USER_MANUAL.md` are deprecated. Rename to lowercase slugs and update all wiki links.
+
+### Roadmap notes (`roadmap/ideas.md`, `roadmap/known-issues.md`)
+
+- **Ideas:** use `## Contents` and status sections (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`).
+- **Known issues:** use `## Contents` and area/status sections (`## Active`, `## Fixed`, `## Deferred`, or project-specific areas).
+- **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` section; bugs and risks stay in `known-issues.md`.
+
+### Planning notes (`planning/YYYY-MM-DD_slug.md`)
+
+- **Filename:** `YYYY-MM-DD_slug.md` (date prefix from `created:` frontmatter). The numbered `NN_slug.md` convention is deprecated; do not renumber active notes when adopting this scheme.
+- **H1:** slug only, no number, no date prefix — `# initial-decisions`, not `# 01_initial-decisions` or `# 2026-05-22_initial-decisions`.
+- **Status values:** `proposed` (under discussion, not yet approved), `active` (in flight), `shipped` (work done, file kept for historical reference), `rejected` (proposal declined), `superseded` (replaced by a newer plan or ADR). These are planning-specific; the global schema documents them in `SKILL.md` "Frontmatter Schema → Planning".
+- **`archived:` field:** when a planning file moves to `archive/`, set `archived: <date>` (the move date) in the frontmatter; keep the original `created:` field. `status:` and `archived:` are **orthogonal** — a shipped-then-archived plan keeps `status: shipped`; a rejected-then-archived plan keeps `status: rejected`; a superseded-then-archived plan keeps `status: superseded`.
+- **Archive rename:** when retiring, `mv planning/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). Then update `planning/planning.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
+- **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
+- **Cross-link:** when a planning note is approved, add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file.
+
+### Feature pages (`features/<feature>.md`)
+
+- **When to add:** a coherent user-facing capability (chat, memory, email) or a coherent technical pillar (runtime, isolation) that has accumulated enough cross-cutting context to need a "tell me everything about X" entry point. Not for every system/ doc — only for things with cross-cutting context. Most system/ docs are best surfaced via the `system/` index alone.
+- **Body sections:** Status (alpha/beta/stable/deprecated), Current Behavior, Known Issues, Roadmap, Relevant ADRs, Source of Truth.
+- **Frontmatter fields:** `pageType: feature`, `status`, `owner`, `source_of_truth` (path to the system/ doc that is canonical for this feature), `roadmap_source` (path to the relevant roadmap section).
+- **Don't duplicate content:** feature pages *point* to system/ and planning/; they don't *replace* them. If a system/ doc changes, the feature page's `source_of_truth` link is still valid; no edit needed unless the feature itself changes.
+
+### ADRs (`planning/decisions/ADR-NNN_slug.md`)
+
+- **Status values:** `proposed`, `accepted`, `deprecated`, `superseded`. When this ADR supersedes another, set the new ADR's `supersedes:` field to the prior ADR id; the prior ADR's status moves to `Superseded by` and the date is recorded in its body. ADRs are not for tactical implementation details (those go in planning notes) or runtime configuration (those go in `system/`).
+- **When to write:** a significant architecture decision affecting multiple parts of the system, a non-obvious choice (e.g., why Supabase over Clerk; why LCM over native summarization), or a "why" that won't be obvious six months later.
+- **Body shape:** detailed sections in `templates/ADR.md` (single-page template; ADR is not a folder note, so its body shape is documented in the page template, not in this README).
 
 ## Navigation Context
 

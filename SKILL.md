@@ -1,9 +1,9 @@
 ---
-name: project-logging
+name: project-management
 description: "Use when the user asks to log, record, archive, update, create, configure, register, add, bootstrap, standardize, initialize, repair, audit, or fix project docs or PM folders; set up or fix a project's AGENTS.md; or when meaningful project work finishes."
 ---
 
-# Project Logging
+# Project Management
 
 Use this skill for three intents:
 
@@ -19,7 +19,7 @@ Use this skill for three intents:
 
 The three most common actions:
 
-**1. Log a change** — say "log this" or "I just finished <feature>". The agent reads the project's `README.md` and the relevant `system/<topic>.md` (current behavior), updates the docs that need to change, then appends a Conventional Commits-prefixed bullet to `history/YYYY-MM/HISTORY-YYYY-MM-DD.md` (e.g., `history/2026-05/HISTORY-2026-05-04.md`).
+**1. Log a change** — say "log this" or "I just finished <feature>". The agent reads the project's `README.md`, checks every PM-impact lane that could have changed (`system/`, `docs/`, `features/`, `roadmap/`, `planning/`, ADRs), updates the needed current-state docs and indexes, then appends a Conventional Commits-prefixed bullet to `history/YYYY-MM/history-YYYY-MM-DD.md` (e.g., `history/2026-05/history-2026-05-04.md`). If the month folder is new, the agent also creates `history/YYYY-MM/YYYY-MM.md` and links it from `history/history.md`.
 
 **2. Initialize a new project's PM folder** — say "initialize the PM folder for <name>". The agent asks for 5 fields (project name, code_repo, pm_folder, phase, access, notes), writes them to `<skill_dir>/projects.json`, then runs the 11-step Bootstrap Workflow in REFERENCE.md.
 
@@ -33,8 +33,8 @@ Match user phrases to the right intent. If multiple intents apply, do all of the
 
 | User says | Intent | Workflow section |
 |---|---|---|
-| "log this", "record this", "capture this decision" | Log | Existing Project Logging (REFERENCE) |
-| "I just made a code change", "I just finished <feature>" | Log | Existing Project Logging (REFERENCE) |
+| "log this", "record this", "capture this decision" | Log | Existing Project Management (REFERENCE) |
+| "I just made a code change", "I just finished <feature>" | Log | Existing Project Management (REFERENCE) |
 | "create the PM folder", "initialize the PM folder", "set up project docs", "bootstrap", "standardize the PM folder", "convert this mess to the standard layout", "restructure the PM folder", "normalize the PM folder" | Initialize (new or against existing) | Standard App Project Bootstrap (REFERENCE) |
 | "repair the PM folder", "fix the PM folder", "audit the PM folder", "check for inconsistencies", "find issues in the PM folder" | Repair | Repair the PM Folder (REFERENCE) |
 | "fix the schema", "migrate the frontmatter", "update the schema" | Repair (focused on schema) | Repair the PM Folder (REFERENCE) |
@@ -56,7 +56,10 @@ Always read the project `README.md` first. If it exists, it wins over this gener
 | `PRODUCT.md` | Product vision, target users, core loop, current product shape, product principles, boundaries, future goals |
 | `README.md` | Folder structure, routing rules, update frequency, live PM folder rules |
 | `system/` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment, operational reference |
-| `docs/` | User, admin, developer, and quick-command documentation |
+| `docs/User Guide/` | End-user behavior, user manual, FAQ, and product reference notes |
+| `docs/Admin Guide/` | Operator/admin runbooks, monitoring, deployment, data repair, and production procedures |
+| `docs/Developer Guide/` | Developer-facing implementation, APIs, testing, schemas, prompts, and contribution workflow |
+| `docs/Quick Commands/` | Copy-pasteable commands; longer explanation belongs in Admin or Developer Guide |
 | `planning/` | Concrete implementation plans and design decisions for a set of features or initiatives |
 | `features/` | Curated per-feature pages. Each page is a "tell me everything about X" index that points into `system/` and `planning/`. **Required** for any project past initial planning; pre-alpha projects have an empty index. |
 | `roadmap/` | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending status, and ideas |

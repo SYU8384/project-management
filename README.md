@@ -1,4 +1,4 @@
-# project-logging skill
+# project-management skill
 
 A portable, host-agnostic skill for managing PM folders (Obsidian vaults) for any project. Log work, initialize new project folders, repair inconsistencies, and keep code repos in sync with their PM folders.
 
