@@ -136,27 +136,40 @@ History is written last because it records what changed after the durable docs h
 
 ## 🧪 Validation Tools
 
-The repo includes three Node scripts:
+Ask an agent to run validation with any of these trigger phrases:
 
-```bash
-node scripts/check-vault-structure.mjs
-node scripts/check-stale-docs.mjs
-node scripts/check-pm-consistency.mjs
+```text
+verify PM folder
+validate PM folder
+check PM folder
+audit PM folder
+run PM checks
 ```
 
-They auto-discover `projects.json` when run from this skill repo. You can also scan one project explicitly:
+Or run the primary validator directly:
 
 ```bash
-node scripts/check-vault-structure.mjs --project MyProject --config projects.json
-node scripts/check-stale-docs.mjs --project MyProject --config projects.json
-node scripts/check-pm-consistency.mjs --project MyProject --config projects.json
+node scripts/check-pm.mjs
 ```
+
+It auto-discovers `projects.json` when run from this skill repo. You can also scan one project explicitly:
+
+```bash
+node scripts/check-pm.mjs --project MyProject --config projects.json
+```
+
+Pass a real config file path for `--config`; shell file descriptors such as `/dev/fd/*` are not a supported public interface.
+
+The wrapper runs all three focused checks and exits nonzero if any check fails:
 
 | Script | Checks |
 |---|---|
+| `check-pm.mjs` | Primary entry point; runs all PM validation checks in sequence. |
 | `check-vault-structure.mjs` | Required PM layout, guide folders, folder notes, semantic casing, roadmap note sections, and AGENTS.md drift. |
 | `check-stale-docs.mjs` | Missing or old `last_reviewed` metadata. |
 | `check-pm-consistency.mjs` | Visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and sync-conflict cleanup. |
+
+Use the individual scripts directly when debugging a specific class of failure.
 
 Projects registered with `access: unavailable` are skipped cleanly because the collaborator has no local PM folder yet.
 
@@ -208,6 +221,7 @@ Most users do not need to edit this manually after setup. The guided `setup this
 | [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
+| [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |

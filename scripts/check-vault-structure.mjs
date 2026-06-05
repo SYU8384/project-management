@@ -2,7 +2,7 @@
 /**
  * check-vault-structure.mjs
  *
- * Walks an OpenManager-style project vault and verifies the required
+ * Walks a project-management PM folder and verifies the required
  * folder + file structure is in place. Emits a pass/fail report.
  *
  * Required:
@@ -17,10 +17,7 @@
  *   - History index: history/history.md
  *
  * Optional but recommended:
- *   - features/ folder (required)
  *   - planning/decisions/ subfolder
- *   - scripts/check-stale-docs.mjs
- *   - scripts/check-vault-structure.mjs
  *
  * Usage:
  *   node scripts/check-vault-structure.mjs                                # scan CWD
@@ -198,11 +195,6 @@ const OPTIONAL_DIRS = [
   "planning/decisions",
 ];
 
-const OPTIONAL_SCRIPTS = [
-  "scripts/check-stale-docs.mjs",
-  "scripts/check-vault-structure.mjs",
-];
-
 // Folder notes (one .md at the top of each visible PM folder serving as
 // its index) are governed by `templates/folder-note.md`. Hidden sync/tooling
 // folders such as `.stfolder`, `.stversions`, and `.workspace` are ignored.
@@ -320,13 +312,6 @@ function checkOptional() {
       findings.optional.present.push(`dir: ${dir}/`);
     } else {
       findings.optional.missing.push(`dir: ${dir}/`);
-    }
-  }
-  for (const file of OPTIONAL_SCRIPTS) {
-    if (isFile(file)) {
-      findings.optional.present.push(`file: ${file}`);
-    } else {
-      findings.optional.missing.push(`file: ${file}`);
     }
   }
 }
@@ -579,7 +564,7 @@ function emit() {
   }
 
   if (findings.required.missing.length === 0 && findings.optional.missing.length === 0) {
-    lines.push("All required and optional files are in place.");
+    lines.push("All required and optional items are in place.");
   }
 
   if (findings.folderNames.violations.length > 0) {

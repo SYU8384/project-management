@@ -85,9 +85,6 @@ owner: PM
 │   ├── known-issues.md
 │   ├── done-pending.md
 │   └── ideas.md
-├── scripts/
-│   ├── check-stale-docs.mjs
-│   └── check-vault-structure.mjs
 └── system/
     ├── system.md
     └── <topic>.md

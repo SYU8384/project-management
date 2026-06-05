@@ -6,15 +6,39 @@ The split mirrors the "Writing Skills" framework: SKILL.md is lean (~150 lines) 
 
 ---
 
-## Repair the PM Folder
+## Validation and Repair
 
-Use this when the user asks to "repair", "fix", "audit", or "check" the PM folder — meaning to find and fix inconsistencies in an existing vault against the canonical conventions.
+Use this when the user asks to "verify", "validate", "audit", "check", "repair", or "fix" the PM folder.
+
+- **Verify / validate / check / audit** means run the validation tools and report findings without editing files.
+- **Repair / fix** means run validation, fix authoritative PM-folder issues, then rerun validation.
+
+Primary command:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs
+node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json
+```
+
+The wrapper runs all focused validators and returns nonzero if any check fails. The individual scripts remain available for debugging specific failures.
 
 The repair workflow has 3 phases: **audit, plan, fix**.
 
 ### Phase 1: Audit
 
-Run the two optional-but-recommended scripts (bundled in `<skill_dir>/scripts/`):
+Run the bundled validation wrapper:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs
+```
+
+For one registered project, prefer:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json
+```
+
+The wrapper runs:
 
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
 - `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale docs
@@ -49,7 +73,7 @@ Apply the fixes in this order:
 1. **Schema first** (REFERENCE.md + templates) — establishes the new convention.
 2. **Verify, then migrate** existing files — each file read first to determine its original lifecycle / kind.
 3. **Update history** with brief bullets recording what was fixed.
-4. **Validate** with the structure check + stale-docs check.
+4. **Validate** with `node <skill_dir>/scripts/check-pm.mjs`.
 5. **Re-run the audit** to confirm a clean state.
 
 ---
@@ -341,11 +365,11 @@ These are planning-specific values. The base `archived:` field is used separatel
 
 ### Stale detection
 
-Notes with `last_reviewed` more than 30 days old are flagged as **stale**. Notes never reviewed or more than 90 days old are **very stale**. Run `<skill_dir>/scripts/check-stale-docs.mjs` (in projects that adopt it) to generate a report; surface results in `CURRENT_STATUS.md` under "Stale Docs".
+Notes with `last_reviewed` more than 30 days old are flagged as **stale**. Notes never reviewed or more than 90 days old are **very stale**. Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json` to generate the full validation report; surface the stale-doc summary in `CURRENT_STATUS.md` under "Stale Docs".
 
-### Stale detection is opt-in per project
+### Stale detection is report-only
 
-The skill defines the schema and the stale detection concept. Each project opts in by adding `scripts/check-stale-docs.mjs` and running it. The script should never delete or modify notes — it only reports.
+The skill defines the schema and the stale detection concept. Validation scripts should never delete or modify notes — they only report.
 
 ### History entry kinds
 
@@ -552,7 +576,7 @@ Never create a private "canonical" PM folder for a collaborator unless the user 
 - A project's one-line description should change.
 - A project's access level changes (e.g., promoting a read-only contributor to authoritative, or a collaborator's project becoming read-only because you no longer maintain it).
 
-**Script auto-discovery.** The bundled scripts (`<skill_dir>/scripts/check-stale-docs.mjs`, `<skill_dir>/scripts/check-vault-structure.mjs`) walk up from their own location looking for a sibling `SKILL.md`; the `projects.json` next to that `SKILL.md` is the default config. Explicit `--config <path>` always wins. This means running the scripts with no arguments works whether the scripts live at `<skill_dir>/scripts/` (the bundled case) or are copied into a project repo (the user-local case).
+**Script auto-discovery.** The bundled validation scripts (`<skill_dir>/scripts/check-pm.mjs` plus the focused checks it runs) walk up from their own location looking for a sibling `SKILL.md`; the `projects.json` next to that `SKILL.md` is the default config. Explicit `--config <path>` always wins. This means running `node <skill_dir>/scripts/check-pm.mjs` with no arguments validates every available project registered in the skill's local config.
 
 **Why a config file instead of placeholders in the skill text?** Placeholders like `<vault_root>` would require the agent or scripts to substitute them, and would clutter the skill prose. A config file is the right abstraction for "user-specific runtime state" — the skill describes the *convention*; the config holds the *user's instance*.
 
@@ -694,13 +718,19 @@ The skill does not endorse any specific mechanism; the user picks based on their
 
 ## Templates
 
-Ten file templates are provided in the `templates/` directory relative to this skill's installation location (i.e., `<skill_dir>/templates/`). When creating a new note of one of these types, copy the template and fill in the body:
+Reusable templates are provided in the `templates/` directory relative to this skill's installation location (i.e., `<skill_dir>/templates/`). When creating a new note or integration artifact, copy the relevant template and fill in the body:
 
 - `templates/README.md` — project root README (sections: What Goes Where, Folder Structure, Quick Rules, Live PM Folder Rule, Naming Conventions, Update Frequency, Conventions by Page Type, Navigation)
 - `templates/CURRENT_STATUS.md` — weekly snapshot at project root
 - `templates/folder-note.md` — universal folder note (one per visible PM folder: `archive/`, `docs/`, `features/`, `history/`, `planning/`, `roadmap/`, `system/`, `planning/decisions/`, and generated `history/YYYY-MM/YYYY-MM.md` month indexes)
+- `templates/planning.md` — planning folder guide
+- `templates/features.md` — features folder guide
 - `templates/ADR.md` — `planning/decisions/ADR-NNN_slug.md`
 - `templates/feature.md` — `features/<feature>.md`
+- `templates/ideas.md` — roadmap idea register
+- `templates/known-issues.md` — roadmap active/fixed/deferred issue tracker
+- `templates/mvp-priorities.md` — MVP priority tracker
+- `templates/done-pending.md` — planning mirror and general done/pending tracker
 - `templates/known-bugs.md` — `docs/Developer Guide/known-bugs.md`
 - `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
@@ -736,10 +766,8 @@ When an agent is asked to set up a new project vault from scratch, follow this w
 6. **Create the archive and history indexes.** `archive/archive.md`, `history/history.md`. When the first `history/YYYY-MM/` month folder is created later, also create `history/YYYY-MM/YYYY-MM.md` and link it from `history/history.md`.
 7. **Create the docs guide indexes and known-bugs note.** Create `docs/docs.md`, `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Developer Guide/known-bugs.md` (from `templates/known-bugs.md`), `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md`.
 8. **Create the features folder + index** (new convention, **required for any project past initial planning**). Copy `templates/folder-note.md` to `features/features.md` and fill in the body. Pre-alpha projects have an empty index; mature projects seed feature pages as features enter the design phase.
-9. **Wire the two bundled scripts** in `scripts/` (already bundled in `<skill_dir>/scripts/`; project repos can copy them to their own `scripts/` if needed):
-   - `scripts/check-stale-docs.mjs` — weekly stale detection
-   - `scripts/check-vault-structure.mjs` — one-time setup verification, also useful in CI
-10. **Run `<skill_dir>/scripts/check-vault-structure.mjs`** to verify the structure is correct. All required folders, root files, planning index, docs guide indexes, `known-bugs.md`, and roadmap notes must be present.
+9. **Use the bundled validation wrapper** in `<skill_dir>/scripts/`. Project repos do not need local script copies unless they want project-specific CI.
+10. **Run `<skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json`** to verify the structure, stale-doc metadata, frontmatter, folder notes, links, planning mirrors, and AGENTS.md PM section are correct.
 11. **Fill in `CURRENT_STATUS.md`** with the initial snapshot (Current Phase, Top Priorities, Blocked, Recent Wins, Major Risks, Relevant ADRs, Relevant Features). Update weekly.
 
 After bootstrap, the agent and any future agents should be able to open the project, read the four root notes, and orient themselves without further setup.

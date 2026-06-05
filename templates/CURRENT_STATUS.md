@@ -44,7 +44,7 @@ owner: PM
 
 ## Stale Docs
 
-> Run `node scripts/check-stale-docs.mjs` (auto-discovers `projects.json`; iterates all known projects) or `node scripts/check-stale-docs.mjs --project <ProjectName>` for a single project. Paste the report here, or replace this section with the latest run. Notes with `last_reviewed` more than 30 days old are flagged as stale; more than 90 days as very-stale.
+> Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json` and paste the stale-doc summary here, or replace this section with the latest run. Notes with `last_reviewed` more than 30 days old are flagged as stale; more than 90 days as very-stale.
 
 ## Relevant ADRs
 

@@ -2,7 +2,7 @@
 /**
  * check-stale-docs.mjs
  *
- * Walks an OpenManager-style project vault, parses frontmatter from every .md
+ * Walks a project-management PM folder, parses frontmatter from every .md
  * file, computes `today - last_reviewed` for each, and emits a markdown report
  * grouped by folder. Flags files as:
  *

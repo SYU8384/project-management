@@ -223,8 +223,9 @@ Installed project-management at:
   $install_dir
 
 Next steps:
-  1. Edit $install_dir/projects.json with your vault and project paths.
-  2. Restart your agent so it discovers the skill.
+  1. Restart your agent so it discovers the skill.
+  2. Use the skill and say: setup this repo
+  3. Advanced/manual fallback: edit $install_dir/projects.json with your vault and project paths.
 EOF
 }
 
