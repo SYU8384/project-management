@@ -12,6 +12,7 @@
  *   - Roadmap standard notes: mvp-priorities.md, known-issues.md,
  *     done-pending.md, ideas.md
  *   - System index: system/system.md (or at least one system/*.md)
+ *   - Developer bug knowledge base: docs/Developer Guide/known-bugs.md
  *   - Archive index: archive/archive.md
  *   - History index: history/history.md
  *
@@ -142,6 +143,14 @@ const REQUIRED_DIRS = [
   "features",
 ];
 
+const CANONICAL_TOP_LEVEL_DIRS = new Set(REQUIRED_DIRS);
+const CANONICAL_DOCS_GUIDE_DIRS = new Map([
+  ["admin guide", "Admin Guide"],
+  ["developer guide", "Developer Guide"],
+  ["quick commands", "Quick Commands"],
+  ["user guide", "User Guide"],
+]);
+
 const REQUIRED_ROOT_FILES = [
   "README.md",
   "PRODUCT.md",
@@ -167,6 +176,7 @@ const REQUIRED_INDEX_FILES = [
   "docs/docs.md",
   "docs/Admin Guide/Admin Guide.md",
   "docs/Developer Guide/Developer Guide.md",
+  "docs/Developer Guide/known-bugs.md",
   "docs/Quick Commands/Quick Commands.md",
   "docs/User Guide/User Guide.md",
 ];
@@ -196,6 +206,7 @@ const findings = {
   project: { found: null, present: false },
   system: { hasSystemMd: false, hasAnySystemDoc: false },
   optional: { missing: [], present: [] },
+  folderNames: { violations: [] },
   folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [] },
   docsNames: { violations: [] },
   historyNames: { violations: [] },
@@ -303,6 +314,38 @@ function checkOptional() {
       findings.optional.present.push(`file: ${file}`);
     } else {
       findings.optional.missing.push(`file: ${file}`);
+    }
+  }
+}
+
+function listVisibleDirectoriesUnder(relDir) {
+  const root = relDir ? join(vaultRoot, relDir) : vaultRoot;
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !isIgnoredDirectory(entry.name))
+    .map((entry) => entry.name);
+}
+
+function checkFolderNames() {
+  for (const name of listVisibleDirectoriesUnder("")) {
+    const lower = name.toLowerCase();
+    if (CANONICAL_TOP_LEVEL_DIRS.has(lower) && name !== lower) {
+      findings.folderNames.violations.push({
+        path: `${name}/`,
+        expected: `${lower}/`,
+        reason: "top-level PM lanes use lowercase",
+      });
+    }
+  }
+
+  for (const name of listVisibleDirectoriesUnder("docs")) {
+    const expected = CANONICAL_DOCS_GUIDE_DIRS.get(name.toLowerCase());
+    if (expected && name !== expected) {
+      findings.folderNames.violations.push({
+        path: `docs/${name}/`,
+        expected: `docs/${expected}/`,
+        reason: "docs guide folders use Title Case",
+      });
     }
   }
 }
@@ -490,6 +533,17 @@ function emit() {
     lines.push("All required and optional files are in place.");
   }
 
+  if (findings.folderNames.violations.length > 0) {
+    lines.push("## Folder Naming Violations");
+    lines.push("");
+    lines.push("Folder casing is semantic: lowercase PM lanes, Title Case docs guide folders, lowercase content slugs, uppercase only for root artifacts and ADR prefixes.");
+    lines.push("");
+    for (const v of findings.folderNames.violations) {
+      lines.push(`- \`${v.path}\`: expected \`${v.expected}\` — ${v.reason}.`);
+    }
+    lines.push("");
+  }
+
   // Folder note coverage and shape checks
   if (findings.folderNotes.missing.length > 0) {
     lines.push("## Missing Folder Notes");
@@ -567,6 +621,7 @@ const findingsRef = findings;
 
 function issueTotal() {
   return findingsRef.required.missing.length
+    + findingsRef.folderNames.violations.length
     + findingsRef.folderNotes.missing.length
     + findingsRef.folderNotes.violations.length
     + findingsRef.folderNotes.parentLinkViolations.length
@@ -581,6 +636,7 @@ function runFor(target) {
   findings.project = { found: null, present: false };
   findings.system = { hasSystemMd: false, hasAnySystemDoc: false };
   findings.optional = { missing: [], present: [] };
+  findings.folderNames = { violations: [] };
   findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [] };
   findings.docsNames = { violations: [] };
   findings.historyNames = { violations: [] };
@@ -588,6 +644,7 @@ function runFor(target) {
 
   checkRequired();
   checkOptional();
+  checkFolderNames();
   checkFolderNotes();
   checkDocsNames();
   checkHistoryNames();

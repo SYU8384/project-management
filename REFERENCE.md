@@ -31,7 +31,8 @@ Then check the schema and content dimensions:
 8. **Folder structure** — all required folders and root files exist; feature/ADR/roadmap index pages exist where needed.
 9. **Feature pages** — coherent features have pages; technical components stay in `system/`.
 10. **Docs guide indexes** — `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md` are folder-note indexes only; durable content lives in independent notes.
-11. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
+11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with status, symptoms, root cause, solution, verification, and references.
+12. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
 
 ### Phase 2: Plan
 
@@ -182,11 +183,15 @@ When moving or renaming notes/folders:
 The four standard docs guide folders are stable lanes. Their folder notes are indexes only; do not put manual, runbook, FAQ, or command content directly in the folder note.
 
 - `docs/User Guide/` — end-user product behavior. Default notes are `user-manual.md`, `faq.md`, and `reference.md` when the project has enough shipped behavior to justify them.
-- `docs/Admin Guide/` — operator/admin procedures: deployments, monitoring, backfills, repair scripts, production data operations, and access management.
-- `docs/Developer Guide/` — developer-facing procedures: local setup, testing, APIs, schemas, prompt/reference material, implementation notes, and contribution workflow.
+- `docs/Admin Guide/` — live product operations for admins/operators: support and feedback triage, admin panel workflows, monitoring, statistics, background job runs, access management, incident response, production verification, and data repair. Admin notes may include operational commands, but should not require source-code edits or explain how to change implementation.
+- `docs/Developer Guide/` — coding-engineer procedures: local setup, codebase structure, testing, APIs, schemas, migrations, prompt/reference material, implementation notes, adding/changing background jobs, release mechanics, contribution workflow, and required `known-bugs.md`.
 - `docs/Quick Commands/` — short command recipes only. If a command needs explanation, troubleshooting, or policy, keep the explanation in Admin or Developer Guide and link to it.
 
 Active docs-guide content notes use lowercase slug filenames with no numeric prefixes (`user-manual.md`, `faq.md`, `cloudflare-tunnel.md`). Legacy numbered names such as `01_USER_MANUAL.md` should be renamed during repair, with all wiki links updated.
+
+Casing is semantic, not uniform. Top-level PM lanes stay lowercase (`archive/`, `docs/`, `history/`, `system/`). The four standard docs guide folders use Title Case (`Admin Guide/`, `Developer Guide/`, `Quick Commands/`, `User Guide/`) because they are user-facing category labels. Folder notes exactly match their folder names, content notes use lowercase slugs, and uppercase filenames are reserved for root artifacts (`README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`) plus the `ADR-NNN_` prefix.
+
+`docs/Developer Guide/known-bugs.md` is required for every PM folder. It is the engineering bug knowledge base: active bugs, fixed bugs, recurring root-cause patterns, solutions, verification, and references to `roadmap/known-issues.md` or `history/`. `roadmap/known-issues.md` remains the active roadmap tracker for bugs, risks, and blockers.
 
 When adding or moving a docs note, update the nearest guide index and `docs/docs.md` if a guide folder changes.
 
@@ -196,7 +201,7 @@ The four standard roadmap notes are active working notes, not folder notes, but 
 
 - `roadmap/ideas.md` uses a `## Contents` TOC and status sections such as `## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, and `## Declined`.
 - `roadmap/known-issues.md` uses a `## Contents` TOC and area/status sections such as `## Active`, `## Fixed`, `## Deferred`, or domain-specific areas.
-- Keep rough ideas in `ideas.md`, concrete approved work in `planning/` plus `done-pending.md`, and bugs/risks in `known-issues.md`.
+- Keep rough ideas in `ideas.md`, concrete approved work in `planning/` plus `done-pending.md`, active bugs/risks in `known-issues.md`, and engineering bug knowledge in `docs/Developer Guide/known-bugs.md`.
 
 ---
 
@@ -531,10 +536,10 @@ A copyable snippet is provided in each template. Project repos that adopt the pr
 
 1. Did current behavior, architecture, data flow, runtime, auth, database, integration, connector, deployment, or operational behavior change? If yes, update the relevant `system/<topic>.md`.
 2. Did user-facing behavior or UX change? If yes, update `docs/User Guide/` and the relevant `features/<feature>.md` when feature scope, behavior, known issues, or roadmap changed.
-3. Did admin/operator workflow change? If yes, update `docs/Admin Guide/` and add or update `docs/Quick Commands/` for useful commands.
-4. Did developer workflow, API behavior, schema/prompt reference, testing, build, or local setup change? If yes, update `docs/Developer Guide/` and add or update `docs/Quick Commands/` for useful commands.
+3. Did live product operation change for admins/operators (support, feedback, admin panel workflow, monitoring, statistics, background job run, access, incident response, production verification, or data repair)? If yes, update `docs/Admin Guide/` and add or update `docs/Quick Commands/` for useful commands.
+4. Did a coding-engineer workflow change (local setup, codebase structure, API behavior, schema/prompt reference, testing, migration, build, release mechanics, adding/changing job code, or engineering bug knowledge)? If yes, update `docs/Developer Guide/` and add or update `docs/Quick Commands/` for useful commands.
 5. Did the change resolve or partially implement a `planning/<date>_slug.md` plan? If yes, mark the relevant PENDING as DONE in `roadmap/done-pending.md`. If the plan is fully shipped, distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the plan to `archive/<slug>-archived.md`.
-6. Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`.
+6. Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`; if it has engineering symptoms, root cause, fix, verification, or recurrence value, also update `docs/Developer Guide/known-bugs.md`.
 7. Did a new idea, declined proposal, or backlog candidate appear? If yes, update `roadmap/ideas.md`.
 8. Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `planning/decisions/ADR-NNN_slug.md`.
 9. Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
@@ -616,13 +621,14 @@ The skill does not endorse any specific mechanism; the user picks based on their
 
 ## Templates
 
-Nine file templates are provided in the `templates/` directory relative to this skill's installation location (i.e., `<skill_dir>/templates/`). When creating a new note of one of these types, copy the template and fill in the body:
+Ten file templates are provided in the `templates/` directory relative to this skill's installation location (i.e., `<skill_dir>/templates/`). When creating a new note of one of these types, copy the template and fill in the body:
 
 - `templates/README.md` — project root README (sections: What Goes Where, Folder Structure, Quick Rules, Live PM Folder Rule, Naming Conventions, Update Frequency, Conventions by Page Type, Navigation)
 - `templates/CURRENT_STATUS.md` — weekly snapshot at project root
 - `templates/folder-note.md` — universal folder note (one per visible PM folder: `archive/`, `docs/`, `features/`, `history/`, `planning/`, `roadmap/`, `system/`, `planning/decisions/`, and generated `history/YYYY-MM/YYYY-MM.md` month indexes)
 - `templates/ADR.md` — `planning/decisions/ADR-NNN_slug.md`
 - `templates/feature.md` — `features/<feature>.md`
+- `templates/known-bugs.md` — `docs/Developer Guide/known-bugs.md`
 - `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
@@ -654,12 +660,13 @@ When an agent is asked to set up a new project vault from scratch, follow this 1
    - `roadmap/ideas.md`
 5. **Create the system index.** `system/system.md` plus at least one `system/*.md` doc.
 6. **Create the archive and history indexes.** `archive/archive.md`, `history/history.md`. When the first `history/YYYY-MM/` month folder is created later, also create `history/YYYY-MM/YYYY-MM.md` and link it from `history/history.md`.
-7. **Create the features folder + index** (new convention, **required for any project past initial planning**). Copy `templates/folder-note.md` to `features/features.md` and fill in the body. Pre-alpha projects have an empty index; mature projects seed feature pages as features enter the design phase.
-8. **Wire the two bundled scripts** in `scripts/` (already bundled in `<skill_dir>/scripts/`; project repos can copy them to their own `scripts/` if needed):
+7. **Create the docs guide indexes and known-bugs note.** Create `docs/docs.md`, `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Developer Guide/known-bugs.md` (from `templates/known-bugs.md`), `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md`.
+8. **Create the features folder + index** (new convention, **required for any project past initial planning**). Copy `templates/folder-note.md` to `features/features.md` and fill in the body. Pre-alpha projects have an empty index; mature projects seed feature pages as features enter the design phase.
+9. **Wire the two bundled scripts** in `scripts/` (already bundled in `<skill_dir>/scripts/`; project repos can copy them to their own `scripts/` if needed):
    - `scripts/check-stale-docs.mjs` — weekly stale detection
    - `scripts/check-vault-structure.mjs` — one-time setup verification, also useful in CI
-9. **Run `<skill_dir>/scripts/check-vault-structure.mjs`** to verify the structure is correct. All required folders, root files, planning index, and roadmap notes must be present.
-10. **Fill in `CURRENT_STATUS.md`** with the initial snapshot (Current Phase, Top Priorities, Blocked, Recent Wins, Major Risks, Relevant ADRs, Relevant Features). Update weekly.
+10. **Run `<skill_dir>/scripts/check-vault-structure.mjs`** to verify the structure is correct. All required folders, root files, planning index, docs guide indexes, `known-bugs.md`, and roadmap notes must be present.
+11. **Fill in `CURRENT_STATUS.md`** with the initial snapshot (Current Phase, Top Priorities, Blocked, Recent Wins, Major Risks, Relevant ADRs, Relevant Features). Update weekly.
 
 After bootstrap, the agent and any future agents should be able to open the project, read the four root notes, and orient themselves without further setup.
 

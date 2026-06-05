@@ -10,7 +10,7 @@ Before coding:
 
 When opening a PR:
 - Use the PR body template (`.github/PULL_REQUEST_TEMPLATE.md`, copied from the project-management skill's `templates/PR_BODY_TEMPLATE.md`)
-- Fill in the "PM folder impact" section with every affected PM lane: `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `planning/`, ADRs, folder indexes, and `history/`
+- Fill in the "PM folder impact" section with every affected PM lane: `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Developer Guide/known-bugs.md`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `planning/`, ADRs, folder indexes, and `history/`
 - Be specific: "system/connectors-and-sessions.md — add new OAuth provider entry" not "update system docs"
 - Do NOT make the PM folder edits in your PR — the maintainer applies them after merge
 

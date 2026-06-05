@@ -57,8 +57,8 @@ Always read the project `README.md` first. If it exists, it wins over this gener
 | `README.md` | Folder structure, routing rules, update frequency, live PM folder rules |
 | `system/` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment, operational reference |
 | `docs/User Guide/` | End-user behavior, user manual, FAQ, and product reference notes |
-| `docs/Admin Guide/` | Operator/admin runbooks, monitoring, deployment, data repair, and production procedures |
-| `docs/Developer Guide/` | Developer-facing implementation, APIs, testing, schemas, prompts, and contribution workflow |
+| `docs/Admin Guide/` | Live product operations for admins/operators: support and feedback triage, admin panel workflows, monitoring, statistics, background job runs, access, incident response, production verification, and data repair. No source-code modification workflows. |
+| `docs/Developer Guide/` | Coding-engineer workflows: local setup, codebase structure, implementation notes, APIs, schemas, migrations, prompts, tests, adding/changing jobs, release mechanics, contribution workflow, and required `known-bugs.md`. |
 | `docs/Quick Commands/` | Copy-pasteable commands; longer explanation belongs in Admin or Developer Guide |
 | `planning/` | Concrete implementation plans and design decisions for a set of features or initiatives |
 | `features/` | Curated per-feature pages. Each page is a "tell me everything about X" index that points into `system/` and `planning/`. **Required** for any project past initial planning; pre-alpha projects have an empty index. |
@@ -66,6 +66,10 @@ Always read the project `README.md` first. If it exists, it wins over this gener
 | `history/` | Brief chronological logs of completed meaningful work, organized by year-month |
 | `archive/` | Superseded material replaced by current product, system, roadmap, or planning docs |
 | `CURRENT_STATUS.md` | Weekly snapshot | Top priorities, blocked, recent wins, major risks, stale docs |
+
+Naming is semantic: top-level PM lanes are lowercase, docs guide folders use Title Case, folder notes exactly match their folder name, content notes use lowercase slugs, and uppercase filenames are reserved for root artifacts (`README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`) plus ADR prefixes.
+
+Bug routing: `roadmap/known-issues.md` tracks active bugs, risks, and blockers; `docs/Developer Guide/known-bugs.md` is required for engineering bug knowledge, including active/fixed status, symptoms, root cause, solution, verification, recurrence patterns, and links to history or known issues.
 
 ---
 

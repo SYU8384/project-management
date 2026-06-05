@@ -33,8 +33,8 @@ owner: PM
 | `PRODUCT.md` | Product | Product vision, target users, core loop, current product shape, principles, boundaries, future goals |
 | `system/` | Current state | Current architecture, auth, database, runtime, integrations, deployment, behavior |
 | `docs/User Guide/` | End-user docs | User manual, FAQ, and product reference notes |
-| `docs/Admin Guide/` | Admin/operator docs | Runbooks, monitoring, deployment, data repair, and production procedures |
-| `docs/Developer Guide/` | Developer docs | Setup, testing, APIs, schemas, prompts, implementation notes, contribution workflow |
+| `docs/Admin Guide/` | Admin/operator docs | Live product operations: support, feedback, admin panel workflows, monitoring, statistics, background job runs, access, incident response, production verification, and data repair |
+| `docs/Developer Guide/` | Developer docs | Coding-engineer workflows: local setup, codebase structure, testing, APIs, schemas, migrations, prompts, implementation notes, changing jobs, release mechanics, contribution workflow, and `known-bugs.md` |
 | `docs/Quick Commands/` | Command recipes | Copy-pasteable commands; longer explanation belongs in Admin or Developer Guide |
 | `roadmap/` | Future and active PM state | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending, ideas |
 | `planning/` | Concrete plans and decisions | Implementation plans, architecture decisions, design strategies not fully shipped yet |
@@ -59,7 +59,8 @@ owner: PM
 │   ├── Admin Guide/
 │   │   └── Admin Guide.md
 │   ├── Developer Guide/
-│   │   └── Developer Guide.md
+│   │   ├── Developer Guide.md
+│   │   └── known-bugs.md
 │   ├── Quick Commands/
 │   │   └── Quick Commands.md
 │   └── User Guide/
@@ -98,8 +99,9 @@ owner: PM
 |---|---|
 | Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/YYYY-MM/history-YYYY-MM-DD.md` |
 | User-facing behavior or UX changed | Relevant `docs/User Guide/`, relevant `system/` doc, affected `features/<feature>.md`, roadmap status if applicable, then `history/` |
-| Admin/operator workflow changed | Relevant `docs/Admin Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
-| Developer workflow, API, schema, prompt, test, build, or local setup changed | Relevant `docs/Developer Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
+| Admin/operator workflow changed (support, feedback, admin panel, monitoring, statistics, background job run, access, incident response, data repair) | Relevant `docs/Admin Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
+| Coding-engineer workflow changed (local setup, code structure, API, schema, prompt, test, migration, build, release, job implementation) | Relevant `docs/Developer Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
+| Engineering bug found, fixed, recurring, or debugged | `roadmap/known-issues.md` for active tracking, `docs/Developer Guide/known-bugs.md` for root cause/solution/verification, then `history/` when fixed |
 | New concrete plan or decision not fully implemented | `planning/YYYY-MM-DD_slug.md`, then add/update a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md` |
 | Significant architecture decision made | New `ADR-NNN` in `planning/decisions/` (see `templates/ADR.md`) |
 | New feature enters design phase (coherent user-facing capability) | Create `features/<feature>.md` (from `templates/feature.md`); link to relevant `system/` and `planning/` docs |
@@ -122,10 +124,11 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 
 | Type | Convention | Example |
 |---|---|---|
-| Folders | lowercase or clear title-case guide folders | `history/`, `User Guide/` |
-| Key root docs | uppercase or title-case | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md` |
-| Folder notes | match the folder name | `history/history.md`, `history/2026-06/2026-06.md` |
-| Section docs (system/) | slug (no prefix; `created:` frontmatter carries the date) | `architecture.md` |
+| Top-level PM lanes | lowercase, no spaces | `archive/`, `history/`, `system/` |
+| Docs guide folders | Title Case category labels | `Admin Guide/`, `Quick Commands/` |
+| Folder notes | exactly match the folder name | `Admin Guide/Admin Guide.md`, `history/history.md` |
+| Content notes | lowercase slug, no numeric prefix | `architecture.md`, `background-jobs.md` |
+| Root canonical docs | uppercase special files | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md` |
 | Docs guide notes | lowercase slug, no numeric prefix | `user-manual.md`, `cloudflare-tunnel.md` |
 | Date-stamped logs | `YYYY-MM/history-YYYY-MM-DD.md` (organized by year-month) | `2026-06/history-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
@@ -135,7 +138,7 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 ## Update Frequency
 
 - `system/`: update immediately when current architecture, data flow, runtime behavior, database, auth, integrations, or deployment changes.
-- `docs/`: update in the same session as user/admin/developer workflow changes.
+- `docs/`: update in the same session as user/admin/developer workflow changes. `docs/Developer Guide/known-bugs.md` is required and tracks engineering bug knowledge, active or fixed.
 - `roadmap/`: update when pending/done/known issue status changes or a new idea enters the backlog.
 - `planning/`: update when a plan, architecture decision, or implementation strategy is created or revised before fully shipped.
 - `planning/decisions/`: add a new ADR when a significant architecture decision is made. Update existing ADRs if their assumptions change.
@@ -152,8 +155,9 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 
 - **Folder notes:** `Admin Guide.md`, `Developer Guide.md`, `Quick Commands.md`, and `User Guide.md` are indexes only. Do not put manual, runbook, FAQ, command, or reference content in guide folder notes.
 - **User Guide:** use independent notes such as `user-manual.md`, `faq.md`, and `reference.md` when the project has shipped user-facing behavior.
-- **Admin Guide:** runbooks, monitoring, deployment, data repair, access, and production procedures.
-- **Developer Guide:** local setup, testing, APIs, schemas, prompts, implementation notes, and contribution workflow.
+- **Admin Guide:** live product operations for admins/operators: support and feedback triage, admin panel workflows, monitoring, statistics, background job runs, access, incident response, production verification, and data repair. Operational commands are fine; source-code modification workflows are not.
+- **Developer Guide:** coding-engineer workflows: local setup, codebase structure, testing, APIs, schemas, migrations, prompts, implementation notes, adding/changing jobs, release mechanics, contribution workflow, and `known-bugs.md`.
+- **Known bugs:** `docs/Developer Guide/known-bugs.md` is the required engineering bug knowledge base. Keep active tracking in `roadmap/known-issues.md`, but record symptoms, root cause, solution, verification, recurrence patterns, and history links in `known-bugs.md`.
 - **Quick Commands:** copy-pasteable commands only; link to Admin or Developer Guide when explanation is needed.
 - **Renames:** legacy numbered filenames like `01_USER_MANUAL.md` are deprecated. Rename to lowercase slugs and update all wiki links.
 
@@ -161,7 +165,7 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 
 - **Ideas:** use `## Contents` and status sections (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`).
 - **Known issues:** use `## Contents` and area/status sections (`## Active`, `## Fixed`, `## Deferred`, or project-specific areas).
-- **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` section; bugs and risks stay in `known-issues.md`.
+- **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
 
 ### Planning notes (`planning/YYYY-MM-DD_slug.md`)
 

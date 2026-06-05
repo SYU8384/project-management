@@ -59,8 +59,8 @@ Each project gets a Markdown folder with stable lanes:
 | `CURRENT_STATUS.md` | Weekly snapshot: phase, priorities, blockers, recent wins, risks, and stale-doc state. |
 | `system/` | Current architecture, behavior, runtime, auth, database, integrations, and deployment. |
 | `docs/User Guide/` | End-user manual, FAQ, and product reference notes. |
-| `docs/Admin Guide/` | Operator runbooks, monitoring, deployment, data repair, and production procedures. |
-| `docs/Developer Guide/` | Local setup, APIs, schemas, prompts, tests, and implementation notes. |
+| `docs/Admin Guide/` | Live product operations: support, feedback, admin panel workflows, monitoring, statistics, background job runs, access, incident response, production verification, and data repair. |
+| `docs/Developer Guide/` | Coding-engineer workflows: local setup, codebase structure, APIs, schemas, migrations, prompts, tests, implementation notes, changing jobs, release mechanics, and the required `known-bugs.md` bug knowledge base. |
 | `docs/Quick Commands/` | Copy-pasteable commands; longer explanations link back to Admin or Developer Guide. |
 | `features/` | Curated "tell me everything about this feature" pages that point into system and planning docs. |
 | `roadmap/` | MVP priorities, known issues, ideas, and active done/pending work. |
@@ -128,7 +128,7 @@ node scripts/check-vault-structure.mjs --project MyProject --config projects.jso
 node scripts/check-stale-docs.mjs --project MyProject --config projects.json
 ```
 
-`check-vault-structure.mjs` verifies the required PM layout, recursive folder notes, docs-guide naming, history filename casing, roadmap shape, and AGENTS.md drift.
+`check-vault-structure.mjs` verifies the required PM layout, required Developer Guide `known-bugs.md`, semantic folder casing, recursive folder notes, docs-guide naming, history filename casing, roadmap shape, and AGENTS.md drift.
 
 `check-stale-docs.mjs` reports files with missing or old `last_reviewed` metadata.
 
@@ -138,7 +138,7 @@ node scripts/check-stale-docs.mjs --project MyProject --config projects.json
 |---|---|
 | [`SKILL.md`](./SKILL.md) | Agent entry point: intents, triggers, quick start, and routing map. |
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
-| [`templates/`](./templates/) | Reusable Markdown templates for project READMEs, folder notes, ADRs, features, PR bodies, and AGENTS.md sections. |
+| [`templates/`](./templates/) | Reusable Markdown templates for project READMEs, folder notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for your local project paths. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
@@ -148,6 +148,8 @@ node scripts/check-stale-docs.mjs --project MyProject --config projects.json
 
 - **Current truth before history.** Update durable docs first; use history as the final chronological log.
 - **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
+- **Bugs become knowledge.** Active bug tracking stays in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
+- **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
 - **The skill is portable.** `projects.json` is local and gitignored; the repo itself contains only reusable conventions, templates, and scripts.

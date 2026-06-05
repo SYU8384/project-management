@@ -11,10 +11,10 @@ Before coding:
 After coding:
 - Did current behavior, architecture, data flow, runtime, auth, database, integration, connector, deployment, or operational behavior change? If yes, update the relevant `system/<topic>.md`.
 - Did user-facing behavior or UX change? If yes, update `docs/User Guide/` and the relevant `features/<feature>.md` when feature scope, behavior, known issues, or roadmap changed.
-- Did admin/operator workflow change? If yes, update `docs/Admin Guide/` and add or update `docs/Quick Commands/` for useful commands.
-- Did developer workflow, API behavior, schema/prompt reference, testing, build, or local setup change? If yes, update `docs/Developer Guide/` and add or update `docs/Quick Commands/` for useful commands.
+- Did live product operation change for admins/operators (support, feedback, admin panel workflow, monitoring, statistics, background job run, access, incident response, production verification, or data repair)? If yes, update `docs/Admin Guide/` and add or update `docs/Quick Commands/` for useful commands.
+- Did a coding-engineer workflow change (local setup, codebase structure, API behavior, schema/prompt reference, testing, migration, build, release mechanics, or adding/changing job code)? If yes, update `docs/Developer Guide/` and add or update `docs/Quick Commands/` for useful commands.
 - Did the change resolve or partially implement a `planning/<date>_slug.md` plan? If yes, mark the relevant PENDING as DONE in `roadmap/done-pending.md`. If the plan is fully shipped, distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the plan to `archive/<slug>-archived.md`.
-- Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`.
+- Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`; if it has engineering symptoms, root cause, solution, verification, or recurrence value, also update `docs/Developer Guide/known-bugs.md`.
 - Did a new idea, declined proposal, or backlog candidate appear? If yes, update `roadmap/ideas.md`.
 - Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `planning/decisions/ADR-NNN_slug.md`.
 - Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
