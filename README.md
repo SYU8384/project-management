@@ -1,57 +1,157 @@
-# project-management skill
+# Project Management Skill
 
-A portable, host-agnostic skill for managing PM folders (I recommend putting it in Obsidian vaults) for any project. Log work, initialize new project folders, repair inconsistencies, and keep code repos in sync with their PM folders.
+A portable Codex/agent skill for keeping project-management notes, product docs, roadmap state, and code changes in sync.
 
-## The pain in project managing
-- messey folders and files
-- got lost track of priorities
-- takes time to write down notes
-- etc.
+It works especially well with an Obsidian vault, but the convention is just Markdown files plus a small `projects.json` mapping. The core idea is simple: when meaningful project work happens, the agent updates the right durable docs, indexes, roadmap notes, and history logs in the same session.
 
-  
-## How this skill solves the problems
-- structuralize folders and files
-- keep histories of every work and categorize them into feat, fix, chore, etc.
-- easy for agents to find a recurring bug and solution
-- track prs and issues that the team is working on and connect to github
-- simultaneously update User Guide (including FAQs), Admin Guide, Dev Guide while developing the project
-- archive plans/ideas smartly and mark their status
-- record brainstorming ideas and classify them
-- record big plans and create done-pending sections automatically
-- track every todo item by section in the done-pending file and archive them once down automatically
-- etc.
+## Why This Exists
 
-## Where to start
+Project notes usually decay for predictable reasons:
 
-- **[SKILL.md](./SKILL.md)** — the entry point (~76 lines). Read this first. It covers the 3 intents (log, initialize, repair), trigger phrases, the routing map, and the final-response rule.
-- **[REFERENCE.md](./REFERENCE.md)** — the deep doc (~573 lines). Read this when you need the details: frontmatter schema, repair workflow, coding agent integration, contributor workflow, bootstrap workflow, permission policy, pitfalls.
+- Work gets shipped, but user guides, admin runbooks, and developer docs lag behind.
+- Decisions are scattered across chats, PRs, issues, and half-finished planning files.
+- Roadmaps become stale because done/pending state is not tied to real implementation work.
+- Agents waste time rediscovering architecture, recurring bugs, and prior fixes.
+- Folder structures grow organically until nobody knows where new information belongs.
 
-## What's in the box
+This skill gives agents a strict, repeatable operating model for project memory.
+
+## What It Does
+
+| Capability | What the agent does |
+|---|---|
+| Log completed work | Updates current-state docs first, then writes a Conventional Commits-style history entry. |
+| Initialize PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and validation scripts. |
+| Repair existing folders | Finds missing indexes, stale schemas, broken conventions, roadmap drift, and folder-note problems. |
+| Keep guides current | Routes user-facing, admin, developer, and quick-command changes into the right docs guide. |
+| Track plans and decisions | Creates planning notes, mirrors active work into `roadmap/done-pending.md`, and records ADRs. |
+| Archive shipped plans | Distills durable truth into current docs, moves superseded material to `archive/`, and records history. |
+| Integrate code repos | Adds an `AGENTS.md` PM section so coding agents know what to read before work and update after work. |
+
+## How The Workflow Works
+
+```text
+User or agent finishes meaningful work
+        |
+        v
+Read the project's PM README routing map
+        |
+        v
+Update affected current-state docs
+system/ + docs/ + features/ + roadmap/ + planning/
+        |
+        v
+Update folder-note indexes and navigation
+        |
+        v
+Write the final history/YYYY-MM/history-YYYY-MM-DD.md entry
+```
+
+History is written last because it records what changed after the durable docs have already been updated.
+
+## PM Folder Model
+
+Each project gets a Markdown folder with stable lanes:
 
 | Path | Purpose |
 |---|---|
-| `SKILL.md` | Entry point: intents, triggers, quick start, routing map |
-| `REFERENCE.md` | Deep doc: schemas, workflows, conventions, pitfalls |
-| `templates/` | 10 file templates (README, CURRENT_STATUS, planning, ADR, feature, features, AGENTS_PM_SECTION_*, PR_BODY_TEMPLATE, projects.template.json) |
-| `scripts/` | 2 check scripts (stale detection, structure verification) |
-| `LICENSE` | MIT |
+| `PRODUCT.md` | Product vision, target users, current product shape, principles, and boundaries. |
+| `CURRENT_STATUS.md` | Weekly snapshot: phase, priorities, blockers, recent wins, risks, and stale-doc state. |
+| `system/` | Current architecture, behavior, runtime, auth, database, integrations, and deployment. |
+| `docs/User Guide/` | End-user manual, FAQ, and product reference notes. |
+| `docs/Admin Guide/` | Operator runbooks, monitoring, deployment, data repair, and production procedures. |
+| `docs/Developer Guide/` | Local setup, APIs, schemas, prompts, tests, and implementation notes. |
+| `docs/Quick Commands/` | Copy-pasteable commands; longer explanations link back to Admin or Developer Guide. |
+| `features/` | Curated "tell me everything about this feature" pages that point into system and planning docs. |
+| `roadmap/` | MVP priorities, known issues, ideas, and active done/pending work. |
+| `planning/` | Concrete plans and architecture decisions that are not fully shipped yet. |
+| `history/` | Chronological logs of completed work, organized by year-month. |
+| `archive/` | Superseded material that has been replaced by current docs. |
 
-## Install
+Every visible folder has a folder-note index named after the folder, including history month folders such as `history/2026-06/2026-06.md`.
 
-The skill is host-agnostic. To use it, point your agent at this folder as a skill installation directory. The agent reads `SKILL.md` and the rest on demand.
+## Quick Start
 
-A typical flow:
+Clone or install this folder wherever your agent can load local skills:
 
-1. **Read `SKILL.md`** to learn the trigger phrases and the 3 intents.
-2. **Set up `projects.json`** by copying `templates/projects.template.json` to the skill root and filling in `vault_root`, `skill_dir`, and one entry per project (with `access: "authoritative" | "read-only"`).
-3. **Use the natural flow:** say "log this", "initialize the PM folder for <name>", "repair the PM folder", or "add to AGENTS.md" — the agent handles the rest.
+```bash
+git clone https://github.com/SYU8384/project-management.git
+```
 
-The agent will auto-discover `projects.json` by walking up from the script's location to a sibling `SKILL.md`. Explicit `--config <path>` always wins.
+Create your local project registry:
 
-## About `projects.json`
+```bash
+cp templates/projects.template.json projects.json
+```
 
-Your `projects.json` is the user's actual instance — paths to your vault, your projects, and your `access` settings. **It is not part of this repo** (it's gitignored). When you clone this skill, copy `templates/projects.template.json` to the skill root and fill it in. The skill is portable; `projects.json` is per-user.
+Fill in `projects.json` with your vault root, this skill path, and one entry per project:
+
+```json
+{
+  "vault_root": "/path/to/your/vault",
+  "skill_dir": "/path/to/project-management",
+  "projects": {
+    "MyProject": {
+      "code_repo": "/path/to/MyProject",
+      "pm_folder": "/path/to/your/vault/Projects/MyProject",
+      "phase": "alpha",
+      "notes": "Short project description",
+      "access": "authoritative"
+    }
+  }
+}
+```
+
+Then use natural prompts with your agent:
+
+| Prompt | Result |
+|---|---|
+| `initialize the PM folder for MyProject` | Creates or standardizes the PM folder layout. |
+| `log this` | Updates relevant docs and appends a history entry. |
+| `repair the PM folder` | Audits structure, schemas, indexes, naming, roadmap shape, and drift. |
+| `add to AGENTS.md` | Installs PM-folder instructions into the code repo. |
+| `I just opened a PR` | Helps fill in the PM impact and update the right project notes. |
+
+## Validation Tools
+
+The repo includes two Node scripts:
+
+```bash
+node scripts/check-vault-structure.mjs
+node scripts/check-stale-docs.mjs
+```
+
+Both scripts auto-discover `projects.json` when run from this skill repo. You can also scan one project explicitly:
+
+```bash
+node scripts/check-vault-structure.mjs --project MyProject --config projects.json
+node scripts/check-stale-docs.mjs --project MyProject --config projects.json
+```
+
+`check-vault-structure.mjs` verifies the required PM layout, recursive folder notes, docs-guide naming, history filename casing, roadmap shape, and AGENTS.md drift.
+
+`check-stale-docs.mjs` reports files with missing or old `last_reviewed` metadata.
+
+## Repository Map
+
+| Path | Purpose |
+|---|---|
+| [`SKILL.md`](./SKILL.md) | Agent entry point: intents, triggers, quick start, and routing map. |
+| [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
+| [`templates/`](./templates/) | Reusable Markdown templates for project READMEs, folder notes, ADRs, features, PR bodies, and AGENTS.md sections. |
+| [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for your local project paths. |
+| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
+| [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
+| [`LICENSE`](./LICENSE) | MIT license. |
+
+## Design Principles
+
+- **Current truth before history.** Update durable docs first; use history as the final chronological log.
+- **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
+- **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
+- **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
+- **The skill is portable.** `projects.json` is local and gitignored; the repo itself contains only reusable conventions, templates, and scripts.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
