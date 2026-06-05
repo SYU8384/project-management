@@ -161,10 +161,12 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 - **Quick Commands:** copy-pasteable commands only; link to Admin or Developer Guide when explanation is needed.
 - **Renames:** legacy numbered filenames like `01_USER_MANUAL.md` are deprecated. Rename to lowercase slugs and update all wiki links.
 
-### Roadmap notes (`roadmap/ideas.md`, `roadmap/known-issues.md`)
+### Roadmap notes (`roadmap/*.md`)
 
-- **Ideas:** use `## Contents` and status sections (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`).
-- **Known issues:** use `## Contents` and area/status sections (`## Active`, `## Fixed`, `## Deferred`, or project-specific areas).
+- **Ideas:** follow `templates/ideas.md`: `## Contents`, `## Status Key`, `## Idea Register`, five status buckets, `## Idea Details`, and `## Navigation`. Use stable IDs such as `IDEA-001`; do not rely on list position for identity.
+- **Known issues:** follow `templates/known-issues.md`: `## Contents`, `## Active`, `## Fixed`, `## Deferred`, and `## Navigation`. Domain-specific grouping belongs under those sections as labels or `###` subsections.
+- **MVP priorities:** follow `templates/mvp-priorities.md`: `## Contents`, `## Alpha Goal`, `## MVP Priorities`, `## Not Yet MVP`, and `## Navigation`.
+- **Done/pending:** follow `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`.
 - **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
 
 ### Planning notes (`planning/YYYY-MM-DD_slug.md`)

@@ -102,17 +102,30 @@ async function resolveTargets() {
       console.error(`ERROR: project '${CLI.project}' not found in ${source}`);
       process.exit(2);
     }
+    if (proj.access === "unavailable") {
+      console.log(`# Stale Docs Report — ${CLI.project}\n`);
+      console.log(`**Status:** SKIP`);
+      console.log("");
+      console.log(`PM folder unavailable for this collaborator checkout; no stale-doc scan was run.`);
+      return [];
+    }
     return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})` }];
   }
   const projects = config.projects ?? {};
   const targets = [];
   for (const [name, proj] of Object.entries(projects)) {
+    if (proj.access === "unavailable") {
+      console.log(`\n# Stale Docs Report — ${name}\n`);
+      console.log(`**Status:** SKIP`);
+      console.log("");
+      console.log(`PM folder unavailable for this collaborator checkout; no stale-doc scan was run.`);
+      continue;
+    }
     if (!proj.pm_folder) continue;
     targets.push({ vault: resolve(proj.pm_folder), label: `${name} (${proj.pm_folder})` });
   }
   if (targets.length === 0) {
-    console.error(`ERROR: no projects with pm_folder in ${source}`);
-    process.exit(2);
+    console.log(`\nNo projects with available pm_folder entries in ${source}.`);
   }
   return targets;
 }
@@ -157,7 +170,7 @@ async function walk(dir) {
   for (const entry of entries) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
+      if (entry.name.startsWith(".") || SKIP_DIRS.has(entry.name)) continue;
       await walk(full);
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       await scan(full);

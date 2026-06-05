@@ -18,6 +18,7 @@ Run the two optional-but-recommended scripts (bundled in `<skill_dir>/scripts/`)
 
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
 - `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale docs
+- `node <skill_dir>/scripts/check-pm-consistency.mjs` — verifies visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and archive/sync-conflict naming
 
 Then check the schema and content dimensions:
 
@@ -199,8 +200,10 @@ When adding or moving a docs note, update the nearest guide index and `docs/docs
 
 The four standard roadmap notes are active working notes, not folder notes, but they still need a predictable scan shape:
 
-- `roadmap/ideas.md` uses a `## Contents` TOC and status sections such as `## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, and `## Declined`.
-- `roadmap/known-issues.md` uses a `## Contents` TOC and area/status sections such as `## Active`, `## Fixed`, `## Deferred`, or domain-specific areas.
+- `roadmap/ideas.md` follows `templates/ideas.md`: `## Contents`, `## Status Key`, `## Idea Register`, status buckets (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`), `## Idea Details`, and `## Navigation`. Use stable IDs (`IDEA-001`, `IDEA-002`) so links survive reordering.
+- `roadmap/known-issues.md` follows `templates/known-issues.md`: `## Contents`, `## Active`, `## Fixed`, `## Deferred`, and `## Navigation`. Domain-specific grouping belongs under those sections as labels or `###` subsections.
+- `roadmap/mvp-priorities.md` follows `templates/mvp-priorities.md`: `## Contents`, `## Alpha Goal`, `## MVP Priorities`, `## Not Yet MVP`, and `## Navigation`.
+- `roadmap/done-pending.md` follows `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`.
 - Keep rough ideas in `ideas.md`, concrete approved work in `planning/` plus `done-pending.md`, active bugs/risks in `known-issues.md`, and engineering bug knowledge in `docs/Developer Guide/known-bugs.md`.
 
 ---
@@ -448,7 +451,7 @@ The user's project paths live in a separate config file, not in the skill text. 
       "pm_folder": "/path/to/vault/Projects/<ProjectName>",
       "phase": "pre-alpha | alpha | beta | stable | deprecated",
       "notes": "one-line description",
-      "access": "authoritative | read-only"
+      "access": "authoritative | read-only | unavailable"
     }
   }
 }
@@ -460,21 +463,88 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `projects.<name>.pm_folder` — the project's PM folder inside the vault.
 - `projects.<name>.phase` — current phase (pre-alpha, alpha, beta, stable, deprecated). Free-form string; helps the agent calibrate detail.
 - `projects.<name>.notes` — one-line description (optional).
-- `projects.<name>.access` — `"authoritative"` (you own the PM folder; you can edit it directly) or `"read-only"` (the PM folder is shared; you can read for context but the maintainer applies changes after you suggest them via the PR body template). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below).
+- `projects.<name>.access` — `"authoritative"` (you own the PM folder; you can edit it directly), `"read-only"` (the PM folder is shared; you can read but not edit), or `"unavailable"` (you have code access but no PM folder access yet). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). `pm_folder` may be empty/null only when `access` is `"unavailable"`.
 
 **Auto-bootstrap on first use.** If `<skill_dir>/projects.json` is missing when the agent starts work, copy `templates/projects.template.json` to `<skill_dir>/projects.json` and walk the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
 **When the agent should update `projects.json`:**
 
-**Adding a new project:** the user says "add a new project", "register a new project", "initialize the PM folder for <name>", or similar. The agent collects the required fields (in this order) and adds the entry to the `projects` object:
+**Adding a new project:** the user says "setup", "add a new project", "register a new project", "initialize the PM folder for <name>", or similar. The agent collects the required fields (in this order) and adds the entry to the `projects` object:
 
 - `code_repo` (path to the project's code repo, or `null` if no code yet) — required
-- `pm_folder` (path to the project's PM folder inside the vault) — required
+- `pm_folder` (path to the project's PM folder inside the vault) — required unless `access` is `"unavailable"`
 - `phase` (pre-alpha | alpha | beta | stable | deprecated) — required
-- `access` (authoritative | read-only) — required
+- `access` (authoritative | read-only | unavailable) — required
 - `notes` (one-line description) — optional
 
 The agent reads the existing `projects.json` (if any), merges the new entry into `projects`, and writes back. **Never silently invent paths — ask the user for each field.** If the user is also bootstrapping the PM folder, this addition is Step 0 of the Bootstrap Workflow (see below).
+
+---
+
+## Setup Intake
+
+Use this when the user says "setup", "set up this repo", "setup this project", "setup PM", "setup project management", "setup as collaborator", or any similar broad setup request. The user should not need to know whether they need bootstrap, repair, read-only registration, or unavailable collaborator mode.
+
+### Inspect before asking
+
+First infer what is safe to infer:
+
+- Current working directory as `code_repo`, if it is a code repo.
+- Repo/project name from the directory name, package metadata, README, or git remote.
+- Existing project entry in `<skill_dir>/projects.json`.
+- Existing `AGENTS.md` and whether it already has a `## PM folder` section.
+- Existing PM folder path if `projects.json` already has one.
+- Project description hints from README/package/docs.
+
+Do not ask for facts that are already clear. Do ask for intent and missing paths.
+
+### Ask with selectable suggestions
+
+When the UI supports selectable answers, use the question tool. Otherwise, present concise numbered options. Ask in small groups rather than one long form.
+
+1. **Role**
+   - Owner / maintainer (recommended when the user controls the PM folder)
+   - Collaborator with PM access
+   - Collaborator without PM access yet
+
+2. **PM folder state**
+   - Create new PM folder (recommended for code-repo-only owner setup)
+   - Use existing PM folder
+   - Repair messy PM folder
+
+3. **Project phase**
+   - `pre-alpha` — idea, research, prototype, or no users yet
+   - `alpha` — usable by owner/testers, breaking changes expected
+   - `beta` — real users, rough edges remain
+   - `stable` — production-quality and maintained
+   - `deprecated` — kept for history, not actively developed
+
+4. **AGENTS.md setup**
+   - Add/update AGENTS.md (recommended)
+   - Skip AGENTS.md for now
+
+Ask free-text follow-ups only for values that cannot be selected:
+
+- Project name, if not clear.
+- Code repo path, if current working directory is not clearly the repo.
+- PM folder path or vault root, unless access is unavailable.
+- One-line project/product description.
+- Optional notes.
+
+Map role + PM state to `access` automatically:
+
+- Owner / maintainer → `authoritative`
+- Collaborator with PM access → `read-only`
+- Collaborator without PM access yet → `unavailable`
+
+### Route after intake
+
+- **Owner + create new PM folder:** register `access: authoritative`, create the standard PM folder, seed initial docs from code repo evidence where possible, optionally add authoritative `AGENTS.md`, then validate.
+- **Owner + existing/messy PM folder:** register `access: authoritative`, run repair/audit, preserve content, normalize structure, optionally add authoritative `AGENTS.md`, then validate.
+- **Collaborator with PM access:** register `access: read-only`, add the read-only `AGENTS.md` section if requested, read the PM folder for context, and never edit it directly.
+- **Collaborator without PM access:** register `access: unavailable`, leave `pm_folder` empty/null, add the unavailable `AGENTS.md` section if requested, ask the maintainer for a PM folder path or read-only mirror, and use PR PM-impact notes until access exists.
+
+Never create a private "canonical" PM folder for a collaborator unless the user explicitly asks for a private local scratch copy. A private scratch copy is not authoritative and must not replace the owner's PM folder.
 
 **Other updates:**
 - A project moves (vault path change, code repo relocation).
@@ -523,12 +593,13 @@ The `system/` and `features/` folders are **complementary, not redundant**:
 
 When a coding agent works in a project's code repo, the PM folder is the source of truth for current behavior. Without explicit guidance, the agent may make code changes without updating the PM folder, causing drift.
 
-**The convention:** the project's `AGENTS.md` includes a `## PM folder` section. The section's content depends on whether the project is **authoritative** (you own the PM folder) or **read-only** (someone else maintains it; you can read but not edit):
+**The convention:** the project's `AGENTS.md` includes a `## PM folder` section. The section's content depends on whether the project is **authoritative** (you own the PM folder), **read-only** (someone else maintains it; you can read but not edit), or **unavailable** (you have code access but no PM folder access yet):
 
 - **Authoritative projects** — the section tells the agent to read `system/<topic>.md` before coding and to update the PM folder directly after coding. See `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`.
 - **Read-only projects** — the section tells the agent to read the PM folder for context, but to use the PR body template (`templates/PR_BODY_TEMPLATE.md`) to suggest PM folder changes. The maintainer applies the changes after merge. See `templates/AGENTS_PM_SECTION_READONLY.md`.
+- **Unavailable PM projects** — the section tells the agent that no PM folder is available locally. It should ask the maintainer for access, use code repo docs only, and fill the PR body template's PM impact section instead of inventing PM folder edits. See `templates/AGENTS_PM_SECTION_UNAVAILABLE.md`.
 
-The agent checks the project's `access` field in `<skill_dir>/projects.json` (`authoritative` or `read-only`) to determine which section to use. The `access` field is set when the project is added to the config and confirmed when AGENTS.md is written/fixed (via the trigger phrases "add to AGENTS.md" / "fix AGENTS.md" / "set up AGENTS.md" / "update AGENTS.md for <project>").
+The agent checks the project's `access` field in `<skill_dir>/projects.json` (`authoritative`, `read-only`, or `unavailable`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
 
 A copyable snippet is provided in each template. Project repos that adopt the project-management skill should add the appropriate section to their `AGENTS.md`. The skill is the canonical reference; the project repo's `AGENTS.md` is a thin pointer to it.
 
@@ -546,6 +617,8 @@ A copyable snippet is provided in each template. Project repos that adopt the pr
 10. Always add a `history/YYYY-MM/history-YYYY-MM-DD.md` bullet for what changed and why (use Conventional Commits prefixes — see "History Conventions").
 
 **The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
+
+**The pattern after a code change (unavailable):** the agent cannot read or edit the PM folder. It should ask the maintainer for read-only PM access if the code change needs project context, rely on code repo docs only until then, and fill in the PR body's "PM folder impact" section with best-effort suggestions and a note that the PM folder was unavailable locally.
 
 ---
 
@@ -631,6 +704,7 @@ Ten file templates are provided in the `templates/` directory relative to this s
 - `templates/known-bugs.md` — `docs/Developer Guide/known-bugs.md`
 - `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
+- `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` — the `## PM folder` section for `AGENTS.md` when a collaborator has code access but no PM folder access yet
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
 
@@ -642,7 +716,7 @@ Do not let planning notes become invisible backlog. The roadmap must show the ac
 
 ## Bootstrap Workflow
 
-When an agent is asked to set up a new project vault from scratch, follow this 11-step workflow. Each step references the relevant section of the skill or a template in `templates/`.
+When an agent is asked to set up a new project vault from scratch, follow this workflow after the Setup Intake has routed the user to "Owner + create new PM folder". Each step references the relevant section of the skill or a template in `templates/`.
 
 **0. Add the project to `projects.json`.** Collect the required fields (code_repo, pm_folder, phase, access) from the user and write a new entry to `<skill_dir>/projects.json`. See "Configuration → Adding a new project" for the field reference. Never silently invent paths. If `projects.json` doesn't exist, copy from `projects.template.json` first (this also satisfies the auto-bootstrap flow).
 
@@ -720,6 +794,7 @@ The canonical reference for any project's current state is its `README.md` at th
 - The frontmatter schema (per `pageType`)
 - The 5 planning-lifecycle `status` values
 - The `access` field on each project in `projects.json`
+- The Setup Intake routing and selectable phase/access suggestions
 
 **What the skill leaves to each project:**
 - Vault structure (`Projects/<Project>/...` vs other layouts)

@@ -111,6 +111,13 @@ function resolveTargets() {
       console.error(`ERROR: project '${CLI.project}' not found in ${configPath}`);
       process.exit(2);
     }
+    if (proj.access === "unavailable") {
+      console.log(`# Vault Structure Report — ${CLI.project}\n`);
+      console.log(`**Status:** SKIP`);
+      console.log("");
+      console.log(`PM folder unavailable for this collaborator checkout; no pm_folder scan was run.`);
+      return [];
+    }
     if (!proj.pm_folder) {
       console.error(`ERROR: project '${CLI.project}' has no pm_folder in ${configPath}`);
       process.exit(2);
@@ -120,12 +127,18 @@ function resolveTargets() {
   const projects = cfg.projects ?? {};
   const targets = [];
   for (const [name, proj] of Object.entries(projects)) {
+    if (proj.access === "unavailable") {
+      console.log(`\n# Vault Structure Report — ${name}\n`);
+      console.log(`**Status:** SKIP`);
+      console.log("");
+      console.log(`PM folder unavailable for this collaborator checkout; no pm_folder scan was run.`);
+      continue;
+    }
     if (!proj.pm_folder) continue;
     targets.push({ vault: resolve(proj.pm_folder), label: `${name} (${proj.pm_folder})` });
   }
   if (targets.length === 0) {
-    console.error(`ERROR: no projects with pm_folder in ${configPath}`);
-    process.exit(2);
+    console.log(`\nNo projects with available pm_folder entries in ${configPath}.`);
   }
   return targets;
 }
@@ -460,18 +473,54 @@ function checkHistoryNames() {
 }
 
 function checkRoadmapShape() {
-  for (const rel of ["roadmap/ideas.md", "roadmap/known-issues.md"]) {
+  const requiredSectionsByFile = new Map([
+    ["roadmap/ideas.md", [
+      "Contents",
+      "Status Key",
+      "Idea Register",
+      "Brainstorming",
+      "Scoping",
+      "Approved",
+      "Implemented",
+      "Declined",
+      "Idea Details",
+      "Navigation",
+    ]],
+    ["roadmap/known-issues.md", [
+      "Contents",
+      "Active",
+      "Fixed",
+      "Deferred",
+      "Navigation",
+    ]],
+    ["roadmap/mvp-priorities.md", [
+      "Contents",
+      "Alpha Goal",
+      "MVP Priorities",
+      "Not Yet MVP",
+      "Navigation",
+    ]],
+    ["roadmap/done-pending.md", [
+      "Contents",
+      "General Done/Pending Without Dedicated Planning Note",
+      "Navigation",
+    ]],
+  ]);
+
+  for (const [rel, requiredSections] of requiredSectionsByFile.entries()) {
     if (!isFile(rel)) continue;
     const body = stripFrontmatter(readFileSync(join(vaultRoot, rel), "utf8"));
-    const hasContents = /^## Contents$/m.test(body);
-    const sections = body.match(/^## (?!Contents$|Navigation$).+$/gm) ?? [];
-    if (!hasContents) {
-      findings.roadmapShape.violations.push({ path: rel, reason: "missing ## Contents TOC" });
-    }
-    if (sections.length === 0) {
-      findings.roadmapShape.violations.push({ path: rel, reason: "missing status/area sections" });
+    for (const section of requiredSections) {
+      if (!hasHeading(body, section)) {
+        findings.roadmapShape.violations.push({ path: rel, reason: `missing ## ${section}` });
+      }
     }
   }
+}
+
+function hasHeading(body, heading) {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^## ${escaped}$`, "m").test(body);
 }
 
 function emit() {
@@ -606,7 +655,7 @@ function emit() {
   if (findings.roadmapShape.violations.length > 0) {
     lines.push("## Roadmap Shape Violations");
     lines.push("");
-    lines.push("`roadmap/ideas.md` and `roadmap/known-issues.md` should have a `## Contents` TOC and status/area sections.");
+    lines.push("Standard roadmap notes must follow their templates: ideas, known issues, MVP priorities, and done/pending each have required scan sections.");
     lines.push("");
     for (const v of findings.roadmapShape.violations) {
       lines.push(`- \`${v.path}\`: ${v.reason}`);

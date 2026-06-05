@@ -17,13 +17,15 @@ Use this skill for three intents:
 
 ## Quick Start
 
-The three most common actions:
+The four most common actions:
 
 **1. Log a change** — say "log this" or "I just finished <feature>". The agent reads the project's `README.md`, checks every PM-impact lane that could have changed (`system/`, `docs/`, `features/`, `roadmap/`, `planning/`, ADRs), updates the needed current-state docs and indexes, then appends a Conventional Commits-prefixed bullet to `history/YYYY-MM/history-YYYY-MM-DD.md` (e.g., `history/2026-05/history-2026-05-04.md`). If the month folder is new, the agent also creates `history/YYYY-MM/YYYY-MM.md` and links it from `history/history.md`.
 
-**2. Initialize a new project's PM folder** — say "initialize the PM folder for <name>". The agent asks for 5 fields (project name, code_repo, pm_folder, phase, access, notes), writes them to `<skill_dir>/projects.json`, then runs the 11-step Bootstrap Workflow in REFERENCE.md.
+**2. Set up project management** — say "setup", "setup this repo", "setup PM", or "setup as collaborator". The agent first inspects the current repo and `projects.json`, then asks a short guided intake with selectable answer suggestions (role, PM folder state, project phase, AGENTS.md setup) plus free-text path/description questions only when needed. It then routes to create a new PM folder, repair an existing/messy PM folder, register read-only collaborator access, or register unavailable PM access.
 
-**3. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md` or `AGENTS_PM_SECTION_READONLY.md`) into the project's `AGENTS.md`.
+**3. Initialize a new project's PM folder directly** — say "initialize the PM folder for <name>". The agent asks for the missing fields (project name, code_repo, pm_folder, phase, access, notes), writes them to `<skill_dir>/projects.json`, then runs the Bootstrap Workflow in REFERENCE.md.
+
+**4. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md`, `AGENTS_PM_SECTION_READONLY.md`, or `AGENTS_PM_SECTION_UNAVAILABLE.md`) into the project's `AGENTS.md`.
 
 ---
 
@@ -33,6 +35,7 @@ Match user phrases to the right intent. If multiple intents apply, do all of the
 
 | User says | Intent | Workflow section |
 |---|---|---|
+| "setup", "set up this repo", "setup this project", "setup PM", "setup project management", "setup as collaborator" | Guided setup intake | Setup Intake (REFERENCE) |
 | "log this", "record this", "capture this decision" | Log | Existing Project Management (REFERENCE) |
 | "I just made a code change", "I just finished <feature>" | Log | Existing Project Management (REFERENCE) |
 | "create the PM folder", "initialize the PM folder", "set up project docs", "bootstrap", "standardize the PM folder", "convert this mess to the standard layout", "restructure the PM folder", "normalize the PM folder" | Initialize (new or against existing) | Standard App Project Bootstrap (REFERENCE) |
