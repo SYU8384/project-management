@@ -29,7 +29,7 @@
  *   node scripts/check-vault-structure.mjs --project <name> --config <p> # scan a single project from config
  *
  * The `--config` flag expects a path to `projects.json` from the
- * project-logging skill (at the skill root, alongside SKILL.md). The script
+ * project-management skill (at the skill root, alongside SKILL.md). The script
  * reads `vault_root` and the project's `pm_folder` from the config. When
  * `--config` is set without `--project`, the script iterates over all
  * projects in the config and prints one report per project.
@@ -41,10 +41,15 @@
  * Exit codes:
  *   0 = all required present
  *   1 = at least one required missing
+ *
+ * When `--config` is set, also emits an "AGENTS.md Drift Report" that fails
+ * the run if any registered project's `code_repo/AGENTS.md` still contains
+ * the literal `<pm_folder>` placeholder. This guards against the
+ * template-substitution step being skipped on bootstrap.
  */
 
 import { existsSync, readdirSync, statSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function findSkillDir() {
@@ -159,6 +164,11 @@ const REQUIRED_INDEX_FILES = [
   "system/system.md",
   "archive/archive.md",
   "history/history.md",
+  "docs/docs.md",
+  "docs/Admin Guide/Admin Guide.md",
+  "docs/Developer Guide/Developer Guide.md",
+  "docs/Quick Commands/Quick Commands.md",
+  "docs/User Guide/User Guide.md",
 ];
 
 const OPTIONAL_DIRS = [
@@ -170,11 +180,26 @@ const OPTIONAL_SCRIPTS = [
   "scripts/check-vault-structure.mjs",
 ];
 
+// Folder notes (one .md at the top of each visible PM folder serving as
+// its index) are governed by `templates/folder-note.md`. Hidden sync/tooling
+// folders such as `.stfolder`, `.stversions`, and `.workspace` are ignored.
+// The body should hold the index block and at most one optional extra `##`
+// section; "Conventions", "Format", "Lifecycle", "When to write" etc.
+// belong in the README's "Conventions by Page Type" section, not in the
+// folder note. The shape check counts `##` headings outside frontmatter
+// and fails if a folder note has accumulated more than 4.
+const IGNORED_DIR_NAMES = new Set([".git", ".obsidian", "node_modules"]);
+const FOLDER_NOTE_MAX_SECTIONS = 4;
+
 const findings = {
   required: { missing: [], present: [] },
   project: { found: null, present: false },
   system: { hasSystemMd: false, hasAnySystemDoc: false },
   optional: { missing: [], present: [] },
+  folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [] },
+  docsNames: { violations: [] },
+  historyNames: { violations: [] },
+  roadmapShape: { violations: [] },
 };
 
 function exists(rel) {
@@ -282,6 +307,130 @@ function checkOptional() {
   }
 }
 
+function countBodySections(content) {
+  // Drop frontmatter (between the first pair of `---` lines)
+  const fmEnd = content.indexOf("\n---", content.indexOf("---") + 3);
+  const body = fmEnd === -1 ? content : content.slice(fmEnd + 4);
+  // Count `## ` headings at line start; `## ` only (not `# ` or `### `)
+  const matches = body.match(/^## .+$/gm);
+  return matches ? matches.length : 0;
+}
+
+function stripFrontmatter(content) {
+  const fmEnd = content.indexOf("\n---", content.indexOf("---") + 3);
+  return fmEnd === -1 ? content : content.slice(fmEnd + 4);
+}
+
+function checkFolderNotes() {
+  for (const { indexRel, parentIndexRel } of listVisibleFolderNotes()) {
+    if (!isFile(indexRel)) {
+      findings.folderNotes.missing.push(indexRel);
+      continue;
+    }
+    const content = readFileSync(join(vaultRoot, indexRel), "utf8");
+    const sections = countBodySections(content);
+    const entry = { path: indexRel, sections };
+    if (sections > FOLDER_NOTE_MAX_SECTIONS) {
+      findings.folderNotes.violations.push(entry);
+    } else {
+      findings.folderNotes.present.push(entry);
+    }
+    if (parentIndexRel && isFile(parentIndexRel)) {
+      const parentContent = readFileSync(join(vaultRoot, parentIndexRel), "utf8");
+      if (!containsObsidianLinkTo(parentContent, indexRel)) {
+        findings.folderNotes.parentLinkViolations.push({ parent: parentIndexRel, child: indexRel });
+      }
+    }
+  }
+}
+
+function isIgnoredDirectory(entryName) {
+  return entryName.startsWith(".") || IGNORED_DIR_NAMES.has(entryName);
+}
+
+function listVisibleFolderNotes() {
+  if (!existsSync(vaultRoot)) return [];
+  const out = [];
+  function walk(abs, relParent) {
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (isIgnoredDirectory(entry.name)) continue;
+      const child = join(abs, entry.name);
+      const relDir = relParent ? `${relParent}/${entry.name}` : entry.name;
+      const parentName = relParent?.split("/").pop();
+      out.push({
+        relDir,
+        indexRel: `${relDir}/${entry.name}.md`,
+        parentIndexRel: relParent && parentName ? `${relParent}/${parentName}.md` : null,
+      });
+      walk(child, relDir);
+    }
+  }
+  walk(vaultRoot, "");
+  return out;
+}
+
+function containsObsidianLinkTo(content, indexRel) {
+  const target = indexRel.replace(/\.md$/, "");
+  const projectTarget = `Projects/${basename(vaultRoot)}/${target}`;
+  const links = [...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1]);
+  return links.some((link) => link === target || link === projectTarget);
+}
+
+function listMarkdownFilesUnder(relDir) {
+  const root = join(vaultRoot, relDir);
+  if (!existsSync(root)) return [];
+  const out = [];
+  function walk(abs) {
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      const child = join(abs, entry.name);
+      if (entry.isDirectory()) {
+        walk(child);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        out.push(relative(vaultRoot, child).split("\\").join("/"));
+      }
+    }
+  }
+  walk(root);
+  return out;
+}
+
+function checkDocsNames() {
+  for (const rel of listMarkdownFilesUnder("docs")) {
+    const filename = rel.split("/").pop();
+    const stem = filename.replace(/\.md$/, "");
+    const parent = rel.split("/").slice(-2, -1)[0];
+    if (stem === parent || filename === "docs.md") continue;
+    if (/^\d+[_ -]/.test(filename)) {
+      findings.docsNames.violations.push(rel);
+    }
+  }
+}
+
+function checkHistoryNames() {
+  for (const rel of listMarkdownFilesUnder("history")) {
+    const filename = rel.split("/").pop();
+    if (/^HISTORY-/.test(filename)) {
+      findings.historyNames.violations.push(rel);
+    }
+  }
+}
+
+function checkRoadmapShape() {
+  for (const rel of ["roadmap/ideas.md", "roadmap/known-issues.md"]) {
+    if (!isFile(rel)) continue;
+    const body = stripFrontmatter(readFileSync(join(vaultRoot, rel), "utf8"));
+    const hasContents = /^## Contents$/m.test(body);
+    const sections = body.match(/^## (?!Contents$|Navigation$).+$/gm) ?? [];
+    if (!hasContents) {
+      findings.roadmapShape.violations.push({ path: rel, reason: "missing ## Contents TOC" });
+    }
+    if (sections.length === 0) {
+      findings.roadmapShape.violations.push({ path: rel, reason: "missing status/area sections" });
+    }
+  }
+}
+
 function emit() {
   const lines = [];
   lines.push(`# Vault Structure Report`);
@@ -290,7 +439,8 @@ function emit() {
   lines.push(`Generated: ${new Date().toISOString()}`);
   lines.push("");
 
-  lines.push(`**Status:** ${findings.required.missing.length === 0 ? "PASS" : "FAIL"}`);
+  const issueCount = issueTotal();
+  lines.push(`**Status:** ${issueCount === 0 ? "PASS" : "FAIL"}`);
   lines.push("");
   lines.push(`**Summary:** ${findings.required.present.length} required present, ${findings.required.missing.length} required missing, ${findings.optional.present.length} optional present, ${findings.optional.missing.length} optional missing.`);
   lines.push("");
@@ -340,10 +490,90 @@ function emit() {
     lines.push("All required and optional files are in place.");
   }
 
+  // Folder note coverage and shape checks
+  if (findings.folderNotes.missing.length > 0) {
+    lines.push("## Missing Folder Notes");
+    lines.push("");
+    lines.push("Every visible PM folder must have a matching folder note named after the folder. Hidden dot-folders are ignored.");
+    lines.push("");
+    for (const rel of findings.folderNotes.missing) {
+      lines.push(`- \`${rel}\`: create this folder-note index from \`templates/folder-note.md\`.`);
+    }
+    lines.push("");
+  }
+
+  if (findings.folderNotes.violations.length > 0) {
+    lines.push("## Folder Note Shape Violations");
+    lines.push("");
+    lines.push(`Folder notes follow \`templates/folder-note.md\`: at most ${FOLDER_NOTE_MAX_SECTIONS} \`##\` sections (Subfolders, Notes, Navigation, + optional 1 extra). Move "Conventions", "Format", "Lifecycle", "When to write" etc. to the README's "Conventions by Page Type" section.`);
+    lines.push("");
+    for (const v of findings.folderNotes.violations) {
+      lines.push(`- \`${v.path}\`: ${v.sections} sections — strip non-essential sections.`);
+    }
+    lines.push("");
+  } else if (findings.folderNotes.present.length > 0) {
+    lines.push(`**Folder notes:** all ${findings.folderNotes.present.length} present pass the shape check.`);
+    lines.push("");
+  }
+
+  if (findings.folderNotes.parentLinkViolations.length > 0) {
+    lines.push("## Folder Note Parent Link Violations");
+    lines.push("");
+    lines.push("Nested folder notes must be listed in the parent folder note's `## Subfolders` index.");
+    lines.push("");
+    for (const v of findings.folderNotes.parentLinkViolations) {
+      lines.push(`- \`${v.parent}\`: add a subfolder link to \`${v.child}\`.`);
+    }
+    lines.push("");
+  }
+
+  if (findings.docsNames.violations.length > 0) {
+    lines.push("## Docs Filename Violations");
+    lines.push("");
+    lines.push("Active docs-guide notes use lowercase slug filenames with no numeric prefixes.");
+    lines.push("");
+    for (const rel of findings.docsNames.violations) {
+      lines.push(`- \`${rel}\`: remove the numeric prefix and update wiki links.`);
+    }
+    lines.push("");
+  }
+
+  if (findings.historyNames.violations.length > 0) {
+    lines.push("## History Filename Violations");
+    lines.push("");
+    lines.push("History log filenames use lowercase `history-YYYY-MM-DD.md` and `history-YYYY-MM-DD-archived-sections.md`.");
+    lines.push("");
+    for (const rel of findings.historyNames.violations) {
+      lines.push(`- \`${rel}\`: rename \`HISTORY-\` to \`history-\` and update links.`);
+    }
+    lines.push("");
+  }
+
+  if (findings.roadmapShape.violations.length > 0) {
+    lines.push("## Roadmap Shape Violations");
+    lines.push("");
+    lines.push("`roadmap/ideas.md` and `roadmap/known-issues.md` should have a `## Contents` TOC and status/area sections.");
+    lines.push("");
+    for (const v of findings.roadmapShape.violations) {
+      lines.push(`- \`${v.path}\`: ${v.reason}`);
+    }
+    lines.push("");
+  }
+
   console.log(lines.join("\n"));
 }
 
 const findingsRef = findings;
+
+function issueTotal() {
+  return findingsRef.required.missing.length
+    + findingsRef.folderNotes.missing.length
+    + findingsRef.folderNotes.violations.length
+    + findingsRef.folderNotes.parentLinkViolations.length
+    + findingsRef.docsNames.violations.length
+    + findingsRef.historyNames.violations.length
+    + findingsRef.roadmapShape.violations.length;
+}
 
 function runFor(target) {
   vaultRoot = target.vault;
@@ -351,12 +581,20 @@ function runFor(target) {
   findings.project = { found: null, present: false };
   findings.system = { hasSystemMd: false, hasAnySystemDoc: false };
   findings.optional = { missing: [], present: [] };
+  findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [] };
+  findings.docsNames = { violations: [] };
+  findings.historyNames = { violations: [] };
+  findings.roadmapShape = { violations: [] };
 
   checkRequired();
   checkOptional();
+  checkFolderNotes();
+  checkDocsNames();
+  checkHistoryNames();
+  checkRoadmapShape();
   emit();
 
-  return findingsRef.required.missing.length;
+  return issueTotal();
 }
 
 const targets = resolveTargets();
@@ -364,6 +602,39 @@ let totalIssues = 0;
 for (const target of targets) {
   console.log(`\n# Vault Structure Report — ${target.label}\n`);
   totalIssues += runFor(target);
+}
+
+// Cross-cutting check: registered project repos' AGENTS.md must not contain
+// the literal `<pm_folder>` placeholder. The template's bootstrap is
+// supposed to substitute it; this guard catches regressions. Projects
+// without an AGENTS.md are skipped (not every registered project is a
+// project-management consumer).
+const configPath = loadConfigPath();
+if (configPath) {
+  const cfg = JSON.parse(readFileSync(configPath, "utf8"));
+  const agentsFailures = [];
+  for (const [name, proj] of Object.entries(cfg.projects ?? {})) {
+    if (!proj.code_repo) continue;
+    const agentsPath = join(resolve(proj.code_repo), "AGENTS.md");
+    if (!existsSync(agentsPath)) continue;
+    const content = readFileSync(agentsPath, "utf8");
+    if (content.includes("<pm_folder>")) {
+      agentsFailures.push({ name, path: agentsPath });
+    }
+  }
+  console.log(`\n# AGENTS.md Drift Report\n`);
+  if (agentsFailures.length > 0) {
+    console.log(`**Status:** FAIL`);
+    console.log(``);
+    for (const f of agentsFailures) {
+      console.log(`- ${f.name}: \`${f.path}\` still contains unresolved \`<pm_folder>\` placeholder — re-run substitution.`);
+    }
+    totalIssues += agentsFailures.length;
+  } else {
+    console.log(`**Status:** PASS`);
+    console.log(``);
+    console.log(`All registered projects have a resolved PM folder path in AGENTS.md.`);
+  }
 }
 
 process.exit(totalIssues > 0 ? 1 : 0);

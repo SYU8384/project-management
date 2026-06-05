@@ -24,7 +24,7 @@
  *   VERY_STALE_DAYS default 90
  *
  * The `--config` flag expects a path to `projects.json` from the
- * project-logging skill (at the skill root, alongside SKILL.md). The script
+ * project-management skill (at the skill root, alongside SKILL.md). The script
  * reads `vault_root` and the project's `pm_folder` from the config. When
  * `--config` is set without `--project`, the script iterates over all
  * projects in the config and prints one report per project.

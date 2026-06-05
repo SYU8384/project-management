@@ -13,7 +13,7 @@
 ## PM folder impact
 
 <!-- Required: describe what PM folder docs (if any) should be updated to reflect this PR.
-     See the project-logging skill's "Contributor Workflow" section for guidance.
+     See the project-management skill's "Contributor Workflow" section for guidance.
 
      The PM folder is separate from this code repo. These items are suggestions;
      the maintainer (or a maintainer-side agent) will apply the actual PM updates
@@ -22,8 +22,23 @@
      System docs affected:
      - [ ] system/<topic>.md — what changed: ...
 
+     User/Admin/Developer docs affected:
+     - [ ] docs/User Guide/<slug>.md — user-facing behavior changed: ...
+     - [ ] docs/Admin Guide/<slug>.md — admin/operator workflow changed: ...
+     - [ ] docs/Developer Guide/<slug>.md — developer workflow/API/schema/test/build behavior changed: ...
+     - [ ] docs/Quick Commands/<slug>.md — useful command added/changed: ...
+
+     Features affected:
+     - [ ] features/<feature>.md — Current Behavior, Known Issues, or Roadmap updated
+     - [ ] features/features.md — new feature page added to index (if applicable)
+
+     Roadmap affected:
+     - [ ] roadmap/known-issues.md — bug/risk/blocker added, fixed, or changed status: ...
+     - [ ] roadmap/ideas.md — idea/backlog/declined proposal added or changed status: ...
+     - [ ] roadmap/done-pending.md — pending/done status changed: ...
+
      History entries needed:
-     - [ ] history/YYYY-MM/HISTORY-YYYY-MM-DD.md — bullet: ...
+     - [ ] history/YYYY-MM/history-YYYY-MM-DD.md — bullet: ...
 
      Planning notes affected:
      - [ ] planning/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
@@ -33,9 +48,8 @@
      - [ ] New ADR if significant decision: planning/decisions/ADR-NNN_slug.md
      - [ ] Existing ADR if assumption changed: planning/decisions/ADR-NNN_slug.md
 
-     Features affected:
-     - [ ] features/<feature>.md — Current Behavior, Known Issues, or Roadmap updated
-     - [ ] features/features.md — new feature page added to index (if applicable)
+     Folder indexes affected:
+     - [ ] <folder>/<folder>.md — note added, moved, renamed, archived, or deleted: ...
 -->
 
 ## Risks

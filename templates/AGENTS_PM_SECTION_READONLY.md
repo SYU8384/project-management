@@ -9,8 +9,8 @@ Before coding:
 - If your change affects a feature, read `features/<feature>.md`
 
 When opening a PR:
-- Use the PR body template (`.github/PULL_REQUEST_TEMPLATE.md`, copied from the project-logging skill's `templates/PR_BODY_TEMPLATE.md`)
-- Fill in the "PM folder impact" section with the affected `system/`, `planning/`, `features/`, and ADR files
+- Use the PR body template (`.github/PULL_REQUEST_TEMPLATE.md`, copied from the project-management skill's `templates/PR_BODY_TEMPLATE.md`)
+- Fill in the "PM folder impact" section with every affected PM lane: `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `planning/`, ADRs, folder indexes, and `history/`
 - Be specific: "system/connectors-and-sessions.md — add new OAuth provider entry" not "update system docs"
 - Do NOT make the PM folder edits in your PR — the maintainer applies them after merge
 
@@ -18,4 +18,4 @@ After PR is merged:
 - The maintainer (or a maintainer-side agent) reads the "PM folder impact" section and applies the PM folder updates
 - You may want to re-read the relevant system/ docs to confirm the update landed
 
-The full convention is documented in the project-logging skill at `<skill_dir>/SKILL.md` (specifically "Contributor Workflow").
+The full convention is documented in the project-management skill at `<skill_dir>/SKILL.md` (specifically "Contributor Workflow").
