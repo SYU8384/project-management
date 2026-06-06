@@ -29,6 +29,8 @@ The five most common actions:
 
 **5. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md`, `AGENTS_PM_SECTION_READONLY.md`, or `AGENTS_PM_SECTION_UNAVAILABLE.md`) into the project's `AGENTS.md`.
 
+**6. Bootstrap an OpenClaw PM agent** — say "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", or "write OpenClaw AGENTS prompt". The agent runs `node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs` with any known agent name or project scope, then gives the copy-paste prompt to the user. The prompt tells the OpenClaw agent how to update its own `AGENTS.md` with the skill path, `projects.json` path, access rules, and PM stewardship workflow.
+
 ---
 
 ## Triggers
@@ -46,6 +48,7 @@ Match user phrases to the right intent. If multiple intents apply, do all of the
 | "fix the schema", "migrate the frontmatter", "update the schema" | Repair (focused on schema) | Validation and Repair (REFERENCE) |
 | "sync the READMEs", "update the routing map", "fix the Quick Rules", "fix the What Goes Where table" | Repair (focused on README) | Validation and Repair (REFERENCE) |
 | "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", "update AGENTS.md for <project>", "write the PM folder section for <project>" | AGENTS.md work (checks `access` in `projects.json` to pick the right section) | Coding Agent Integration (REFERENCE) |
+| "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", "write OpenClaw AGENTS prompt", "OpenClaw PM bootstrap" | Generate a copy-paste prompt for an OpenClaw PM agent to update its own `AGENTS.md` | OpenClaw PM Agent Bootstrap (REFERENCE) |
 | "register <project> as authoritative", "mark <project> as read-only", "set access for <project>" | Config update | Configuration (REFERENCE) |
 | "add a new project", "register a new project", "add <Project> to projects.json" | Config update | Configuration → Adding a new project (REFERENCE) |
 | "I just opened a PR", "I just merged a PR", "review a PR for PM impact" | Contributor | Contributor Workflow (REFERENCE) |

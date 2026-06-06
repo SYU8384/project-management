@@ -648,6 +648,68 @@ A copyable snippet is provided in each template. Project repos that adopt the pr
 
 ---
 
+## OpenClaw PM Agent Bootstrap
+
+Use this when the user says "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", "write OpenClaw AGENTS prompt", or similar.
+
+OpenClaw PM agents are long-running project-management stewards. They complement coding agents instead of replacing them:
+
+- **Coding agents** update PM folders after code changes in authoritative projects.
+- **OpenClaw PM agents** brainstorm, capture ideas, triage issues, review priorities, audit/repair PM folders, curate coding-agent updates, and coordinate across projects.
+
+### Generate the prompt
+
+Run the read-only renderer and give the output to the user:
+
+```bash
+node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs
+node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs --agent-name Quill --project-scope "all non-academic projects"
+```
+
+The script prints a copy-paste Markdown prompt. It does not edit OpenClaw files, `AGENTS.md`, or `projects.json`.
+
+The prompt is based on `templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md` and includes:
+
+- `<skill_dir>` — the project-management skill directory
+- `<skill_dir>/projects.json` — the local project registry
+- the OpenClaw agent's PM role and boundaries
+- authoritative/read-only/unavailable access behavior
+- common workflows for ideas, known issues, priorities, known bugs, history, validation, and bootstrap
+- the required final response habit after PM-folder work
+
+### How the user uses it
+
+The user copies the rendered prompt into their OpenClaw PM agent. The OpenClaw agent then updates its own workspace `AGENTS.md` with a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules.
+
+Do not directly mutate an OpenClaw workspace `AGENTS.md` unless the user explicitly asks for that and gives the exact file path. The generated-prompt workflow is the default because it lets the OpenClaw agent own its persistent instructions deliberately.
+
+### PM-agent behavior
+
+An OpenClaw PM agent using this bootstrap should:
+
+1. Read `<skill_dir>/SKILL.md` for routing rules.
+2. Read `<skill_dir>/REFERENCE.md` for setup, validation, repair, schema, or bootstrap details.
+3. Use `<skill_dir>/projects.json` to find project PM folders and access levels.
+4. Read each project PM folder `README.md` before deciding where information belongs.
+5. Respect access:
+   - `authoritative` — edit PM folder directly.
+   - `read-only` — read for context and suggest changes.
+   - `unavailable` — ask for access; do not invent a PM folder.
+6. Keep durable current-state docs, roadmap notes, and folder indexes synchronized before writing history.
+7. Avoid source-code edits unless the user explicitly asks it to code.
+
+### Recommended trigger to tell users
+
+Tell users they can say:
+
+```text
+setup OpenClaw PM agent
+```
+
+Then copy the generated prompt into their OpenClaw PM agent.
+
+---
+
 ## Big Tasks Must Be Planned
 
 If a feature, fix, or change has **multi-step work, multi-session work, or many rounds of implementation and fixes**, the agent must write the plan to `planning/` first (in the correct format) and mirror it in `roadmap/done-pending.md` before starting implementation.
@@ -737,6 +799,7 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
 - `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` — the `## PM folder` section for `AGENTS.md` when a collaborator has code access but no PM folder access yet
+- `templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md` — copy-paste prompt template for bootstrapping an OpenClaw PM agent's workspace `AGENTS.md`
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
 

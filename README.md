@@ -47,6 +47,7 @@ The agent asks free-text follow-ups only for facts it cannot infer, such as a va
 | 🧩 Track plans and decisions | Creates planning notes, mirrors active work into `roadmap/done-pending.md`, and records ADRs. |
 | 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
 | 🤝 Integrate code repos | Adds an `AGENTS.md` PM section so coding agents know what to read and update. |
+| 🧑‍💼 Bootstrap OpenClaw PM agents | Generates a copy-paste prompt so an OpenClaw PM agent can add the skill path, `projects.json`, and PM stewardship rules to its own `AGENTS.md`. |
 
 ## 🧠 Why This Exists
 
@@ -91,6 +92,30 @@ git clone https://github.com/SYU8384/project-management.git ~/.agents/skills/pro
 ```
 
 Restart your agent after installing or updating the skill.
+
+## 🧑‍💼 OpenClaw PM Agent Setup
+
+Installing with `--target openclaw` makes the skill available to OpenClaw:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target openclaw --yes
+```
+
+To bootstrap an OpenClaw PM agent, use the skill and say:
+
+```text
+setup OpenClaw PM agent
+```
+
+The agent will generate a copy-paste prompt. Give that prompt to your OpenClaw PM agent, and the OpenClaw agent will update its own `AGENTS.md` with the project-management skill path, `projects.json` path, access rules, and PM workflow.
+
+You can also render the prompt directly:
+
+```bash
+node scripts/render-openclaw-pm-agent-prompt.mjs --agent-name Quill --project-scope "all non-academic projects"
+```
+
+Use coding agents for direct code-change logging. Use the OpenClaw PM agent for PM stewardship: brainstorming, idea capture, issue triage, priority review, PM folder audits, and cross-project coordination.
 
 ## 🗂️ PM Folder Model
 
@@ -224,8 +249,10 @@ Most users do not need to edit this manually after setup. The guided `setup this
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
 | [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
+| [`templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md`](./templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md) | Copy-paste prompt template for bootstrapping an OpenClaw PM agent. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
+| [`scripts/render-openclaw-pm-agent-prompt.mjs`](./scripts/render-openclaw-pm-agent-prompt.mjs) | Read-only prompt renderer for OpenClaw PM-agent bootstrap. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
