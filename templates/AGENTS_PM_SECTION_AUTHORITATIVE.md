@@ -23,3 +23,15 @@ After coding:
 The full convention is documented in the project-management skill at `<skill_dir>/SKILL.md` (specifically the "Coding Agent Integration" subsection).
 
 If the PM folder path is unknown, check the project-management skill's `projects.json` for the project's `pm_folder` field, or ask the maintainer.
+
+### Maintainer PR review
+
+When reviewing or merging a PR, check whether the PR body has a useful `PM folder impact` section.
+
+If the section is missing, empty, vague, or says the PM folder was unavailable locally:
+- Inspect the PR diff, commits, changed files, tests, migrations, and release notes.
+- Infer the PM updates needed across `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Developer Guide/known-bugs.md`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `roadmap/done-pending.md`, `planning/`, ADRs, folder indexes, and `history/`.
+- Write a concrete PM update plan before merge, or immediately after merge if the PR must land first.
+- Apply the PM folder updates directly for this authoritative project, then add the normal history entry.
+
+Do not block a contributor solely because they lacked PM folder access. Maintainer-side agents are responsible for backfilling PM updates when contributor PRs cannot provide them.

@@ -493,6 +493,8 @@ The user's project paths live in a separate config file, not in the skill text. 
 
 **Validation requires registration.** If a collaborator runs `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` while `projects.json` is still the empty template, the validators must stop with an actionable setup message. The correct next step is to use the skill and say "setup as collaborator" or "setup this repo" so the agent can register `access`, `code_repo`, and `pm_folder` (unless access is unavailable).
 
+**Setup always verifies registration first.** Whether setup is started by a coding agent ("setup this repo") or by an OpenClaw PM agent (`openclaw-instruction.md`), the agent must inspect `projects.json` before assuming the skill is configured. Missing, empty, or template-only registries mean setup has not completed. Populated registries should be summarized back to the user for path confirmation and optional new-project registration.
+
 **When the agent should update `projects.json`:**
 
 **Adding a new project:** the user says "setup", "add a new project", "register a new project", "initialize the PM folder for <name>", or similar. The agent collects the required fields (in this order) and adds the entry to the `projects` object:
@@ -659,35 +661,20 @@ OpenClaw PM agents are long-running project-management stewards. They complement
 
 ### Display the prompt
 
-Display the full copy-paste prompt directly in the response. Do not make the user run a separate install command before they can copy the OpenClaw instructions. The prompt itself tells OpenClaw to install or update the skill:
+Display this short copy-paste prompt directly in the response:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
-  | bash -s -- --target openclaw --yes
+```text
+Read and follow this instruction:
+https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
+
+It will install or update the project-management skill, verify or create projects.json, ask setup questions with answer suggestions when needed, add your OpenClaw PM role to AGENTS.md, and ask permission before writing project code repo AGENTS.md files. Ask me for project paths; do not invent them.
 ```
 
-For customized agent names, scopes, or non-default paths, run the read-only renderer and give the output to the user:
-
-```bash
-node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs
-node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs --agent-name Quill --project-scope "all non-academic projects"
-```
-
-The script prints a copy-paste Markdown prompt. It does not edit OpenClaw files, `AGENTS.md`, or `projects.json`.
-
-The prompt is based on `templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md` and includes:
-
-- the OpenClaw install/update command
-- `<skill_dir>` — the project-management skill directory
-- `<skill_dir>/projects.json` — the local project registry
-- the OpenClaw agent's PM role and boundaries
-- authoritative/read-only/unavailable access behavior
-- common workflows for ideas, known issues, priorities, known bugs, history, validation, and bootstrap
-- the required final response habit after PM-folder work
+The public instruction file is `openclaw-instruction.md` at the repository root. It uses the OpenClaw managed/local skill root `~/.openclaw/skills/project-management` by default. If the user has a custom OpenClaw skill root, the OpenClaw agent must ask for the exact path. OpenClaw setup is an alternative full setup path: install/update the skill, verify or create the registry, run guided setup when the registry is empty/template-only, configure the OpenClaw PM role, and audit registered code repo `AGENTS.md` files.
 
 ### How the user uses it
 
-The user copies the prompt into their OpenClaw PM agent. The OpenClaw agent installs or updates the skill, verifies `projects.json`, then updates its own workspace `AGENTS.md` with a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules.
+The user copies the prompt into their OpenClaw PM agent. The OpenClaw agent reads the public instruction, installs or updates the skill, verifies `projects.json`, asks guided setup questions when needed, then updates its own workspace `AGENTS.md` with a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules.
 
 Do not directly mutate an OpenClaw workspace `AGENTS.md` unless the user explicitly asks for that and gives the exact file path. The generated-prompt workflow is the default because it lets the OpenClaw agent own its persistent instructions deliberately.
 
@@ -760,7 +747,8 @@ A copyable PR body template is provided in `templates/PR_BODY_TEMPLATE.md`. Proj
 **The pattern for the contributor:**
 
 1. Open a PR in the code repo.
-2. In the PR body, fill in the "PM folder impact" section. Check the boxes for:
+2. In the PR body, fill in the "PM folder impact" section. If the contributor has no PM folder access, write: "PM folder unavailable locally; maintainer must infer and apply PM updates."
+3. When PM access is available, check the boxes for:
    - System docs affected (and what changed)
    - User Guide, Admin Guide, Developer Guide, and Quick Commands docs affected
    - Roadmap known issues or ideas affected
@@ -768,10 +756,26 @@ A copyable PR body template is provided in `templates/PR_BODY_TEMPLATE.md`. Proj
    - History entries needed (the date and bullet)
    - Planning notes affected (updated, superseded, or moved to archive)
    - ADRs affected (new or existing)
-3. Submit the PR.
-4. After the PR is merged, the maintainer (or a maintainer-side agent) reads the PR's "PM folder impact" section and applies the corresponding PM updates.
+4. Submit the PR.
+5. After the PR is merged, the maintainer (or a maintainer-side agent) reads the PR's "PM folder impact" section and applies the corresponding PM updates.
 
 The maintainer's job is to translate the contributor's "PM folder impact" claim into actual PM folder edits. This keeps the contributor focused on the code change while ensuring the PM folder stays in sync.
+
+### Maintainer PR PM Backfill
+
+Maintainer-side agents must ensure PM impact is handled at merge time even when the contributor could not provide it.
+
+When reviewing or merging a PR:
+
+1. Check whether the PR body has a useful `PM folder impact` section.
+2. If the section is complete, verify it against the diff and apply the needed PM updates after merge.
+3. If the section is missing, empty, vague, or says `PM folder unavailable locally`, inspect the PR diff, commits, changed files, tests, migrations, and release notes.
+4. Infer the PM updates needed across `system/`, `docs/`, `features/`, `roadmap/`, `planning/`, ADRs, folder indexes, and `history/`.
+5. For authoritative projects, apply the PM updates directly before merge or immediately after merge. If the PR must land first, write the PM update plan before merge so the follow-up is explicit.
+6. For read-only projects, produce a maintainer-facing PM update plan instead of editing the PM folder.
+7. For unavailable projects, record that PM access is missing and ask the owner for access or a maintainer-side PM agent to apply the updates.
+
+Do not block a contributor solely because they lacked PM folder access. The merge/review agent owns PM backfill for maintainer-side workflows.
 
 ---
 
@@ -807,7 +811,6 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
 - `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` — the `## PM folder` section for `AGENTS.md` when a collaborator has code access but no PM folder access yet
-- `templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md` — copy-paste prompt template for bootstrapping an OpenClaw PM agent's workspace `AGENTS.md`
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
 

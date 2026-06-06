@@ -10,18 +10,19 @@ YES=0
 
 usage() {
   cat <<'USAGE'
-Install the project-management skill.
+Install or update the project-management skill.
 
 Usage:
-  install.sh [--target codex|agents|claude|openclaw] [--yes]
-  install.sh --dest <skills-dir> [--name project-management] [--yes]
+  install.sh [--target codex|agents|claude|openclaw] [--yes] [--update]
+  install.sh --dest <skills-dir> [--name project-management] [--yes] [--update]
 
 Options:
-  --target <target>  Install target: codex, agents, claude, or openclaw.
+  --target <target>  Install/update target: codex, agents, claude, or openclaw.
   --dest <dir>       Custom parent skills directory.
   --name <name>      Installed skill directory name. Default: project-management.
   --repo <url>       Git repo URL. Default: https://github.com/SYU8384/project-management.git
   --ref <ref>        Branch or tag to install. Default: main.
+  --update           Explicitly request update behavior. Existing installs update automatically.
   --yes              Skip confirmation prompts.
   --help            Show this help.
 
@@ -73,7 +74,7 @@ target_dest_parent() {
     codex) printf "%s/skills" "${CODEX_HOME:-$HOME/.codex}" ;;
     agents) printf "%s/.agents/skills" "$HOME" ;;
     claude) printf "%s/.claude/skills" "$HOME" ;;
-    openclaw) printf "%s/.openclaw/shared-skills" "$HOME" ;;
+    openclaw) printf "%s/.openclaw/skills" "$HOME" ;;
     *) die "Unknown target: $1" ;;
   esac
 }
@@ -110,6 +111,9 @@ parse_args() {
         YES=1
         shift
         ;;
+      --update)
+        shift
+        ;;
       --help|-h)
         usage
         exit 0
@@ -130,7 +134,7 @@ Choose where to install project-management:
   1) Codex   (~/.codex/skills)
   2) Agents  (~/.agents/skills)
   3) Claude  (~/.claude/skills)
-  4) OpenClaw (~/.openclaw/shared-skills)
+  4) OpenClaw (~/.openclaw/skills)
   5) Custom skills directory
 MENU
   local choice
@@ -209,7 +213,7 @@ main() {
   local install_dir="$DEST_PARENT/$SKILL_NAME"
 
   if [[ "$YES" -ne 1 ]]; then
-    echo "Install project-management to: $install_dir"
+    echo "Install or update project-management at: $install_dir"
     local confirm
     confirm="$(tty_read "Continue? [y/N] ")"
     [[ "$confirm" == "y" || "$confirm" == "Y" ]] || die "Canceled."
@@ -219,7 +223,7 @@ main() {
 
   cat <<EOF
 
-Installed project-management at:
+Installed or updated project-management at:
   $install_dir
 
 Next steps:

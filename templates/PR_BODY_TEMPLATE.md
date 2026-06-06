@@ -19,6 +19,9 @@
      the maintainer (or a maintainer-side agent) will apply the actual PM updates
      after this PR is merged.
 
+     If you do not have PM folder access, write:
+     "PM folder unavailable locally; maintainer must infer and apply PM updates."
+
      System docs affected:
      - [ ] system/<topic>.md — what changed: ...
 

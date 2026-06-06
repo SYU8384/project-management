@@ -61,12 +61,18 @@ Project memory usually decays in predictable ways:
 
 This skill gives agents a strict, repeatable operating model for project memory.
 
-## ⚙️ Install
+## ⚙️ Install Or Update
 
 Interactive installer:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
+```
+
+Rerunning the install command updates an existing install. You can also use the explicit update entry point:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
 ```
 
 Noninteractive examples:
@@ -81,8 +87,24 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 # Claude: ~/.claude/skills/project-management
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target claude --yes
 
-# OpenClaw: ~/.openclaw/shared-skills/project-management
+# OpenClaw: ~/.openclaw/skills/project-management
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target openclaw --yes
+```
+
+Explicit update examples:
+
+```bash
+# Codex
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
+
+# Agent skills
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target agents --yes
+
+# Claude
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target claude --yes
+
+# OpenClaw
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target openclaw --yes
 ```
 
 Manual install:
@@ -97,40 +119,11 @@ Restart your agent after installing or updating the skill.
 
 Copy this prompt to your OpenClaw PM agent:
 
-> Install or update the project-management skill:
->
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
->   | bash -s -- --target openclaw --yes
-> ```
->
-> Then update your workspace `AGENTS.md` with a `## Project Management Skill` section.
->
-> Use:
->
-> - Skill path: `~/.openclaw/shared-skills/project-management`
-> - Project registry: `~/.openclaw/shared-skills/project-management/projects.json`
->
-> If `projects.json` is missing, copy `~/.openclaw/shared-skills/project-management/templates/projects.template.json` to `~/.openclaw/shared-skills/project-management/projects.json`, then ask me for project entries instead of inventing paths.
->
-> You are the OpenClaw PM steward. Use this skill whenever I ask you to brainstorm, log ideas, triage issues, review priorities, audit project memory, update roadmap state, or maintain a project's PM folder.
->
-> Read `~/.openclaw/shared-skills/project-management/SKILL.md` first for routing rules. Read `~/.openclaw/shared-skills/project-management/REFERENCE.md` when you need setup, validation, repair, schema, or bootstrap details. Use `projects.json` to find registered projects, PM folders, code repos, phases, and access levels.
->
-> Respect project access: edit PM folders directly only for `access: authoritative`; suggest updates for `access: read-only`; ask for access and do not invent a PM folder for `access: unavailable`.
->
-> Coding agents still update PM folders after code changes. Your PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless I explicitly ask you to code.
->
-> Common routes: ideas go to `roadmap/ideas.md`; active bugs, risks, and blockers go to `roadmap/known-issues.md`; engineering bug knowledge goes to `docs/Developer Guide/known-bugs.md`; priorities go to `roadmap/mvp-priorities.md`, `roadmap/done-pending.md`, and `CURRENT_STATUS.md`; completed meaningful PM work ends with a brief `history/YYYY-MM/history-YYYY-MM-DD.md` entry.
->
-> After PM-folder work, tell me exactly which project files you updated. If no files were updated, say that explicitly and explain why.
+```text
+Read and follow this instruction:
+https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
 
-For customized agent names, scopes, or non-default paths, render a prompt from a local checkout:
-
-```bash
-node scripts/render-openclaw-pm-agent-prompt.mjs \
-  --agent-name Quill \
-  --project-scope "all non-academic projects"
+It will install or update the project-management skill, verify or create projects.json, ask setup questions with answer suggestions when needed, add your OpenClaw PM role to AGENTS.md, and ask permission before writing project code repo AGENTS.md files. Ask me for project paths; do not invent them.
 ```
 
 ## 🗂️ PM Folder Model
@@ -263,12 +256,12 @@ Most users do not need to edit this manually after setup. The guided `setup this
 |---|---|
 | [`SKILL.md`](./SKILL.md) | Agent entry point: intents, triggers, quick start, and routing map. |
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
-| [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory. |
+| [`install.sh`](./install.sh) | Curl-friendly installer/updater for Codex, agent skills, Claude, OpenClaw, or a custom skills directory. |
+| [`update.sh`](./update.sh) | Explicit curl-friendly update entry point; installs if missing and updates if present. |
+| [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
-| [`templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md`](./templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md) | Copy-paste prompt template for bootstrapping an OpenClaw PM agent. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
-| [`scripts/render-openclaw-pm-agent-prompt.mjs`](./scripts/render-openclaw-pm-agent-prompt.mjs) | Read-only prompt renderer for OpenClaw PM-agent bootstrap. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
