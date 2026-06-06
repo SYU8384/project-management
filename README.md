@@ -46,7 +46,7 @@ There are two setup paths:
 | Installer | Coding agents such as Codex, Claude, or a local agent skill root | Installs or updates the skill files, creates or preserves local `projects.json`, then tells you to restart the coding agent and say `setup this repo`. |
 | OpenClaw PM prompt | An OpenClaw agent that should act as the project-management steward | Lets OpenClaw install, update, or discover the skill, verify `projects.json`, set up its own PM role, audit registered PM folders and `AGENTS.md`, and ask approval before edits. No separate `setup this repo` step is required. |
 
-### OpenClaw PM Agent Setup
+### OpenClaw PM Agent Setup (Recommended if you have an OpenClaw agent for Project Managing)
 
 Copy this prompt to your OpenClaw PM agent:
 
@@ -65,23 +65,7 @@ Interactive installer:
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
 ```
 
-Noninteractive examples:
-
-```bash
-# Codex: ~/.codex/skills/project-management
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target codex --yes
-
-# Agent skills: ~/.agents/skills/project-management
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target agents --yes
-
-# Claude: ~/.claude/skills/project-management
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target claude --yes
-
-# OpenClaw: ~/.openclaw/skills/project-management
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target openclaw --yes
-```
-
-`--target openclaw` only installs the skill into OpenClaw's skill root. It does not configure the OpenClaw PM role or run the alignment audit. For that full setup, use the OpenClaw PM prompt above.
+Installing into OpenClaw with the installer only installs the skill into OpenClaw's skill root. It does not configure the OpenClaw PM role or run the alignment audit. For that full setup, use the OpenClaw PM prompt above.
 
 ### Update An Existing Install
 
@@ -89,22 +73,6 @@ Rerunning the install command updates an existing install. You can also use the 
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
-```
-
-Explicit update examples:
-
-```bash
-# Codex
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
-
-# Agent skills
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target agents --yes
-
-# Claude
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target claude --yes
-
-# OpenClaw
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target openclaw --yes
 ```
 
 ### Manual Install
@@ -237,7 +205,9 @@ Write the final history/YYYY-MM/history-YYYY-MM-DD.md entry
 
 History is written last because it records what changed after the durable docs have already been updated.
 
-## 🧪 Validation Tools
+## 🧪 Validation Tools (Optional)
+
+> Use it only if you want to verify or repair the setup (e.g. after updating the skill or accidentally breaking the PM folder structure).
 
 Ask an agent to run validation with any of these trigger phrases:
 
