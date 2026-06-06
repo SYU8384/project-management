@@ -2,39 +2,66 @@
 
 Use this instruction to install the project-management skill, set up its local project registry, configure your OpenClaw PM role, and audit project code-repo `AGENTS.md` files.
 
-## 1. Install Or Update The Skill
+## 1. Discover Existing Install
 
-Install or update the project-management skill. For existing installs, prefer the explicit update command:
+Before installing, check whether `project-management` is already installed in an OpenClaw-loaded skill root.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \
-  | bash -s -- --target openclaw --yes
+Check these candidate paths in OpenClaw loading precedence order:
+
+```text
+<workspace>/skills/project-management
+<workspace>/.agents/skills/project-management
+~/.agents/skills/project-management
+~/.openclaw/skills/project-management
 ```
 
-For first-time setup, this install command is equivalent and also updates an existing install:
+For each candidate:
+
+- It is a candidate only if `SKILL.md` exists.
+- If it is a git checkout, verify its `origin` points to `https://github.com/SYU8384/project-management.git` or `git@github.com:SYU8384/project-management.git`.
+- If it is not a git checkout but has `SKILL.md`, ask the user before treating it as the canonical install.
+
+Choose `skill_dir` this way:
+
+- If exactly one valid install exists, use that path.
+- If multiple valid installs exist, explain OpenClaw precedence and ask the user which one should be canonical.
+- If no valid install exists, use `~/.openclaw/skills/project-management` as the default install path.
+
+## 2. Install Or Update The Chosen Skill
+
+If `skill_dir` already exists and is a valid git checkout, update it:
+
+```bash
+cd <skill_dir>
+git pull --ff-only
+```
+
+If no valid install exists, install to the default OpenClaw managed/local skill root:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
   | bash -s -- --target openclaw --yes
 ```
 
-Default OpenClaw skill path:
+If the user chose a custom root, install/update with `--dest <skills-dir>` instead:
 
-```text
-~/.openclaw/skills/project-management
+```bash
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \
+  | bash -s -- --dest <skills-dir> --yes
 ```
 
-Default project registry:
+After install/update, set:
 
 ```text
-~/.openclaw/skills/project-management/projects.json
+skill_dir = <chosen project-management install path>
+projects_json = <skill_dir>/projects.json
 ```
 
 If the user uses a custom OpenClaw skill root, ask for the exact path. OpenClaw can load skills from workspace skills, project `.agents/skills`, personal `~/.agents/skills`, managed/local `~/.openclaw/skills`, bundled skills, and configured extra directories. Do not use `~/.openclaw/shared-skills` as a public default.
 
-## 2. Check Whether The Skill Is Set Up
+## 3. Check Whether The Skill Is Set Up
 
-Inspect `~/.openclaw/skills/project-management/projects.json`.
+Inspect `<projects_json>`.
 
 Treat the skill as **not set up yet** if any of these are true:
 
@@ -46,18 +73,18 @@ Treat the skill as **not set up yet** if any of these are true:
 If `projects.json` is missing, copy:
 
 ```text
-~/.openclaw/skills/project-management/templates/projects.template.json
+<skill_dir>/templates/projects.template.json
 ```
 
 to:
 
 ```text
-~/.openclaw/skills/project-management/projects.json
+<projects_json>
 ```
 
-Set `skill_dir` to `~/.openclaw/skills/project-management` when writing the registry. Ask the user for real project paths. Do not invent paths.
+Set `skill_dir` to `<skill_dir>` when writing the registry. Ask the user for real project paths. Do not invent paths.
 
-## 3. If projects.json Is Empty Or Template-Only
+## 4. If projects.json Is Empty Or Template-Only
 
 Run a guided setup intake with answer suggestions. Ask in small groups and use selectable choices when the interface supports them.
 
@@ -101,7 +128,7 @@ Map role to `access`:
 
 Write the collected project entry to `projects.json`. If the user chose owner + create new PM folder, use the skill's bootstrap workflow in `REFERENCE.md` to create the PM folder. If the user chose existing or messy PM folder, register it first, then audit/repair with validation.
 
-## 4. If projects.json Already Has Projects
+## 5. If projects.json Already Has Projects
 
 Summarize the registered projects to the user:
 
@@ -121,7 +148,7 @@ For every registered project:
 - If `access` is `unavailable`, confirm that `pm_folder` is empty or unavailable and ask whether access has changed.
 - Report missing paths clearly and ask the user for replacements.
 
-## 5. Set Up Your OpenClaw PM Role
+## 6. Set Up Your OpenClaw PM Role
 
 Add or update this section in your workspace `AGENTS.md`:
 
@@ -130,10 +157,10 @@ Add or update this section in your workspace `AGENTS.md`:
 
 Use the project-management skill for project memory, planning, prioritization, triage, and PM-folder upkeep.
 
-- Skill path: `~/.openclaw/skills/project-management`
-- Project registry: `~/.openclaw/skills/project-management/projects.json`
+- Skill path: `<skill_dir>`
+- Project registry: `<projects_json>`
 
-Read `~/.openclaw/skills/project-management/SKILL.md` first for routing rules. Read `~/.openclaw/skills/project-management/REFERENCE.md` when setup, validation, repair, schema, or bootstrap details are needed. Use `projects.json` to find registered projects, PM folders, code repos, phases, and access levels.
+Read `<skill_dir>/SKILL.md` first for routing rules. Read `<skill_dir>/REFERENCE.md` when setup, validation, repair, schema, or bootstrap details are needed. Use `<projects_json>` to find registered projects, PM folders, code repos, phases, and access levels.
 
 Use this skill whenever the user asks to brainstorm, log ideas, triage issues, review priorities, audit project memory, update roadmap state, or maintain a project's PM folder.
 
@@ -163,13 +190,13 @@ Maintainer PR PM backfill:
 After PM-folder work, state exactly which project files were updated. If no files were updated, say that explicitly and why.
 ```
 
-## 6. Audit Project Code Repo AGENTS.md Files
+## 7. Audit Project Code Repo AGENTS.md Files
 
 For each registered project with a real `code_repo` path:
 
 1. Check whether `<code_repo>/AGENTS.md` exists.
 2. Check whether it has a `## PM folder` section.
-3. Compare the needed section with the templates in `~/.openclaw/skills/project-management/templates/`:
+3. Compare the needed section with the templates in `<skill_dir>/templates/`:
    - `AGENTS_PM_SECTION_AUTHORITATIVE.md` for `access: authoritative`
    - `AGENTS_PM_SECTION_READONLY.md` for `access: read-only`
    - `AGENTS_PM_SECTION_UNAVAILABLE.md` for `access: unavailable`
@@ -179,14 +206,14 @@ For each registered project with a real `code_repo` path:
 
 Never edit source code as part of this setup unless the user separately asks for coding work.
 
-## 7. Validate And Report
+## 8. Validate And Report
 
 For each available registered project, run:
 
 ```bash
-node ~/.openclaw/skills/project-management/scripts/check-pm.mjs \
+node <skill_dir>/scripts/check-pm.mjs \
   --project <ProjectName> \
-  --config ~/.openclaw/skills/project-management/projects.json
+  --config <projects_json>
 ```
 
 If validation fails and the project has `access: authoritative`, ask whether to repair the PM folder. If access is `read-only` or `unavailable`, report suggested fixes without editing.
