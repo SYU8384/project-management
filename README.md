@@ -122,10 +122,9 @@ Copy this prompt to your OpenClaw PM agent:
 ```text
 Read and follow this instruction:
 https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
-
-It will install or update the project-management skill, verify or create projects.json, ask setup questions with answer suggestions when needed, then run a full alignment audit of projects.json, existing PM folders, project repo AGENTS.md files, and your own OpenClaw workspace AGENTS.md. Ask before changing any files; if approval is denied, show suggested changes instead. Ask me for project paths; do not invent them.
-It checks existing OpenClaw skill roots before installing, so use an existing project-management skill if one is already available.
 ```
+
+The instruction installs or updates the project-management skill, verifies or creates `projects.json`, asks setup questions with answer suggestions when needed, then runs a full alignment audit of `projects.json`, existing PM folders, project repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`. It checks existing OpenClaw skill roots before installing, uses an existing `project-management` skill when one is already available, asks before changing files, and shows suggested changes when approval is denied.
 
 ## 🗂️ PM Folder Model
 

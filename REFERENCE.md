@@ -666,9 +666,9 @@ Display this short copy-paste prompt directly in the response:
 ```text
 Read and follow this instruction:
 https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
-
-It will install or update the project-management skill, verify or create projects.json, ask setup questions with answer suggestions when needed, then run a full alignment audit of projects.json, existing PM folders, project repo AGENTS.md files, and your own OpenClaw workspace AGENTS.md. Ask before changing any files; if approval is denied, show suggested changes instead. Ask me for project paths; do not invent them.
 ```
+
+The instruction installs or updates the project-management skill, verifies or creates `projects.json`, asks setup questions with answer suggestions when needed, then runs a full alignment audit of `projects.json`, existing PM folders, project repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`. It checks existing OpenClaw skill roots before installing, uses an existing `project-management` skill when one is already available, asks before changing files, and shows suggested changes when approval is denied.
 
 The public instruction file is `openclaw-instruction.md` at the repository root. It uses the OpenClaw managed/local skill root `~/.openclaw/skills/project-management` by default. If the user has a custom OpenClaw skill root, the OpenClaw agent must ask for the exact path. OpenClaw setup is an alternative full setup path: install/update the skill, verify or create the registry, run guided setup when the registry is empty/template-only, configure the OpenClaw PM role, and run a full alignment audit across the registry, PM folders, project code repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`.
 
