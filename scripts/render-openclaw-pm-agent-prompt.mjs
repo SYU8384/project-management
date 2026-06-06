@@ -8,13 +8,15 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_SKILL_DIR = resolve(SCRIPT_DIR, "..");
+const TEMPLATE_SKILL_DIR = resolve(SCRIPT_DIR, "..");
+const DEFAULT_SKILL_DIR = resolve(homedir(), ".openclaw", "shared-skills", "project-management");
 const DEFAULT_PROJECTS_JSON = resolve(DEFAULT_SKILL_DIR, "projects.json");
-const TEMPLATE_PATH = resolve(DEFAULT_SKILL_DIR, "templates", "OPENCLAW_PM_AGENT_BOOTSTRAP.md");
+const TEMPLATE_PATH = resolve(TEMPLATE_SKILL_DIR, "templates", "OPENCLAW_PM_AGENT_BOOTSTRAP.md");
 
 function printHelp() {
   console.log(`Usage:
@@ -23,7 +25,7 @@ function printHelp() {
 Options:
   --agent-name <name>       OpenClaw PM agent name. Default: "OpenClaw PM agent"
   --project-scope <scope>   Project scope phrase. Default: inferred from projects.json, or "all registered projects"
-  --skill-dir <path>        Skill directory. Default: this script's parent directory
+  --skill-dir <path>        OpenClaw skill directory. Default: ~/.openclaw/shared-skills/project-management
   --projects-json <path>    Project registry path. Default: <skill-dir>/projects.json
   --help                    Show this help
 `);

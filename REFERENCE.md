@@ -657,9 +657,16 @@ OpenClaw PM agents are long-running project-management stewards. They complement
 - **Coding agents** update PM folders after code changes in authoritative projects.
 - **OpenClaw PM agents** brainstorm, capture ideas, triage issues, review priorities, audit/repair PM folders, curate coding-agent updates, and coordinate across projects.
 
-### Generate the prompt
+### Display the prompt
 
-Run the read-only renderer and give the output to the user:
+Display the full copy-paste prompt directly in the response. Do not make the user run a separate install command before they can copy the OpenClaw instructions. The prompt itself tells OpenClaw to install or update the skill:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
+  | bash -s -- --target openclaw --yes
+```
+
+For customized agent names, scopes, or non-default paths, run the read-only renderer and give the output to the user:
 
 ```bash
 node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs
@@ -670,6 +677,7 @@ The script prints a copy-paste Markdown prompt. It does not edit OpenClaw files,
 
 The prompt is based on `templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md` and includes:
 
+- the OpenClaw install/update command
 - `<skill_dir>` — the project-management skill directory
 - `<skill_dir>/projects.json` — the local project registry
 - the OpenClaw agent's PM role and boundaries
@@ -679,7 +687,7 @@ The prompt is based on `templates/OPENCLAW_PM_AGENT_BOOTSTRAP.md` and includes:
 
 ### How the user uses it
 
-The user copies the rendered prompt into their OpenClaw PM agent. The OpenClaw agent then updates its own workspace `AGENTS.md` with a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules.
+The user copies the prompt into their OpenClaw PM agent. The OpenClaw agent installs or updates the skill, verifies `projects.json`, then updates its own workspace `AGENTS.md` with a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules.
 
 Do not directly mutate an OpenClaw workspace `AGENTS.md` unless the user explicitly asks for that and gives the exact file path. The generated-prompt workflow is the default because it lets the OpenClaw agent own its persistent instructions deliberately.
 
@@ -706,7 +714,7 @@ Tell users they can say:
 setup OpenClaw PM agent
 ```
 
-Then copy the generated prompt into their OpenClaw PM agent.
+Then copy the displayed prompt into their OpenClaw PM agent.
 
 ---
 

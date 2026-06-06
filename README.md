@@ -95,27 +95,43 @@ Restart your agent after installing or updating the skill.
 
 ## 🧑‍💼 OpenClaw PM Agent Setup
 
-Installing with `--target openclaw` makes the skill available to OpenClaw:
+Copy this prompt to your OpenClaw PM agent:
+
+> Install or update the project-management skill:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
+>   | bash -s -- --target openclaw --yes
+> ```
+>
+> Then update your workspace `AGENTS.md` with a `## Project Management Skill` section.
+>
+> Use:
+>
+> - Skill path: `~/.openclaw/shared-skills/project-management`
+> - Project registry: `~/.openclaw/shared-skills/project-management/projects.json`
+>
+> If `projects.json` is missing, copy `~/.openclaw/shared-skills/project-management/templates/projects.template.json` to `~/.openclaw/shared-skills/project-management/projects.json`, then ask me for project entries instead of inventing paths.
+>
+> You are the OpenClaw PM steward. Use this skill whenever I ask you to brainstorm, log ideas, triage issues, review priorities, audit project memory, update roadmap state, or maintain a project's PM folder.
+>
+> Read `~/.openclaw/shared-skills/project-management/SKILL.md` first for routing rules. Read `~/.openclaw/shared-skills/project-management/REFERENCE.md` when you need setup, validation, repair, schema, or bootstrap details. Use `projects.json` to find registered projects, PM folders, code repos, phases, and access levels.
+>
+> Respect project access: edit PM folders directly only for `access: authoritative`; suggest updates for `access: read-only`; ask for access and do not invent a PM folder for `access: unavailable`.
+>
+> Coding agents still update PM folders after code changes. Your PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless I explicitly ask you to code.
+>
+> Common routes: ideas go to `roadmap/ideas.md`; active bugs, risks, and blockers go to `roadmap/known-issues.md`; engineering bug knowledge goes to `docs/Developer Guide/known-bugs.md`; priorities go to `roadmap/mvp-priorities.md`, `roadmap/done-pending.md`, and `CURRENT_STATUS.md`; completed meaningful PM work ends with a brief `history/YYYY-MM/history-YYYY-MM-DD.md` entry.
+>
+> After PM-folder work, tell me exactly which project files you updated. If no files were updated, say that explicitly and explain why.
+
+For customized agent names, scopes, or non-default paths, render a prompt from a local checkout:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target openclaw --yes
+node scripts/render-openclaw-pm-agent-prompt.mjs \
+  --agent-name Quill \
+  --project-scope "all non-academic projects"
 ```
-
-To bootstrap an OpenClaw PM agent, use the skill and say:
-
-```text
-setup OpenClaw PM agent
-```
-
-The agent will generate a copy-paste prompt. Give that prompt to your OpenClaw PM agent, and the OpenClaw agent will update its own `AGENTS.md` with the project-management skill path, `projects.json` path, access rules, and PM workflow.
-
-You can also render the prompt directly:
-
-```bash
-node scripts/render-openclaw-pm-agent-prompt.mjs --agent-name Quill --project-scope "all non-academic projects"
-```
-
-Use coding agents for direct code-change logging. Use the OpenClaw PM agent for PM stewardship: brainstorming, idea capture, issue triage, priority review, PM folder audits, and cross-project coordination.
 
 ## 🗂️ PM Folder Model
 

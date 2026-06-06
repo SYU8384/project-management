@@ -29,7 +29,7 @@ The five most common actions:
 
 **5. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md`, `AGENTS_PM_SECTION_READONLY.md`, or `AGENTS_PM_SECTION_UNAVAILABLE.md`) into the project's `AGENTS.md`.
 
-**6. Bootstrap an OpenClaw PM agent** — say "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", or "write OpenClaw AGENTS prompt". The agent runs `node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs` with any known agent name or project scope, then gives the copy-paste prompt to the user. The prompt tells the OpenClaw agent how to update its own `AGENTS.md` with the skill path, `projects.json` path, access rules, and PM stewardship workflow.
+**6. Bootstrap an OpenClaw PM agent** — say "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", or "write OpenClaw AGENTS prompt". The agent displays the full copy-paste prompt directly. The prompt tells the OpenClaw agent to install or update the skill, verify `projects.json`, and update its own `AGENTS.md` with the skill path, registry path, access rules, and PM stewardship workflow. Use `node <skill_dir>/scripts/render-openclaw-pm-agent-prompt.mjs` when the user wants a customized agent name, project scope, or non-default path.
 
 ---
 
