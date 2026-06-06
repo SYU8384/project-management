@@ -65,24 +65,18 @@ Interactive installer:
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
 ```
 
+Run the same installer command again to update an existing install.
+
 Target commands:
 
-| Target | Install | Update |
-|---|---|---|
-| Codex | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target codex --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target codex --yes` |
-| Agent skills | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target agents --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target agents --yes` |
-| Claude | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target claude --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target claude --yes` |
-| OpenClaw | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target openclaw --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target openclaw --yes` |
+| Target | Install or update |
+|---|---|
+| Codex | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target codex --yes` |
+| Agent skills | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target agents --yes` |
+| Claude | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target claude --yes` |
+| OpenClaw | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target openclaw --yes` |
 
-Installing into OpenClaw with the installer only installs the skill into OpenClaw's skill root. It does not configure the OpenClaw PM role or run the alignment audit. For that full setup, use the OpenClaw PM prompt above.
-
-### Update An Existing Install
-
-Rerunning the install command updates an existing install. You can also use the explicit update entry point:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
-```
+Installing into OpenClaw with the installer only installs or updates the skill files in OpenClaw's skill root. It does not configure the OpenClaw PM role or run the alignment audit. For that full setup, use the OpenClaw PM prompt above.
 
 ### Manual Install
 
@@ -265,8 +259,7 @@ Projects registered with `access: unavailable` are skipped cleanly because the c
 |---|---|
 | [`SKILL.md`](./SKILL.md) | Agent entry point: intents, triggers, quick start, and routing map. |
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
-| [`install.sh`](./install.sh) | Curl-friendly installer/updater for Codex, agent skills, Claude, OpenClaw, or a custom skills directory. |
-| [`update.sh`](./update.sh) | Explicit curl-friendly update entry point; installs if missing and updates if present. |
+| [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
