@@ -39,12 +39,12 @@ This skill gives agents a strict, repeatable operating model for project memory.
 
 ## ⚙️ Install Or Update
 
-There are two setup paths:
+Choose one setup path. If you use the OpenClaw PM prompt, do not also run the installer unless the OpenClaw agent asks you to.
 
 | Path | Best for | What it does |
 |---|---|---|
-| Installer | Coding agents such as Codex, Claude, or a local agent skill root | Installs or updates the skill files, creates or preserves local `projects.json`, then tells you to restart the coding agent and say `setup this repo`. |
-| OpenClaw PM prompt | An OpenClaw agent that should act as the project-management steward | Lets OpenClaw install, update, or discover the skill, verify `projects.json`, set up its own PM role, audit registered PM folders and `AGENTS.md`, and ask approval before edits. No separate `setup this repo` step is required. |
+| OpenClaw PM prompt | Recommended when you have an OpenClaw PM agent | Installs or updates the skill if needed, verifies `projects.json`, configures the PM role, audits registered PM folders and `AGENTS.md`, and asks approval before edits. No separate `setup this repo` step is required. |
+| Installer | Codex, Claude, or a local agent skill root | Installs or updates the skill files and creates or preserves local `projects.json`. After install/update, restart the coding agent and say `setup this repo`. |
 
 ### OpenClaw PM Agent Setup (Recommended for OpenClaw PM agents)
 
