@@ -21,7 +21,7 @@ It works especially well with an Obsidian vault, but the convention is plain Mar
 | 🧩 Track plans and decisions | Creates planning notes, mirrors active work into `roadmap/done-pending.md`, and records ADRs. |
 | 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
 | 🤝 Integrate code repos | Adds an `AGENTS.md` PM section so coding agents know what to read and update. |
-| 🧑‍💼 Bootstrap OpenClaw PM agents | Generates a copy-paste prompt so an OpenClaw PM agent can add the skill path, `projects.json`, and PM stewardship rules to its own `AGENTS.md`. |
+| 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
 
 ## 🧠 Why This Exists
 
@@ -43,8 +43,8 @@ There are two setup paths:
 
 | Path | Best for | What it does |
 |---|---|---|
-| Installer | Coding agents such as Codex, Claude, or a local agent skill root | Installs or updates the skill files, creates or preserves local `projects.json`, then tells you to restart the agent and say `setup this repo`. |
-| OpenClaw PM prompt | An OpenClaw agent that should act as the project-management steward | Lets OpenClaw install, update, or discover the skill, verify `projects.json`, set up its own PM role, audit registered PM folders and `AGENTS.md`, and ask approval before edits. |
+| Installer | Coding agents such as Codex, Claude, or a local agent skill root | Installs or updates the skill files, creates or preserves local `projects.json`, then tells you to restart the coding agent and say `setup this repo`. |
+| OpenClaw PM prompt | An OpenClaw agent that should act as the project-management steward | Lets OpenClaw install, update, or discover the skill, verify `projects.json`, set up its own PM role, audit registered PM folders and `AGENTS.md`, and ask approval before edits. No separate `setup this repo` step is required. |
 
 ### OpenClaw PM Agent Setup
 
@@ -81,6 +81,8 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target openclaw --yes
 ```
 
+`--target openclaw` only installs the skill into OpenClaw's skill root. It does not configure the OpenClaw PM role or run the alignment audit. For that full setup, use the OpenClaw PM prompt above.
+
 ### Update An Existing Install
 
 Rerunning the install command updates an existing install. You can also use the explicit update entry point:
@@ -111,13 +113,61 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/upd
 git clone https://github.com/SYU8384/project-management.git ~/.agents/skills/project-management
 ```
 
+Manual clones do not create `projects.json`. After cloning, create it if needed:
+
+```bash
+cd <skill_dir>
+cp templates/projects.template.json projects.json
+```
+
 Restart your agent after installing or updating the skill.
+
+### Local Registry (Advanced)
+
+`projects.json` is private local config and is gitignored. The installer creates it from `templates/projects.template.json` if it does not already exist.
+
+`<skill_dir>` is whichever install path you chose, such as:
+
+| Target | Default skill directory |
+|---|---|
+| Codex | `~/.codex/skills/project-management` |
+| Agent skills | `~/.agents/skills/project-management` |
+| Claude | `~/.claude/skills/project-management` |
+| OpenClaw | `~/.openclaw/skills/project-management` |
+
+Example registry:
+
+```json
+{
+  "vault_root": "/path/to/your/vault",
+  "skill_dir": "/path/to/project-management",
+  "projects": {
+    "MyProject": {
+      "code_repo": "/path/to/MyProject",
+      "pm_folder": "/path/to/your/vault/Projects/MyProject",
+      "phase": "alpha",
+      "notes": "Short project description",
+      "access": "authoritative"
+    }
+  }
+}
+```
+
+`access` can be:
+
+| Access | Use when |
+|---|---|
+| `authoritative` | You own the PM folder and agents may edit it directly. |
+| `read-only` | You can read the owner's PM folder but must suggest changes through PR impact notes. |
+| `unavailable` | You cloned the code repo but do not have the PM folder yet. |
+
+Most users do not need to edit this manually after setup. The guided setup flow registers projects for you.
 
 <a id="start-with-one-prompt"></a>
 
-## 🚀 Start With One Prompt
+## 🚀 After Installer: Start With One Prompt
 
-After installing, use the skill and say:
+If you used the installer path in Codex, Claude, or another coding agent, restart that agent and say:
 
 ```text
 setup this repo
@@ -140,6 +190,8 @@ Setup uses suggested choices where possible:
 - **AGENTS.md setup:** Add/update AGENTS.md, or skip for now.
 
 The agent asks free-text follow-ups only for facts it cannot infer, such as a vault root, PM folder path, or one-line project description.
+
+If you used the OpenClaw PM prompt, you do not need to say `setup this repo` separately. The OpenClaw instruction runs setup and alignment itself.
 
 <a id="pm-folder-model"></a>
 
@@ -227,45 +279,6 @@ Use the individual scripts directly when debugging a specific class of failure.
 When using an individual script, an explicit PM-folder path scans that folder directly. Auto-discovered `projects.json` is used only when no path is provided or when `--config` is passed.
 
 Projects registered with `access: unavailable` are skipped cleanly because the collaborator has no local PM folder yet.
-
-## 🧾 Local Registry
-
-Create your local project registry:
-
-```bash
-cd ~/.agents/skills/project-management
-cp templates/projects.template.json projects.json
-```
-
-`projects.json` is private local config and is gitignored.
-
-Example:
-
-```json
-{
-  "vault_root": "/path/to/your/vault",
-  "skill_dir": "/path/to/project-management",
-  "projects": {
-    "MyProject": {
-      "code_repo": "/path/to/MyProject",
-      "pm_folder": "/path/to/your/vault/Projects/MyProject",
-      "phase": "alpha",
-      "notes": "Short project description",
-      "access": "authoritative"
-    }
-  }
-}
-```
-
-`access` can be:
-
-| Access | Use when |
-|---|---|
-| `authoritative` | You own the PM folder and agents may edit it directly. |
-| `read-only` | You can read the owner's PM folder but must suggest changes through PR impact notes. |
-| `unavailable` | You cloned the code repo but do not have the PM folder yet. |
-
-Most users do not need to edit this manually after setup. The guided `setup this repo` flow registers projects for you.
 
 ## 🧰 Repository Map
 
