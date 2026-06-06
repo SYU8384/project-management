@@ -1,39 +1,13 @@
 # Project Management Skill
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Install with curl](https://img.shields.io/badge/install-curl%20%7C%20bash-0f766e.svg)](#-install)
-[![Setup trigger](https://img.shields.io/badge/bootstrap-say%20setup%20this%20repo-7c3aed.svg)](#-start-with-one-prompt)
-[![Markdown PM folders](https://img.shields.io/badge/docs-Markdown%20%2B%20Obsidian-2563eb.svg)](#-pm-folder-model)
+[![Install with curl](https://img.shields.io/badge/install-curl%20%7C%20bash-0f766e.svg)](#install-or-update)
+[![Setup trigger](https://img.shields.io/badge/bootstrap-say%20setup%20this%20repo-7c3aed.svg)](#start-with-one-prompt)
+[![Markdown PM folders](https://img.shields.io/badge/docs-Markdown%20%2B%20Obsidian-2563eb.svg)](#pm-folder-model)
 
 A portable agent skill for keeping project-management notes, product docs, roadmap state, and code changes in sync.
 
 It works especially well with an Obsidian vault, but the convention is plain Markdown plus a small local `projects.json` registry. The important part is behavioral: when meaningful project work happens, the agent updates the right current-state docs, indexes, roadmap notes, and history logs in the same session.
-
-## 🚀 Start With One Prompt
-
-After installing, use the skill and say:
-
-```text
-setup this repo
-```
-
-The agent will inspect the current code repo, ask a short guided intake with selectable suggestions, and route to the right workflow:
-
-| Situation | Say this | Result |
-|---|---|---|
-| You own a code repo but have no PM folder yet | `setup this repo` | Bootstraps a new authoritative PM folder and can add PM guidance to `AGENTS.md`. |
-| You already have a messy PM folder | `setup PM for this project` | Registers, audits, repairs, validates, and preserves existing content. |
-| You are a collaborator with PM access | `setup as collaborator` | Registers read-only access and uses PR PM-impact notes instead of direct PM edits. |
-| You cloned code but do not have the PM folder | `setup as collaborator` | Registers `access: unavailable`, adds unavailable-PM guidance, and asks the maintainer for access. |
-
-Setup uses suggested choices where possible:
-
-- **Role:** Owner / maintainer, collaborator with PM access, collaborator without PM access yet.
-- **PM folder state:** Create new PM folder, use existing PM folder, repair messy PM folder.
-- **Project phase:** `pre-alpha`, `alpha`, `beta`, `stable`, `deprecated`.
-- **AGENTS.md setup:** Add/update AGENTS.md, or skip for now.
-
-The agent asks free-text follow-ups only for facts it cannot infer, such as a vault root, PM folder path, or one-line project description.
 
 ## ✨ What It Does
 
@@ -61,18 +35,34 @@ Project memory usually decays in predictable ways:
 
 This skill gives agents a strict, repeatable operating model for project memory.
 
+<a id="install-or-update"></a>
+
 ## ⚙️ Install Or Update
+
+There are two setup paths:
+
+| Path | Best for | What it does |
+|---|---|---|
+| Installer | Coding agents such as Codex, Claude, or a local agent skill root | Installs or updates the skill files, creates or preserves local `projects.json`, then tells you to restart the agent and say `setup this repo`. |
+| OpenClaw PM prompt | An OpenClaw agent that should act as the project-management steward | Lets OpenClaw install, update, or discover the skill, verify `projects.json`, set up its own PM role, audit registered PM folders and `AGENTS.md`, and ask approval before edits. |
+
+### OpenClaw PM Agent Setup
+
+Copy this prompt to your OpenClaw PM agent:
+
+```text
+Read and follow this instruction:
+https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
+```
+
+The instruction installs or updates the project-management skill, verifies or creates `projects.json`, asks setup questions with answer suggestions when needed, then runs a full alignment audit of `projects.json`, existing PM folders, project repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`. It checks existing OpenClaw skill roots before installing, uses an existing `project-management` skill when one is already available, asks before changing files, and shows suggested changes when approval is denied.
+
+### Install With The Installer
 
 Interactive installer:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
-```
-
-Rerunning the install command updates an existing install. You can also use the explicit update entry point:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
 ```
 
 Noninteractive examples:
@@ -91,6 +81,14 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target openclaw --yes
 ```
 
+### Update An Existing Install
+
+Rerunning the install command updates an existing install. You can also use the explicit update entry point:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target codex --yes
+```
+
 Explicit update examples:
 
 ```bash
@@ -107,7 +105,7 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/upd
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh | bash -s -- --target openclaw --yes
 ```
 
-Manual install:
+### Manual Install
 
 ```bash
 git clone https://github.com/SYU8384/project-management.git ~/.agents/skills/project-management
@@ -115,16 +113,35 @@ git clone https://github.com/SYU8384/project-management.git ~/.agents/skills/pro
 
 Restart your agent after installing or updating the skill.
 
-## 🧑‍💼 OpenClaw PM Agent Setup
+<a id="start-with-one-prompt"></a>
 
-Copy this prompt to your OpenClaw PM agent:
+## 🚀 Start With One Prompt
+
+After installing, use the skill and say:
 
 ```text
-Read and follow this instruction:
-https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
+setup this repo
 ```
 
-The instruction installs or updates the project-management skill, verifies or creates `projects.json`, asks setup questions with answer suggestions when needed, then runs a full alignment audit of `projects.json`, existing PM folders, project repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`. It checks existing OpenClaw skill roots before installing, uses an existing `project-management` skill when one is already available, asks before changing files, and shows suggested changes when approval is denied.
+The agent will inspect the current code repo, ask a short guided intake with selectable suggestions, and route to the right workflow:
+
+| Situation | Say this | Result |
+|---|---|---|
+| You own a code repo but have no PM folder yet | `setup this repo` | Bootstraps a new authoritative PM folder and can add PM guidance to `AGENTS.md`. |
+| You already have a messy PM folder | `setup PM for this project` | Registers, audits, repairs, validates, and preserves existing content. |
+| You are a collaborator with PM access | `setup as collaborator` | Registers read-only access and uses PR PM-impact notes instead of direct PM edits. |
+| You cloned code but do not have the PM folder | `setup as collaborator` | Registers `access: unavailable`, adds unavailable-PM guidance, and asks the maintainer for access. |
+
+Setup uses suggested choices where possible:
+
+- **Role:** Owner / maintainer, collaborator with PM access, collaborator without PM access yet.
+- **PM folder state:** Create new PM folder, use existing PM folder, repair messy PM folder.
+- **Project phase:** `pre-alpha`, `alpha`, `beta`, `stable`, `deprecated`.
+- **AGENTS.md setup:** Add/update AGENTS.md, or skip for now.
+
+The agent asks free-text follow-ups only for facts it cannot infer, such as a vault root, PM folder path, or one-line project description.
+
+<a id="pm-folder-model"></a>
 
 ## 🗂️ PM Folder Model
 
