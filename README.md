@@ -55,7 +55,7 @@ Read and follow this instruction:
 https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
 ```
 
-The instruction installs or updates the project-management skill, verifies or creates `projects.json`, asks setup questions with answer suggestions when needed, then runs a full alignment audit of `projects.json`, existing PM folders, project repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`. It checks existing OpenClaw skill roots before installing, uses an existing `project-management` skill when one is already available, asks before changing files, and shows suggested changes when approval is denied.
+The instruction checks existing OpenClaw skill roots first. If the skill is already installed, it updates that install; otherwise it installs it. It then verifies or creates `projects.json`, asks setup questions with answer suggestions when needed, runs a full alignment audit of `projects.json`, existing PM folders, project repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`, asks before changing files, and shows suggested changes when approval is denied.
 
 ### Install With The Installer
 
@@ -71,8 +71,8 @@ Target commands:
 
 | Target | Install or update |
 |---|---|
-| Codex | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target codex --yes` |
 | Agent skills | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target agents --yes` |
+| Codex | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target codex --yes` |
 | Claude | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target claude --yes` |
 | OpenClaw | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target openclaw --yes` |
 
@@ -101,8 +101,8 @@ Restart your agent after installing or updating the skill.
 
 | Target | Default skill directory |
 |---|---|
-| Codex | `~/.codex/skills/project-management` |
 | Agent skills | `~/.agents/skills/project-management` |
+| Codex | `~/.codex/skills/project-management` |
 | Claude | `~/.claude/skills/project-management` |
 | OpenClaw | `~/.openclaw/skills/project-management` |
 
