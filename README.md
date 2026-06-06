@@ -46,7 +46,7 @@ There are two setup paths:
 | Installer | Coding agents such as Codex, Claude, or a local agent skill root | Installs or updates the skill files, creates or preserves local `projects.json`, then tells you to restart the coding agent and say `setup this repo`. |
 | OpenClaw PM prompt | An OpenClaw agent that should act as the project-management steward | Lets OpenClaw install, update, or discover the skill, verify `projects.json`, set up its own PM role, audit registered PM folders and `AGENTS.md`, and ask approval before edits. No separate `setup this repo` step is required. |
 
-### OpenClaw PM Agent Setup (Recommended if you have an OpenClaw agent for Project Managing)
+### OpenClaw PM Agent Setup (Recommended for OpenClaw PM agents)
 
 Copy this prompt to your OpenClaw PM agent:
 
@@ -64,6 +64,15 @@ Interactive installer:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
 ```
+
+Target commands:
+
+| Target | Install | Update |
+|---|---|---|
+| Codex | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target codex --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target codex --yes` |
+| Agent skills | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target agents --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target agents --yes` |
+| Claude | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target claude --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target claude --yes` |
+| OpenClaw | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \| bash -s -- --target openclaw --yes` | `curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/update.sh \| bash -s -- --target openclaw --yes` |
 
 Installing into OpenClaw with the installer only installs the skill into OpenClaw's skill root. It does not configure the OpenClaw PM role or run the alignment audit. For that full setup, use the OpenClaw PM prompt above.
 
@@ -205,9 +214,9 @@ Write the final history/YYYY-MM/history-YYYY-MM-DD.md entry
 
 History is written last because it records what changed after the durable docs have already been updated.
 
-## 🧪 Validation Tools (Optional)
+## 🧪 Validation Tools
 
-> Use it only if you want to verify or repair the setup (e.g. after updating the skill or accidentally breaking the PM folder structure).
+Manual validation is optional, but agents use these checks during setup, repair, and OpenClaw alignment audits.
 
 Ask an agent to run validation with any of these trigger phrases:
 
