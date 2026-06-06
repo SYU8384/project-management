@@ -667,16 +667,18 @@ Display this short copy-paste prompt directly in the response:
 Read and follow this instruction:
 https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md
 
-It will install or update the project-management skill, verify or create projects.json, ask setup questions with answer suggestions when needed, add your OpenClaw PM role to AGENTS.md, and ask permission before writing project code repo AGENTS.md files. Ask me for project paths; do not invent them.
+It will install or update the project-management skill, verify or create projects.json, ask setup questions with answer suggestions when needed, then run a full alignment audit of projects.json, existing PM folders, project repo AGENTS.md files, and your own OpenClaw workspace AGENTS.md. Ask before changing any files; if approval is denied, show suggested changes instead. Ask me for project paths; do not invent them.
 ```
 
-The public instruction file is `openclaw-instruction.md` at the repository root. It uses the OpenClaw managed/local skill root `~/.openclaw/skills/project-management` by default. If the user has a custom OpenClaw skill root, the OpenClaw agent must ask for the exact path. OpenClaw setup is an alternative full setup path: install/update the skill, verify or create the registry, run guided setup when the registry is empty/template-only, configure the OpenClaw PM role, and audit registered code repo `AGENTS.md` files.
+The public instruction file is `openclaw-instruction.md` at the repository root. It uses the OpenClaw managed/local skill root `~/.openclaw/skills/project-management` by default. If the user has a custom OpenClaw skill root, the OpenClaw agent must ask for the exact path. OpenClaw setup is an alternative full setup path: install/update the skill, verify or create the registry, run guided setup when the registry is empty/template-only, configure the OpenClaw PM role, and run a full alignment audit across the registry, PM folders, project code repo `AGENTS.md` files, and the OpenClaw workspace `AGENTS.md`.
 
 ### How the user uses it
 
-The user copies the prompt into their OpenClaw PM agent. The OpenClaw agent reads the public instruction, installs or updates the skill, verifies `projects.json`, asks guided setup questions when needed, then updates its own workspace `AGENTS.md` with a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules.
+The user copies the prompt into their OpenClaw PM agent. The OpenClaw agent reads the public instruction, installs or updates the skill, verifies `projects.json`, asks guided setup questions when needed, then checks its own workspace `AGENTS.md` for a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules. If the section is missing or stale, the OpenClaw agent proposes the exact update and asks approval before editing.
 
-Do not directly mutate an OpenClaw workspace `AGENTS.md` unless the user explicitly asks for that and gives the exact file path. The generated-prompt workflow is the default because it lets the OpenClaw agent own its persistent instructions deliberately.
+The OpenClaw agent also checks each registered project: path correctness in `projects.json`, PM folder validation, and whether the code repo `AGENTS.md` has the correct PM section for the project's `access` value. It reports results as `OK`, `Needs approval`, or `Blocked / missing access`. It asks approval before changing `projects.json`, the OpenClaw workspace `AGENTS.md`, project repo `AGENTS.md`, or any authoritative PM folder files. For read-only or unavailable PM folders, it reports suggested changes instead of editing.
+
+The coding agent that displays this prompt should not directly mutate an OpenClaw workspace `AGENTS.md` unless the user explicitly asks for that and gives the exact file path. The generated-prompt workflow is the default because it lets the OpenClaw agent own its persistent instructions deliberately, then ask approval before changing its own workspace files.
 
 ### PM-agent behavior
 

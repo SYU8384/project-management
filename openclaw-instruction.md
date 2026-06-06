@@ -1,6 +1,6 @@
 # OpenClaw Project Management Skill Instruction
 
-Use this instruction to install the project-management skill, set up its local project registry, configure your OpenClaw PM role, and audit project code-repo `AGENTS.md` files.
+Use this instruction to install or update the project-management skill, set up its local project registry, configure your OpenClaw PM role, and run a full alignment audit across registered PM folders, project code-repo `AGENTS.md` files, and your own OpenClaw workspace `AGENTS.md`.
 
 ## 1. Discover Existing Install
 
@@ -150,7 +150,11 @@ For every registered project:
 
 ## 6. Set Up Your OpenClaw PM Role
 
-Add or update this section in your workspace `AGENTS.md`:
+Find your OpenClaw workspace `AGENTS.md`. If it is missing, ask the user where the OpenClaw agent keeps persistent workspace instructions.
+
+Check whether the workspace `AGENTS.md` already has a `## Project Management Skill` section. If the section is missing, stale, points to a different `skill_dir`, points to a different `projects_json`, or lacks the access/PM workflow rules below, propose the exact replacement section and ask for approval before editing.
+
+Use this section:
 
 ```markdown
 ## Project Management Skill
@@ -190,7 +194,45 @@ Maintainer PR PM backfill:
 After PM-folder work, state exactly which project files were updated. If no files were updated, say that explicitly and why.
 ```
 
-## 7. Audit Project Code Repo AGENTS.md Files
+If approval is denied, leave the file unchanged and show the recommended section.
+
+## 7. Run A Full Alignment Audit
+
+Before changing registered project files, produce an alignment audit. Read-only checks do not need approval. File edits always need approval.
+
+Check these areas:
+
+1. **Skill install**
+   - Confirm `skill_dir` exists and has `SKILL.md`.
+   - Confirm `projects_json` points to the selected skill install.
+   - If multiple valid installs exist, confirm which install is canonical.
+
+2. **Project registry**
+   - Confirm `projects.json` exists, is not template-only, and has real project entries.
+   - Confirm each project has a valid `phase`, `access`, `code_repo`, and `pm_folder` where required.
+   - Ask approval before writing `projects.json`.
+
+3. **OpenClaw workspace AGENTS.md**
+   - Confirm the `## Project Management Skill` section exists and points to the selected `skill_dir` and `projects_json`.
+   - If missing or stale, propose the exact update and ask approval before editing.
+
+4. **Project code repo AGENTS.md**
+   - For each registered project with a real `code_repo`, check the repo `AGENTS.md` against the expected PM section template for its `access` value.
+   - If missing or stale, propose the exact add/update and ask approval before editing.
+
+5. **PM folder validation**
+   - For each registered project with `access: authoritative` or `access: read-only`, run the validation command in section 9.
+   - For `authoritative` projects, ask approval before repairing PM folder files.
+   - For `read-only` projects, report suggested fixes instead of editing.
+   - For `unavailable` projects, confirm the PM folder is unavailable and suggest asking the maintainer for access.
+
+Report audit results in three groups:
+
+- `OK` — already aligned.
+- `Needs approval` — exact changes you recommend and the file paths affected.
+- `Blocked / missing access` — missing paths, unavailable PM folders, or choices the user must answer.
+
+## 8. Audit Project Code Repo AGENTS.md Files
 
 For each registered project with a real `code_repo` path:
 
@@ -206,7 +248,7 @@ For each registered project with a real `code_repo` path:
 
 Never edit source code as part of this setup unless the user separately asks for coding work.
 
-## 8. Validate And Report
+## 9. Validate And Report
 
 For each available registered project, run:
 
@@ -223,6 +265,7 @@ Finish by reporting:
 - Whether the skill was installed or updated
 - Whether `projects.json` was created, confirmed, or changed
 - Which projects were registered or updated
-- Whether your workspace `AGENTS.md` was updated
+- Whether your workspace `AGENTS.md` was checked, changed, or left with a suggested change
 - Which project code repo `AGENTS.md` files were checked or changed
 - Which PM validation checks passed or failed
+- Which recommended changes still need approval or access

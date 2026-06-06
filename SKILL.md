@@ -29,7 +29,7 @@ The five most common actions:
 
 **5. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md`, `AGENTS_PM_SECTION_READONLY.md`, or `AGENTS_PM_SECTION_UNAVAILABLE.md`) into the project's `AGENTS.md`.
 
-**6. Bootstrap an OpenClaw PM agent** — say "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", or "write OpenClaw AGENTS prompt". The agent displays the short copy-paste prompt that tells OpenClaw to read `https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md`. That instruction installs or updates the skill, verifies or creates `projects.json`, runs guided project intake when needed, sets up the OpenClaw PM role in its own `AGENTS.md`, and asks permission before adding or fixing PM guidance in registered project code repo `AGENTS.md` files.
+**6. Bootstrap an OpenClaw PM agent** — say "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", or "write OpenClaw AGENTS prompt". The agent displays the short copy-paste prompt that tells OpenClaw to read `https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md`. That instruction installs or updates the skill, verifies or creates `projects.json`, runs guided project intake when needed, checks its own workspace `AGENTS.md`, audits registered PM folders and project code repo `AGENTS.md` files, and asks approval before changing files.
 
 ---
 
