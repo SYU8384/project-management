@@ -131,8 +131,8 @@ choose_target() {
   fi
   cat > /dev/tty <<'MENU'
 Choose where to install project-management:
-  1) Codex   (~/.codex/skills)
-  2) Agents  (~/.agents/skills)
+  1) Agents  (~/.agents/skills)
+  2) Codex   (~/.codex/skills)
   3) Claude  (~/.claude/skills)
   4) OpenClaw (~/.openclaw/skills)
   5) Custom skills directory
@@ -140,8 +140,8 @@ MENU
   local choice
   choice="$(tty_read "Enter 1-5: ")"
   case "$choice" in
-    1) TARGET="codex" ;;
-    2) TARGET="agents" ;;
+    1) TARGET="agents" ;;
+    2) TARGET="codex" ;;
     3) TARGET="claude" ;;
     4) TARGET="openclaw" ;;
     5) DEST_PARENT="$(expand_path "$(tty_read "Parent skills directory: ")")" ;;
