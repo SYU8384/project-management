@@ -41,10 +41,8 @@
  *   0 = all required present
  *   1 = at least one required missing
  *
- * When `--config` is set, also emits an "AGENTS.md Drift Report" that fails
- * the run if any registered project's `code_repo/AGENTS.md` still contains
- * the literal `<pm_folder>` placeholder. This guards against the
- * template-substitution step being skipped on bootstrap.
+ * AGENTS.md integration is validated by check-agents.mjs, which is run by
+ * the primary check-pm.mjs wrapper.
  */
 
 import { existsSync, readdirSync, statSync, readFileSync } from "node:fs";
@@ -726,39 +724,6 @@ let totalIssues = 0;
 for (const target of targets) {
   console.log(`\n# Vault Structure Report — ${target.label}\n`);
   totalIssues += runFor(target);
-}
-
-// Cross-cutting check: registered project repos' AGENTS.md must not contain
-// the literal `<pm_folder>` placeholder. The template's bootstrap is
-// supposed to substitute it; this guard catches regressions. Projects
-// without an AGENTS.md are skipped (not every registered project is a
-// project-management consumer).
-const configPath = loadConfigPath();
-if (configPath) {
-  const cfg = JSON.parse(readFileSync(configPath, "utf8"));
-  const agentsFailures = [];
-  for (const [name, proj] of Object.entries(cfg.projects ?? {})) {
-    if (!proj.code_repo) continue;
-    const agentsPath = join(resolve(proj.code_repo), "AGENTS.md");
-    if (!existsSync(agentsPath)) continue;
-    const content = readFileSync(agentsPath, "utf8");
-    if (content.includes("<pm_folder>")) {
-      agentsFailures.push({ name, path: agentsPath });
-    }
-  }
-  console.log(`\n# AGENTS.md Drift Report\n`);
-  if (agentsFailures.length > 0) {
-    console.log(`**Status:** FAIL`);
-    console.log(``);
-    for (const f of agentsFailures) {
-      console.log(`- ${f.name}: \`${f.path}\` still contains unresolved \`<pm_folder>\` placeholder — re-run substitution.`);
-    }
-    totalIssues += agentsFailures.length;
-  } else {
-    console.log(`**Status:** PASS`);
-    console.log(``);
-    console.log(`All registered projects have a resolved PM folder path in AGENTS.md.`);
-  }
 }
 
 process.exit(totalIssues > 0 ? 1 : 0);

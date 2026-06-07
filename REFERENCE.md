@@ -8,10 +8,10 @@ The split mirrors the "Writing Skills" framework: SKILL.md is lean (~150 lines) 
 
 ## Validation and Repair
 
-Use this when the user asks to "verify", "validate", "audit", "check", "repair", or "fix" the PM folder.
+Use this when the user asks to "verify", "validate", "audit", "check", "repair", or "fix" the PM folder, project setup, or code repo `AGENTS.md` integration.
 
 - **Verify / validate / check / audit** means run the validation tools and report findings without editing files.
-- **Repair / fix** means run validation, fix authoritative PM-folder issues, then rerun validation.
+- **Repair / fix** means run validation, fix authoritative PM-folder and code repo AGENTS.md integration issues, then rerun validation.
 
 Primary command:
 
@@ -43,6 +43,7 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
 - `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale docs
 - `node <skill_dir>/scripts/check-pm-consistency.mjs` — verifies visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and archive/sync-conflict naming
+- `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
 
 Then check the schema and content dimensions:
 
@@ -58,6 +59,7 @@ Then check the schema and content dimensions:
 10. **Docs guide indexes** — `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md` are folder-note indexes only; durable content lives in independent notes.
 11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with status, symptoms, root cause, solution, verification, and references.
 12. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
+13. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only | unavailable`; no unresolved placeholders remain.
 
 ### Phase 2: Plan
 
@@ -828,6 +830,7 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
 - `scripts/bootstrap-pm.mjs` — deterministic owner setup script for registering a project, scaffolding an authoritative PM folder, and wiring code repo `AGENTS.md`
+- `scripts/check-agents.mjs` — focused validator for registered code repo `AGENTS.md` PM folder sections
 
 Each template is fully frontmatter-populated. The agent replaces the placeholder text in the body with the project-specific content.
 

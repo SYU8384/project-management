@@ -210,9 +210,9 @@ Write the final history/YYYY-MM/history-YYYY-MM-DD.md entry
 
 History is written last because it records what changed after the durable docs have already been updated.
 
-## 🧪 Validation Tools
+## 🧪 Validation And Integration Checks
 
-Manual validation is optional, but agents use these checks during setup, repair, and OpenClaw alignment audits.
+Manual validation is optional, but agents use these checks during setup, repair, and OpenClaw alignment audits. The primary check validates both the PM folder and the registered code repo `AGENTS.md` integration.
 
 Ask an agent to run validation with any of these trigger phrases:
 
@@ -221,6 +221,12 @@ verify PM folder
 validate PM folder
 check PM folder
 audit PM folder
+verify project setup
+validate project setup
+check PM setup
+check AGENTS.md
+validate AGENTS.md
+audit project management
 run PM checks
 ```
 
@@ -240,15 +246,16 @@ Run `setup this repo` or `setup as collaborator` before project-scoped validatio
 
 Pass a real config file path for `--config`; shell file descriptors such as `/dev/fd/*` are not a supported public interface.
 
-The wrapper runs all three focused checks and exits nonzero if any check fails:
+The wrapper runs all focused checks and exits nonzero if any check fails:
 
 | Script | Purpose |
 |---|---|
 | `bootstrap-pm.mjs` | Owner setup scaffold: registers a project, creates the canonical PM folder, and wires code repo `AGENTS.md`. |
 | `check-pm.mjs` | Primary entry point; runs all PM validation checks in sequence. |
-| `check-vault-structure.mjs` | Required PM layout, guide folders, folder notes, semantic casing, roadmap note sections, and AGENTS.md drift. |
+| `check-vault-structure.mjs` | Required PM layout, guide folders, folder notes, semantic casing, and roadmap note sections. |
 | `check-stale-docs.mjs` | Missing or old `last_reviewed` metadata. |
 | `check-pm-consistency.mjs` | Visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and sync-conflict cleanup. |
+| `check-agents.mjs` | Registered code repo `AGENTS.md` presence, PM section template, access mode, and placeholder drift. |
 
 Use the individual scripts directly when debugging a specific class of failure.
 
@@ -268,6 +275,7 @@ Projects registered with `access: unavailable` are skipped cleanly because the c
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
+| [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |

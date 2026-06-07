@@ -27,6 +27,10 @@ const CHECKS = [
     file: "check-pm-consistency.mjs",
     label: "PM consistency",
   },
+  {
+    file: "check-agents.mjs",
+    label: "AGENTS.md integration",
+  },
 ];
 
 const failures = [];
