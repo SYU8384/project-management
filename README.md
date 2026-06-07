@@ -144,11 +144,11 @@ If you used the installer path in Codex, Claude, or another coding agent, restar
 setup this repo
 ```
 
-The agent will inspect the current code repo, ask a short guided intake with selectable suggestions, and route to the right workflow:
+The agent will inspect the current folder and `projects.json`, ask what the folder is when it is empty or unrecognized, then run a short guided intake with selectable suggestions and route to the right workflow:
 
 | Situation | Say this | Result |
 |---|---|---|
-| You own a code repo but have no PM folder yet | `setup this repo` | Bootstraps a new authoritative PM folder and can add PM guidance to `AGENTS.md`. |
+| You own a code repo but have no PM folder yet | `setup this repo` | Bootstraps a new authoritative PM folder and creates PM guidance in `AGENTS.md` when a real code repo path exists. |
 | You already have a messy PM folder | `setup PM for this project` | Registers, audits, repairs, validates, and preserves existing content. |
 | You are a collaborator with PM access | `setup as collaborator` | Registers read-only access and uses PR PM-impact notes instead of direct PM edits. |
 | You cloned code but do not have the PM folder | `setup as collaborator` | Registers `access: unavailable`, adds unavailable-PM guidance, and asks the maintainer for access. |
@@ -158,9 +158,11 @@ Setup uses suggested choices where possible:
 - **Role:** Owner / maintainer, collaborator with PM access, collaborator without PM access yet.
 - **PM folder state:** Create new PM folder, use existing PM folder, repair messy PM folder.
 - **Project phase:** `pre-alpha`, `alpha`, `beta`, `stable`, `deprecated`.
-- **AGENTS.md setup:** Add/update AGENTS.md, or skip for now.
+- **AGENTS.md setup:** Owner setup creates/updates AGENTS.md when a real code repo path exists; collaborator or no-code setup can skip.
 
 The agent asks free-text follow-ups only for facts it cannot infer, such as a vault root, PM folder path, or one-line project description.
+
+If the current folder is empty or lacks clear signals, setup asks whether it is the code repo, the PM folder, or something unrelated. Empty code repos and empty PM folders are valid once confirmed; owner setup runs `scripts/bootstrap-pm.mjs` to scaffold the PM folder and create the code repo `AGENTS.md` when `code_repo` is not `null`.
 
 If you used the OpenClaw PM prompt, you do not need to say `setup this repo` separately. The OpenClaw instruction runs setup and alignment itself.
 
@@ -240,8 +242,9 @@ Pass a real config file path for `--config`; shell file descriptors such as `/de
 
 The wrapper runs all three focused checks and exits nonzero if any check fails:
 
-| Script | Checks |
+| Script | Purpose |
 |---|---|
+| `bootstrap-pm.mjs` | Owner setup scaffold: registers a project, creates the canonical PM folder, and wires code repo `AGENTS.md`. |
 | `check-pm.mjs` | Primary entry point; runs all PM validation checks in sequence. |
 | `check-vault-structure.mjs` | Required PM layout, guide folders, folder notes, semantic casing, roadmap note sections, and AGENTS.md drift. |
 | `check-stale-docs.mjs` | Missing or old `last_reviewed` metadata. |
@@ -263,6 +266,7 @@ Projects registered with `access: unavailable` are skipped cleanly because the c
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
+| [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |

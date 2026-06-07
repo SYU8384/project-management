@@ -517,12 +517,24 @@ Use this when the user says "setup", "set up this repo", "setup this project", "
 
 First infer what is safe to infer:
 
-- Current working directory as `code_repo`, if it is a code repo.
+- Current working directory classification: clear code repo, clear PM folder, registered project path, or empty/unrecognized.
 - Repo/project name from the directory name, package metadata, README, or git remote.
 - Existing project entry in `<skill_dir>/projects.json`.
 - Existing `AGENTS.md` and whether it already has a `## PM folder` section.
 - Existing PM folder path if `projects.json` already has one.
 - Project description hints from README/package/docs.
+
+Treat an empty or unrecognized current working directory as a candidate path, not as evidence that setup cannot continue. If `cwd` is empty, has no strong repo/PM-folder signals, or could plausibly be either an empty code repo or an empty PM folder, ask what the current folder represents:
+
+- Current folder is the code repo, even if empty.
+- Current folder is the PM folder, even if empty.
+- Current folder is neither; use another path, or `code_repo: null` if no code exists yet.
+
+Then route path follow-ups from that answer:
+
+- If `cwd` is the code repo, set `code_repo` to the absolute `cwd` path and ask for the PM folder path or vault root unless access is `unavailable`.
+- If `cwd` is the PM folder, set `pm_folder` to the absolute `cwd` path and ask for the code repo path or `null` if no code exists yet.
+- If `cwd` is neither, ask for both paths as needed.
 
 Do not ask for facts that are already clear. Do ask for intent and missing paths.
 
@@ -548,14 +560,14 @@ When the UI supports selectable answers, use the question tool. Otherwise, prese
    - `deprecated` — kept for history, not actively developed
 
 4. **AGENTS.md setup**
-   - Add/update AGENTS.md (recommended)
-   - Skip AGENTS.md for now
+   - Owner / maintainer with a real `code_repo`: create or update `AGENTS.md` automatically unless the user explicitly refuses file edits.
+   - Collaborator or no-code setup: add/update `AGENTS.md` when useful, or skip when `code_repo` is `null`.
 
 Ask free-text follow-ups only for values that cannot be selected:
 
 - Project name, if not clear.
-- Code repo path, if current working directory is not clearly the repo.
-- PM folder path or vault root, unless access is unavailable.
+- Code repo path, if current working directory was not confirmed as the repo.
+- PM folder path or vault root, if current working directory was not confirmed as the PM folder and access is not unavailable.
 - One-line project/product description.
 - Optional notes.
 
@@ -567,8 +579,8 @@ Map role + PM state to `access` automatically:
 
 ### Route after intake
 
-- **Owner + create new PM folder:** register `access: authoritative`, create the standard PM folder, seed initial docs from code repo evidence where possible, optionally add authoritative `AGENTS.md`, then validate.
-- **Owner + existing/messy PM folder:** register `access: authoritative`, run repair/audit, preserve content, normalize structure, optionally add authoritative `AGENTS.md`, then validate.
+- **Owner + create new PM folder:** register `access: authoritative`, create the standard PM folder, seed initial docs from code repo evidence where possible, create/update authoritative `AGENTS.md` when `code_repo` is not `null`, then validate. Empty confirmed PM folders are valid bootstrap targets, and empty confirmed code repos still get `AGENTS.md`.
+- **Owner + existing/messy PM folder:** register `access: authoritative`, run repair/audit, preserve content, normalize structure, create/update authoritative `AGENTS.md` when `code_repo` is not `null`, then validate.
 - **Collaborator with PM access:** register `access: read-only`, add the read-only `AGENTS.md` section if requested, read the PM folder for context, and never edit it directly.
 - **Collaborator without PM access:** register `access: unavailable`, leave `pm_folder` empty/null, add the unavailable `AGENTS.md` section if requested, ask the maintainer for a PM folder path or read-only mirror, and use PR PM-impact notes until access exists.
 
@@ -815,6 +827,7 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` — the `## PM folder` section for `AGENTS.md` when a collaborator has code access but no PM folder access yet
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
+- `scripts/bootstrap-pm.mjs` — deterministic owner setup script for registering a project, scaffolding an authoritative PM folder, and wiring code repo `AGENTS.md`
 
 Each template is fully frontmatter-populated. The agent replaces the placeholder text in the body with the project-specific content.
 
@@ -826,27 +839,38 @@ Do not let planning notes become invisible backlog. The roadmap must show the ac
 
 When an agent is asked to set up a new project vault from scratch, follow this workflow after the Setup Intake has routed the user to "Owner + create new PM folder". Each step references the relevant section of the skill or a template in `templates/`.
 
-**0. Add the project to `projects.json`.** Collect the required fields (code_repo, pm_folder, phase, access) from the user and write a new entry to `<skill_dir>/projects.json`. See "Configuration → Adding a new project" for the field reference. Never silently invent paths. If `projects.json` doesn't exist, copy from `projects.template.json` first (this also satisfies the auto-bootstrap flow).
+**Default path: run the bootstrap script.** After collecting project name, `code_repo`, `pm_folder`, phase, vault root, and one-line notes, run:
 
-1. **Create the folder structure.** `mkdir planning/ roadmap/ system/ history/ archive/ docs/ features/`
-2. **Create the four root notes** (copy templates from `templates/`):
-   - `README.md` (from `templates/README.md`) — the "where to write things" guide
-   - `PRODUCT.md` — product vision (write directly; no template)
-   - `<Project>.md` — project landing note (write directly)
-   - `CURRENT_STATUS.md` (from `templates/CURRENT_STATUS.md`) — initial weekly snapshot
-3. **Create the planning index.** `planning/planning.md` (from `templates/folder-note.md`).
-4. **Create the four standard roadmap notes** (lifecycle-tracked, slug filenames):
-   - `roadmap/mvp-priorities.md`
-   - `roadmap/known-issues.md`
-   - `roadmap/done-pending.md`
-   - `roadmap/ideas.md`
-5. **Create the system index.** `system/system.md` plus at least one `system/*.md` doc.
-6. **Create the archive and history indexes.** `archive/archive.md`, `history/history.md`. When the first `history/YYYY-MM/` month folder is created later, also create `history/YYYY-MM/YYYY-MM.md` and link it from `history/history.md`.
-7. **Create the docs guide indexes and known-bugs note.** Create `docs/docs.md`, `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Developer Guide/known-bugs.md` (from `templates/known-bugs.md`), `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md`.
-8. **Create the features folder + index** (new convention, **required for any project past initial planning**). Copy `templates/folder-note.md` to `features/features.md` and fill in the body. Pre-alpha projects have an empty index; mature projects seed feature pages as features enter the design phase.
-9. **Use the bundled validation wrapper** in `<skill_dir>/scripts/`. Project repos do not need local script copies unless they want project-specific CI.
-10. **Run `<skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json`** to verify the structure, stale-doc metadata, frontmatter, folder notes, links, planning mirrors, and AGENTS.md PM section are correct.
-11. **Fill in `CURRENT_STATUS.md`** with the initial snapshot (Current Phase, Top Priorities, Blocked, Recent Wins, Major Risks, Relevant ADRs, Relevant Features). Update weekly.
+```bash
+node <skill_dir>/scripts/bootstrap-pm.mjs \
+  --project <ProjectName> \
+  --pm-folder <pm_folder> \
+  --code-repo <code_repo_or_null> \
+  --phase <phase> \
+  --notes "<one-line description>" \
+  --config <skill_dir>/projects.json \
+  --vault-root <vault_root>
+```
+
+Use `--dry-run` first when the user wants a preview, and `--date YYYY-MM-DD` when bootstrapping for a specific date.
+
+The script owns deterministic setup:
+
+- Creates `projects.json` from `templates/projects.template.json` when missing, sets `skill_dir`, and registers the project as `access: authoritative`.
+- Creates the canonical PM folder scaffold, including folder notes, standard roadmap notes, docs guide indexes, `known-bugs.md`, `planning/decisions/`, initial history, and `system/overview.md`.
+- Uses create-only behavior for PM files: existing PM files are preserved and reported as skipped.
+- Adds or replaces only the managed `## PM folder` section in `<code_repo>/AGENTS.md` when `code_repo` is not `null`, preserving unrelated AGENTS.md content.
+- Refuses to silently change a conflicting existing `projects.json` project entry.
+
+After the script runs, audit and refine the generated docs. Empty code repos provide no seed evidence, so the script uses the collected project name, phase, and one-line description instead of inventing architecture or features. If the script cannot be run, perform the same deterministic scaffold manually and then run validation.
+
+Finally, run:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json
+```
+
+The validation checks structure, stale-doc metadata, frontmatter, folder notes, links, planning mirrors, and AGENTS.md PM section drift.
 
 After bootstrap, the agent and any future agents should be able to open the project, read the four root notes, and orient themselves without further setup.
 

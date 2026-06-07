@@ -88,6 +88,14 @@ Set `skill_dir` to `<skill_dir>` when writing the registry. Ask the user for rea
 
 Run a guided setup intake with answer suggestions. Ask in small groups and use selectable choices when the interface supports them.
 
+Before asking for paths, inspect the current working directory and classify it as a clear code repo, clear PM folder, registered project path, or empty/unrecognized. Treat an empty or unrecognized directory as a candidate path, not as a reason to stop. If `cwd` is empty, has no strong repo/PM-folder signals, or could plausibly be either an empty code repo or an empty PM folder, ask whether the current folder is:
+
+- The code repo, even if empty
+- The PM folder, even if empty
+- Neither; use another path, or `code_repo: null` if no code exists yet
+
+If confirmed as the code repo, set `code_repo` to the absolute `cwd` path and ask for the PM folder path unless access is unavailable. If confirmed as the PM folder, set `pm_folder` to the absolute `cwd` path and ask for the code repo path or `null`. If it is neither, ask for both paths as needed.
+
 Ask for:
 
 1. **Role**
@@ -108,14 +116,14 @@ Ask for:
    - `deprecated` — kept for history, not actively developed
 
 4. **Code repo AGENTS.md setup**
-   - Add/update AGENTS.md
-   - Skip AGENTS.md for now
+   - Owner / maintainer with a real `code_repo`: propose creating or updating `AGENTS.md` automatically unless the user explicitly refuses file edits
+   - Collaborator or no-code setup: add/update `AGENTS.md` when useful, or skip when `code_repo` is `null`
 
 Ask free-text follow-ups only for missing facts:
 
 - Project name
-- Code repo path, or `null` if the project has no code repo yet
-- PM folder path, unless access is unavailable
+- Code repo path, or `null` if the project has no code repo yet, unless current working directory was confirmed as the code repo
+- PM folder path, unless current working directory was confirmed as the PM folder or access is unavailable
 - Vault root
 - One-line project/product description
 - Optional notes
@@ -126,7 +134,7 @@ Map role to `access`:
 - Collaborator with PM access -> `read-only`
 - Collaborator without PM access yet -> `unavailable`
 
-Write the collected project entry to `projects.json`. If the user chose owner + create new PM folder, use the skill's bootstrap workflow in `REFERENCE.md` to create the PM folder. If the user chose existing or messy PM folder, register it first, then audit/repair with validation.
+If the user chose owner + create new PM folder, ask approval and then run `<skill_dir>/scripts/bootstrap-pm.mjs` with the collected project name, `pm_folder`, `code_repo` (or `null`), phase, notes, vault root, and `<projects_json>` config path. The script registers the project, creates the PM scaffold, and wires the authoritative code repo `AGENTS.md` when `code_repo` is not `null`; empty confirmed PM folders and empty confirmed code repos are valid inputs. If the user chose existing or messy PM folder, register it first, then audit/repair with validation. Ask approval before changing files, but do not treat an empty code repo or empty PM folder as a blocker.
 
 ## 5. If projects.json Already Has Projects
 
