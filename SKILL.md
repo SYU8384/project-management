@@ -25,7 +25,7 @@ The five most common actions:
 
 **3. Initialize a new project's PM folder directly** — say "initialize the PM folder for <name>". The agent asks for the missing fields (project name, code_repo, pm_folder, phase, access, notes), then runs `scripts/bootstrap-pm.mjs` as described in the Bootstrap Workflow in REFERENCE.md.
 
-**4. Verify project management setup** — say "verify PM folder", "validate project setup", "check AGENTS.md", "audit project management", or "run PM checks". The agent first confirms the project is registered in `projects.json`, then runs `node <skill_dir>/scripts/check-pm.mjs` with any relevant `--project` / `--config` args, reports failures clearly, and only fixes files when the user asked to repair or the project has authoritative PM access.
+**4. Verify project management setup** — say "verify setup", "validate setup", "check setup", "audit setup", "verify project setup", "check PM setup", or "run setup checks". The agent first confirms the project is registered in `projects.json`, then runs `node <skill_dir>/scripts/check-pm.mjs` with any relevant `--project` / `--config` args. This is one integrated setup check covering both the PM folder and code repo `AGENTS.md`; if the user asks to check either one directly, run the full setup check.
 
 **5. Add an AGENTS.md PM folder section to a project repo** — say "add to AGENTS.md" or "set up AGENTS.md for <project>". The agent reads the project's `access` field in `projects.json` and copies the right template (`AGENTS_PM_SECTION_AUTHORITATIVE.md`, `AGENTS_PM_SECTION_READONLY.md`, or `AGENTS_PM_SECTION_UNAVAILABLE.md`) into the project's `AGENTS.md`.
 
@@ -43,7 +43,7 @@ Match user phrases to the right intent. If multiple intents apply, do all of the
 | "log this", "record this", "capture this decision" | Log | Existing Project Management (REFERENCE) |
 | "I just made a code change", "I just finished <feature>" | Log | Existing Project Management (REFERENCE) |
 | "create the PM folder", "initialize the PM folder", "set up project docs", "bootstrap", "standardize the PM folder", "convert this mess to the standard layout", "restructure the PM folder", "normalize the PM folder" | Initialize (new or against existing) | Standard App Project Bootstrap (REFERENCE) |
-| "verify PM folder", "validate PM folder", "check PM folder", "audit PM folder", "verify project setup", "validate project setup", "check PM setup", "check AGENTS.md", "validate AGENTS.md", "audit project management", "run PM checks", "check for inconsistencies", "find issues in the PM folder" | Validate / audit PM folder and AGENTS.md integration | Validation and Repair (REFERENCE) |
+| "verify setup", "validate setup", "check setup", "audit setup", "verify project setup", "validate project setup", "check PM setup", "run setup checks", or direct requests to check the PM folder or AGENTS.md | Validate / audit the integrated project setup: PM folder plus AGENTS.md integration | Validation and Repair (REFERENCE) |
 | "repair the PM folder", "fix the PM folder", "repair PM folder" | Repair: run validation, fix authoritative issues, rerun validation | Validation and Repair (REFERENCE) |
 | "fix the schema", "migrate the frontmatter", "update the schema" | Repair (focused on schema) | Validation and Repair (REFERENCE) |
 | "sync the READMEs", "update the routing map", "fix the Quick Rules", "fix the What Goes Where table" | Repair (focused on README) | Validation and Repair (REFERENCE) |

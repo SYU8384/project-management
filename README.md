@@ -214,20 +214,17 @@ History is written last because it records what changed after the durable docs h
 
 Manual validation is optional, but agents use these checks during setup, repair, and OpenClaw alignment audits. The primary check validates both the PM folder and the registered code repo `AGENTS.md` integration.
 
-Ask an agent to run validation with any of these trigger phrases:
+Ask an agent to run the integrated setup check with any of these trigger phrases:
 
 ```text
-verify PM folder
-validate PM folder
-check PM folder
-audit PM folder
+verify setup
+validate setup
+check setup
+audit setup
 verify project setup
 validate project setup
 check PM setup
-check AGENTS.md
-validate AGENTS.md
-audit project management
-run PM checks
+run setup checks
 ```
 
 Or run the primary validator directly:
