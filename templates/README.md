@@ -200,6 +200,18 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 - **When to write:** a significant decision affecting multiple parts of the system, a non-obvious choice, or a "why" that won't be obvious six months later. Architecture → `ADR`; product positioning/pricing → `PRD`; market/segment/GTM → `MKT`; vendor pick → `VND`; operating rule → `POL`; explicit "we are not doing X" → `NEG`; time-boxed bet → `EXP`.
 - **Body shape:** detailed sections in `templates/decision.md` (single-page template; decision is not a folder note, so its body shape is documented in the page template, not in this README).
 
+### Meeting records (`meetings/YYYY-MM-DD_<topic-slug>.md`) — optional
+
+This is an *optional* lane for projects that have a meeting-recording agent or a habit of documenting meetings. It is not auto-scaffolded by `bootstrap-pm.mjs`; the lane is created on demand by the user (folder + folder-note + content files).
+
+- **Filename:** `YYYY-MM-DD_<topic-slug>.md` (date prefix from the meeting date).
+- **H1:** the topic slug, no date prefix.
+- **Body shape:** see `templates/meeting-record.md`. At minimum: Attendees, Agenda, Discussion, Decisions Made, Action Items, Notes.
+- **Decisions and plans are not duplicated here.** A decision made in a meeting gets its own `decisions/D-NNN_<type>_<slug>.md`; the meeting record cites it. Same for plans: a meeting that produces a plan gets a `roadmap/plans/YYYY-MM-DD_<slug>.md`; the meeting record cites it. The meeting record is the *source*; the decision and plan are the *formalized outputs*.
+- **Append-mostly.** Don't rewrite a past meeting record to reflect later developments; cite the new artifact instead.
+- **Cross-link:** from `CURRENT_STATUS.md`'s Recent Wins or Major Risks section, if a meeting was the trigger.
+- **Personal prefixes:** collaborator-name prefixes (e.g. `haoyou_`) are discouraged in this folder's filenames; the validator reports them as warnings.
+
 ## Navigation Context
 
 | Anchor | Link |

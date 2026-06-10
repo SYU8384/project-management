@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `meetings/` as an **optional** meeting records lane. Two new
+  templates ship in `templates/`: `meetings.md` (folder-note template
+  for the lane) and `meeting-record.md` (content-note template for
+  individual meeting records). The lane is *not* auto-scaffolded by
+  `bootstrap-pm.mjs`; users create the folder on demand. Filename
+  pattern is `YYYY-MM-DD_<topic-slug>.md`; body sections are
+  Attendees / Agenda / Discussion / Decisions Made / Action Items /
+  Notes. Decisions and plans are not duplicated inside meeting records
+  — they are cited by reference to `decisions/D-NNN_<type>_<slug>.md`
+  and `roadmap/plans/YYYY-MM-DD_<slug>.md`. A new row in `SKILL.md`'s
+  "Where Information Goes" lane table and a new subsection in
+  `templates/README.md`'s "Conventions by Page Type" document the
+  lane.
+
 ### Changed
 
 - Folder-note templates (`decisions/`, `roadmap/plans/`) and the

@@ -199,6 +199,7 @@ Always read the project `README.md` first. If it exists, it wins over this gener
 | `roadmap/plans/` | Concrete implementation plans and design strategies for a set of features or initiatives. Plans are mirrored into `roadmap/done-pending.md` when in flight |
 | `decisions/` | First-class PM lane at the project root. Record of decisions *made*, typed (`ADR / PRD / MKT / VND / POL / NEG / EXP`), peers with `roadmap/` |
 | `features/` | Curated per-feature pages. Each page is a "tell me everything about X" index that points into `system/` and `decisions/`. **Required** for any project past initial planning; pre-alpha projects have an empty index. |
+| `meetings/` | **Optional** meeting records lane (not auto-scaffolded; for projects with meeting-recording agents) | Date-stamped meeting records; cross-link decisions and plans rather than duplicating. See `templates/README.md` → Conventions by Page Type → Meeting records |
 | `history/` | Brief chronological logs of completed meaningful work, organized by year-month |
 | `archive/` | Superseded material replaced by current product, system, roadmap, or planning docs |
 | `CURRENT_STATUS.md` | Weekly snapshot | Top priorities, blocked, recent wins, major risks, stale docs |
