@@ -22,7 +22,7 @@ owner: PM
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
 
-This file mirrors `planning/` note names first. Use the general section only for lightweight done/pending items that do not need a dedicated concrete plan.
+This file mirrors `roadmap/plans/` note names first. Use the general section only for lightweight done/pending items that do not need a dedicated concrete plan.
 
 Sections that are fully done should be archived to `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md`.
 

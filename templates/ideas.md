@@ -30,7 +30,7 @@ owner: PM
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
 
-Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into `planning/` and `roadmap/done-pending.md`.
+Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into `roadmap/plans/` and `roadmap/done-pending.md`.
 
 ## Status Key
 

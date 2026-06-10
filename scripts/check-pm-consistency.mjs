@@ -134,11 +134,11 @@ function expectedPageType(rel, project, existing) {
   if (isFolderNote(rel, project)) return "index";
   if (["README.md", "PRODUCT.md", "CURRENT_STATUS.md"].includes(rel)) return "index";
   if (rel.startsWith("history/")) return "history";
-  if (rel.startsWith("planning/decisions/ADR-")) return "adr";
-  if (rel.startsWith("planning/")) return "planning";
+  if (rel.startsWith("decisions/D-")) return "decision";
+  if (rel.startsWith("roadmap/plans/")) return "planning";
+  if (rel.startsWith("roadmap/")) return rel === "roadmap/roadmap.md" ? "index" : "roadmap";
   if (rel.startsWith("features/")) return rel === "features/features.md" ? "index" : "feature";
   if (rel.startsWith("system/")) return rel === "system/system.md" ? "index" : "system";
-  if (rel.startsWith("roadmap/")) return rel === "roadmap/roadmap.md" ? "index" : "roadmap";
   if (rel.startsWith("docs/")) return isFolderNote(rel, project) ? "index" : "note";
   if (rel.startsWith("archive/")) return existing || "note";
   return existing || "note";
@@ -196,7 +196,7 @@ function runFor(target) {
     if (rel.startsWith("archive/") && !isFolderNote(rel, project) && rel !== "archive/archive.md" && !rel.endsWith("-archived.md")) {
       issues.push(`${rel}: visible archive file should use *-archived.md`);
     }
-    if (rel.startsWith("planning/") && !rel.startsWith("planning/decisions/") && rel !== "planning/planning.md") {
+    if (rel.startsWith("roadmap/plans/")) {
       if (!donePending.includes(`## ${stem(rel)}`)) issues.push(`${rel}: missing roadmap/done-pending mirror section`);
     }
     for (const match of content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)) {

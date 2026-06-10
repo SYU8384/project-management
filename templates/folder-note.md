@@ -40,8 +40,8 @@ Optional body additions (each adds one ## section; max 4 total body sections
 before the check-vault-structure guard fails):
   - ## Purpose — if the one-sentence intro is not enough
   - Nested folder notes should also add a `Back to <parent folder>` link in
-    the Navigation section above (e.g., `decisions/decisions.md` adds
-    `Back to planning`)
+    the Navigation section above (e.g., `roadmap/plans/plans.md` adds
+    `Back to roadmap`)
 
 Conventions by page type live in `templates/README.md` under
 "Conventions by Page Type" — not in this template. The folder note is

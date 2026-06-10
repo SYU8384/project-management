@@ -339,6 +339,7 @@ function scaffold() {
   const dirs = [
     "",
     "archive",
+    "decisions",
     "docs",
     "docs/Admin Guide",
     "docs/Developer Guide",
@@ -347,9 +348,8 @@ function scaffold() {
     "features",
     "history",
     `history/${month}`,
-    "planning",
-    "planning/decisions",
     "roadmap",
+    "roadmap/plans",
     "system",
   ];
   for (const dir of dirs) ensureDir(join(pmFolder, dir));
@@ -359,7 +359,7 @@ function scaffold() {
     `${notes}\n\n## Start Here\n\n- [[${linkRoot}/README|README]] - PM folder routing map.\n- [[${linkRoot}/PRODUCT|PRODUCT]] - Product context.\n- [[${linkRoot}/CURRENT_STATUS|CURRENT_STATUS]] - Current snapshot.\n\n${nav([`${linkRoot}/README`, "README"])}`));
 
   writeCreateOnly(join(pmFolder, "README.md"), page(`${project} Project Docs`, "index",
-    `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`roadmap/\` | MVP priorities, known issues, done/pending, ideas |\n| \`planning/\` | Concrete plans and ADRs |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules\n\nUpdate current-state docs first, then history. Update folder indexes whenever notes are added, moved, archived, or deleted.\n\n${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
+    `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`roadmap/\` | MVP priorities, known issues, done/pending, ideas, and scoped plans under \`roadmap/plans/\` |\n| \`roadmap/plans/\` | Concrete plans (mirrored into \`roadmap/done-pending.md\` when in flight) |\n| \`decisions/\` | Typed decision log (architecture, product, market, vendor, policy, rejection, experiment) |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules\n\nUpdate current-state docs first, then history. Update folder indexes whenever notes are added, moved, archived, or deleted.\n\n${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "PRODUCT.md"), page(`${project} Product`, "index",
     `## Summary\n\n${notes}\n\n## Current Phase\n\n${cli.phase}\n\n## Product Notes\n\nUse this page for product vision, target users, current product shape, principles, boundaries, and future goals.\n\n${rootNav}`));
@@ -369,7 +369,7 @@ function scaffold() {
 
   writeCreateOnly(join(pmFolder, "archive/archive.md"), folderNote({
     title: "archive",
-    intro: "Superseded material replaced by current product, system, roadmap, or planning docs.",
+    intro: "Superseded material replaced by current product, system, roadmap, or decisions docs.",
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`]),
   }));
 
@@ -416,7 +416,7 @@ function scaffold() {
 
   writeCreateOnly(join(pmFolder, "features/features.md"), folderNote({
     title: "features",
-    intro: "Curated per-feature pages that point into system and planning docs.",
+    intro: "Curated per-feature pages that point into system, decisions, and roadmap/plans docs.",
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 
@@ -437,27 +437,27 @@ function scaffold() {
   writeCreateOnly(join(pmFolder, `history/${month}/history-${date}.md`), historyPage(`history-${date}`,
     `- feat: bootstrap PM folder scaffold for ${project}.\n\n${nav([`${linkRoot}/history/${month}/${month}`, `Back to ${month}`], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
-  writeCreateOnly(join(pmFolder, "planning/planning.md"), folderNote({
-    title: "planning",
-    intro: "Concrete plans, implementation strategies, and architecture decisions.",
-    subfolders: [[`${linkRoot}/planning/decisions/decisions`, "decisions/", "Architecture Decision Records"]],
-    navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
+  writeCreateOnly(join(pmFolder, "roadmap/plans/plans.md"), folderNote({
+    title: "plans",
+    intro: "Concrete plans, implementation strategies, and design approaches. Active plans are mirrored in `roadmap/done-pending.md`; completed plans move to `archive/`. Significant decisions live in `decisions/` and are cited from the plan, not duplicated here.",
+    navigation: nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 
-  writeCreateOnly(join(pmFolder, "planning/decisions/decisions.md"), folderNote({
+  writeCreateOnly(join(pmFolder, "decisions/decisions.md"), folderNote({
     title: "decisions",
-    intro: "Architecture Decision Records for significant project decisions.",
-    navigation: nav([`${linkRoot}/planning/planning`, "Back to planning"], [`${linkRoot}/${project}`, `Back to ${project}`]),
+    intro: "Record of decisions made. Typed entries (ADR / PRD / MKT / VND / POL / NEG / EXP) capture one significant decision each: context, options, the call, and the consequences. ADRs are one type, not the only kind. See SKILL.md \"PM-folder rules\" for the type legend.",
+    navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 
   writeCreateOnly(join(pmFolder, "roadmap/roadmap.md"), folderNote({
     title: "roadmap",
-    intro: "MVP priorities, known issues, done/pending status, and ideas.",
+    intro: "MVP priorities, known issues, done/pending status, ideas, and scoped plans under `roadmap/plans/`.",
     notes: [
       [`${linkRoot}/roadmap/mvp-priorities`, "mvp-priorities", "MVP priority tracker"],
       [`${linkRoot}/roadmap/known-issues`, "known-issues", "Active bugs, risks, and blockers"],
       [`${linkRoot}/roadmap/done-pending`, "done-pending", "Planning mirrors and lightweight done/pending"],
       [`${linkRoot}/roadmap/ideas`, "ideas", "Idea register"],
+      [`${linkRoot}/roadmap/plans/plans`, "plans/", "Concrete plans not fully shipped yet"],
     ],
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`]),
   }));

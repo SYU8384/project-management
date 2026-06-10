@@ -14,7 +14,7 @@ owner: PM
 ---
 # <Project Name> Current Status
 
-> **First thing a new agent should read.** This is a weekly snapshot of where <Project> is now. For durable architecture, see `system/`. For user-facing capabilities, see `features/`. For concrete plans in flight, see `planning/`. For pending work, see `roadmap/done-pending.md`. For user/admin/dev docs, see `docs/`. For completed work, see `history/`. For superseded material, see `archive/`.
+> **First thing a new agent should read.** This is a weekly snapshot of where <Project> is now. For durable architecture, see `system/`. For user-facing capabilities, see `features/`. For concrete plans in flight, see `roadmap/plans/`. For pending work, see `roadmap/done-pending.md`. For decisions, see `decisions/`. For user/admin/dev docs, see `docs/`. For completed work, see `history/`. For superseded material, see `archive/`.
 
 ## Current Phase
 
@@ -22,9 +22,9 @@ owner: PM
 
 ## Top Priorities
 
-1. **<Priority 1>** (`planning/YYYY-MM-DD_slug`, <DRAFT/APPROVED>) — <one-sentence description>
-2. **<Priority 2>** (`planning/YYYY-MM-DD_slug`, <DRAFT/APPROVED>) — <one-sentence description>
-3. **<Priority 3>** (`planning/YYYY-MM-DD_slug`, <DRAFT/APPROVED>) — <one-sentence description>
+1. **<Priority 1>** (`roadmap/plans/YYYY-MM-DD_slug`, <DRAFT/APPROVED>) — <one-sentence description>
+2. **<Priority 2>** (`roadmap/plans/YYYY-MM-DD_slug`, <DRAFT/APPROVED>) — <one-sentence description>
+3. **<Priority 3>** (`roadmap/plans/YYYY-MM-DD_slug`, <DRAFT/APPROVED>) — <one-sentence description>
 
 ## Blocked
 
@@ -46,10 +46,10 @@ owner: PM
 
 > Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json` and paste the stale-doc summary here, or replace this section with the latest run. Notes with `last_reviewed` more than 30 days old are flagged as stale; more than 90 days as very-stale.
 
-## Relevant ADRs
+## Relevant Decisions
 
-- `[[Projects/<Project>/planning/decisions/ADR-NNN_slug|ADR-NNN <title>]]`
-- `[[Projects/<Project>/planning/decisions/ADR-NNN_slug|ADR-NNN <title>]]`
+- `[[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]]`
+- `[[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]]`
 
 ## Relevant Features
 

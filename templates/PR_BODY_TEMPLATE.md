@@ -45,12 +45,12 @@
      - [ ] history/YYYY-MM/history-YYYY-MM-DD.md — bullet: ...
 
      Planning notes affected:
-     - [ ] planning/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
-     - [ ] planning/<date>_slug.md → move to archive/ if fully shipped: ...
+     - [ ] roadmap/plans/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
+     - [ ] roadmap/plans/<date>_slug.md → move to archive/ if fully shipped: ...
 
-     ADRs affected:
-     - [ ] New ADR if significant decision: planning/decisions/ADR-NNN_slug.md
-     - [ ] Existing ADR if assumption changed: planning/decisions/ADR-NNN_slug.md
+     Decisions affected:
+     - [ ] New decision if significant: decisions/D-NNN_<type>_<slug>.md (use `ADR` for architecture; other types per SKILL.md "PM-folder rules")
+     - [ ] Existing decision if assumption changed: decisions/D-NNN_<type>_<slug>.md (write a superseding decision; do not edit the accepted body)
 
      Folder indexes affected:
      - [ ] <folder>/<folder>.md — note added, moved, renamed, archived, or deleted: ...

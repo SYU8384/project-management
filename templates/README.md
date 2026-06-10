@@ -36,10 +36,10 @@ owner: PM
 | `docs/Admin Guide/` | Admin/operator docs | Live product operations: support, feedback, admin panel workflows, monitoring, statistics, background job runs, access, incident response, production verification, and data repair |
 | `docs/Developer Guide/` | Developer docs | Coding-engineer workflows: local setup, codebase structure, testing, APIs, schemas, migrations, prompts, implementation notes, changing jobs, release mechanics, contribution workflow, and `known-bugs.md` |
 | `docs/Quick Commands/` | Command recipes | Copy-pasteable commands; longer explanation belongs in Admin or Developer Guide |
-| `roadmap/` | Future and active PM state | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending, ideas |
-| `planning/` | Concrete plans and decisions | Implementation plans, architecture decisions, design strategies not fully shipped yet |
-| `planning/decisions/` | Architecture Decision Records | ADRs — short records of why a decision was made |
-| `features/` | Curated per-feature pages | "Tell me everything about feature X" — points into system/ and planning/ |
+| `roadmap/` | Future and active PM state | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending, ideas, and scoped plans under `roadmap/plans/` |
+| `roadmap/plans/` | Concrete plans | Implementation plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight |
+| `decisions/` | Decision log (first-class PM lane at the project root) | Typed records of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. ADRs are one type, not the only kind |
+| `features/` | Curated per-feature pages | "Tell me everything about feature X" — points into system/, decisions/, and roadmap/plans/ |
 | `history/` | Completed work | Chronological daily logs of shipped changes, fixes, decisions, archive events |
 | `archive/` | Superseded material | Old docs and plans replaced by current product, system, roadmap, or planning docs |
 | `CURRENT_STATUS.md` | Weekly snapshot | Top priorities, blocked, recent wins, major risks, stale docs |
@@ -73,18 +73,18 @@ owner: PM
 │   └── YYYY-MM/
 │       ├── YYYY-MM.md
 │       └── history-YYYY-MM-DD.md
-├── planning/
-│   ├── planning.md
-│   ├── decisions/
-│   │   ├── decisions.md
-│   │   └── ADR-NNN_slug.md
-│   └── YYYY-MM-DD_slug.md
+├── decisions/
+│   ├── decisions.md
+│   └── D-NNN_<type>_slug.md
 ├── roadmap/
 │   ├── roadmap.md
 │   ├── mvp-priorities.md
 │   ├── known-issues.md
 │   ├── done-pending.md
-│   └── ideas.md
+│   ├── ideas.md
+│   └── plans/
+│       ├── plans.md
+│       └── YYYY-MM-DD_slug.md
 └── system/
     ├── system.md
     └── <topic>.md
@@ -99,9 +99,9 @@ owner: PM
 | Admin/operator workflow changed (support, feedback, admin panel, monitoring, statistics, background job run, access, incident response, data repair) | Relevant `docs/Admin Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | Coding-engineer workflow changed (local setup, code structure, API, schema, prompt, test, migration, build, release, job implementation) | Relevant `docs/Developer Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | Engineering bug found, fixed, recurring, or debugged | `roadmap/known-issues.md` for active tracking, `docs/Developer Guide/known-bugs.md` for root cause/solution/verification, then `history/` when fixed |
-| New concrete plan or decision not fully implemented | `planning/YYYY-MM-DD_slug.md`, then add/update a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md` |
-| Significant architecture decision made | New `ADR-NNN` in `planning/decisions/` (see `templates/ADR.md`) |
-| New feature enters design phase (coherent user-facing capability) | Create `features/<feature>.md` (from `templates/feature.md`); link to relevant `system/` and `planning/` docs |
+| New concrete plan or decision not fully implemented | `roadmap/plans/YYYY-MM-DD_slug.md`, then add/update a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md` |
+| Significant decision made (architecture, product, market, vendor, policy, rejection, experiment) | New `D-NNN_<type>_<slug>.md` in `decisions/` (see `templates/decision.md`) |
+| New feature enters design phase (coherent user-facing capability) | Create `features/<feature>.md` (from `templates/feature.md`); link to relevant `system/`, `roadmap/plans/`, and `decisions/` docs |
 | Feature's scope, availability, or known issues changed | Update the matching `features/<feature>.md` (not just the system/ doc it points to) |
 | Bug, risk, or blocker found or changed status | `roadmap/known-issues.md` |
 | New idea or declined proposal | `roadmap/ideas.md` |
@@ -129,7 +129,7 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 | Docs guide notes | neutral lowercase kebab-case slug, no numeric prefix | `user-manual.md`, `cloudflare-tunnel.md` |
 | Date-stamped logs | `YYYY-MM/history-YYYY-MM-DD.md` (organized by year-month) | `2026-06/history-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
-| ADRs | `ADR-NNN_slug.md` (numbered within decisions/) | `ADR-001_<decision-slug>.md` |
+| Decisions | `D-NNN_<type>_<slug>.md` (numbered globally, typed) | `D-001_ADR_tauri-opencode.md` |
 | Archived files | `<slug>-archived.md` (date prefix and number dropped) | `m3-return-path-archived.md` |
 
 ## Update Frequency
@@ -137,8 +137,8 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 - `system/`: update immediately when current architecture, data flow, runtime behavior, database, auth, integrations, or deployment changes.
 - `docs/`: update in the same session as user/admin/developer workflow changes. `docs/Developer Guide/known-bugs.md` is required and tracks engineering bug knowledge, active or fixed.
 - `roadmap/`: update when pending/done/known issue status changes or a new idea enters the backlog.
-- `planning/`: update when a plan, architecture decision, or implementation strategy is created or revised before fully shipped.
-- `planning/decisions/`: add a new ADR when a significant architecture decision is made. Update existing ADRs if their assumptions change.
+- `roadmap/plans/`: update when a plan or implementation strategy is created or revised before fully shipped.
+- `decisions/`: add a new typed decision (`ADR / PRD / MKT / VND / POL / NEG / EXP`) when a significant decision is made. Update existing decisions only via `supersedes:` chains — do not edit an `accepted` decision's body to re-litigate it.
 - `features/`: update when a feature's current behavior, known issues, or roadmap changes.
 - `history/`: update last with brief chronological bullets after meaningful work is finished. New month folders must include `YYYY-MM/YYYY-MM.md` and be linked from `history/history.md`.
 - `CURRENT_STATUS.md` (at root): update weekly with the current snapshot — top priorities, blocked, recent wins, major risks, stale docs. PM agent maintains.
@@ -146,7 +146,7 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 
 ## Conventions by Page Type
 
-Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `planning/planning.md`, `features/features.md`, `history/2026-06/2026-06.md`) follow the universal shape in `templates/folder-note.md` — they hold the index block, not the conventions.
+Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `roadmap/plans/plans.md`, `decisions/decisions.md`, `features/features.md`, `history/2026-06/2026-06.md`) follow the universal shape in `templates/folder-note.md` — they hold the index block, not the conventions.
 
 ### Docs guide notes (`docs/<Guide>/<slug>.md`)
 
@@ -167,29 +167,33 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 - **Done/pending:** follow `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`.
 - **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
 
-### Planning notes (`planning/YYYY-MM-DD_slug.md`)
+### Planning notes (`roadmap/plans/YYYY-MM-DD_slug.md`)
 
 - **Filename:** `YYYY-MM-DD_slug.md` (date prefix from `created:` frontmatter). The numbered `NN_slug.md` convention is deprecated; do not renumber active notes when adopting this scheme.
 - **H1:** slug only, no number, no date prefix — `# initial-decisions`, not `# 01_initial-decisions` or `# 2026-05-22_initial-decisions`.
-- **Status values:** `proposed` (under discussion, not yet approved), `active` (in flight), `shipped` (work done, file kept for historical reference), `rejected` (proposal declined), `superseded` (replaced by a newer plan or ADR). These are planning-specific; the global schema documents them in `SKILL.md` "Frontmatter Schema → Planning".
+- **Status values:** `proposed` (under discussion, not yet approved), `active` (in flight), `shipped` (work done, file kept for historical reference), `rejected` (proposal declined), `superseded` (replaced by a newer plan or decision). These are planning-specific; the global schema documents them in `SKILL.md` "Frontmatter Schema → Planning".
 - **`archived:` field:** when a planning file moves to `archive/`, set `archived: <date>` (the move date) in the frontmatter; keep the original `created:` field. `status:` and `archived:` are **orthogonal** — a shipped-then-archived plan keeps `status: shipped`; a rejected-then-archived plan keeps `status: rejected`; a superseded-then-archived plan keeps `status: superseded`.
 - **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
-- **Archive rename:** when retiring, `mv planning/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). Then update `planning/planning.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
+- **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file.
+- **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
 ### Feature pages (`features/<feature>.md`)
 
 - **When to add:** a coherent user-facing capability (chat, memory, email) or a coherent technical pillar (runtime, isolation) that has accumulated enough cross-cutting context to need a "tell me everything about X" entry point. Not for every system/ doc — only for things with cross-cutting context. Most system/ docs are best surfaced via the `system/` index alone.
-- **Body sections:** Status (alpha/beta/stable/deprecated), Current Behavior, Known Issues, Roadmap, Relevant ADRs, Source of Truth.
+- **Body sections:** Status (alpha/beta/stable/deprecated), Current Behavior, Known Issues, Roadmap, Relevant Decisions, Source of Truth.
 - **Frontmatter fields:** `pageType: feature`, `status`, `owner`, `source_of_truth` (path to the system/ doc that is canonical for this feature), `roadmap_source` (path to the relevant roadmap section).
-- **Don't duplicate content:** feature pages *point* to system/ and planning/; they don't *replace* them. If a system/ doc changes, the feature page's `source_of_truth` link is still valid; no edit needed unless the feature itself changes.
+- **Don't duplicate content:** feature pages *point* to system/, `roadmap/plans/`, and `decisions/`; they don't *replace* them. If a system/ doc changes, the feature page's `source_of_truth` link is still valid; no edit needed unless the feature itself changes.
 
-### ADRs (`planning/decisions/ADR-NNN_slug.md`)
+### Decisions (`decisions/D-NNN_<type>_<slug>.md`)
 
-- **Status values:** `proposed`, `accepted`, `deprecated`, `superseded`. When this ADR supersedes another, set the new ADR's `supersedes:` field to the prior ADR id; the prior ADR's status moves to `Superseded by` and the date is recorded in its body. ADRs are not for tactical implementation details (those go in planning notes) or runtime configuration (those go in `system/`).
-- **When to write:** a significant architecture decision affecting multiple parts of the system, a non-obvious choice (e.g., why Supabase over Clerk; why LCM over native summarization), or a "why" that won't be obvious six months later.
-- **Body shape:** detailed sections in `templates/ADR.md` (single-page template; ADR is not a folder note, so its body shape is documented in the page template, not in this README).
+- **Typed, not ADR-monoculture.** `ADR` is one `decision_type` among seven: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment). Use the type that matches the decision; prefer an existing type over a new one.
+- **Filename:** `D-NNN_<type>_<slug>.md`, numbered globally across the project.
+- **Status values:** `proposed`, `accepted`, `active`, `superseded`, `deprecated`. `accepted` is the default for a decision in force. `active` is allowed but temporary (accepted and being rolled out). When this decision supersedes another, set `supersedes: <D-id>` in this file's frontmatter; the prior decision's `status` moves to `superseded` and the date is recorded in its body. Cross-type supersedes is allowed.
+- **Append-mostly.** Do not edit an `accepted` decision's body to re-litigate it. To change a decision, write a new one that `supersedes:` it. Decisions are a record of decisions *made*, not a place to track open questions.
+- **When to write:** a significant decision affecting multiple parts of the system, a non-obvious choice, or a "why" that won't be obvious six months later. Architecture → `ADR`; product positioning/pricing → `PRD`; market/segment/GTM → `MKT`; vendor pick → `VND`; operating rule → `POL`; explicit "we are not doing X" → `NEG`; time-boxed bet → `EXP`.
+- **Body shape:** detailed sections in `templates/decision.md` (single-page template; decision is not a folder note, so its body shape is documented in the page template, not in this README).
 
 ## Navigation Context
 

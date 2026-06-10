@@ -9,7 +9,7 @@ Before coding:
 
 When opening a PR:
 - Use the PR body template (`.github/PULL_REQUEST_TEMPLATE.md`, copied from the project-management skill's `templates/PR_BODY_TEMPLATE.md`) if available.
-- Fill in the "PM folder impact" section with best-effort suggestions for affected PM lanes: `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Developer Guide/known-bugs.md`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `planning/`, ADRs, folder indexes, and `history/`.
+- Fill in the "PM folder impact" section with best-effort suggestions for affected PM lanes: `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Developer Guide/known-bugs.md`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `roadmap/done-pending.md`, `roadmap/plans/`, `decisions/`, folder indexes, and `history/`.
 - Add a note that the PM folder was unavailable locally, so the maintainer must verify and apply the PM updates.
 - Do NOT make PM folder edits from this checkout.
 
