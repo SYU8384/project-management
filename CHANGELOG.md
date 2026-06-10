@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Folder-note templates (`decisions/`, `roadmap/plans/`) and the
+  project-root `README.md` template no longer use apologetic v0.x
+  contrast or defer rules to `SKILL.md`; rules are stated inline at the
+  point of use. Specifically:
+  - `decisions/decisions.md` intro rewritten to enumerate the seven
+    decision types inline (`ADR / PRD / MKT / VND / POL / NEG / EXP`),
+    state the filename pattern (`D-NNN_<type>_<slug>.md`), and state
+    the body shape inline. Removed the v0.x apology "ADRs are one
+    type, not the only kind" and the forward reference to `SKILL.md`
+    "PM-folder rules" for the type legend. Kept `templates/decision.md`
+    as a legitimate template pointer.
+  - `roadmap/plans/plans.md` `## Conventions` section inlines the
+    five planning status values (`proposed / active / shipped /
+    rejected / superseded`) as a bulleted list and the archive-rename
+    rule (`archive/<slug>-archived.md` — drop the date prefix,
+    preserve the slug, append `-archived`). Removed the forward
+    references to `SKILL.md` "Frontmatter Schema → Planning" and
+    "Planning To Roadmap Sync" for those rules.
+  - `templates/README.md` archive-row description updated to
+    reference `roadmap/plans/` and `decisions/` lanes (was the v0.x
+    "or planning docs" tail). Planning-notes subsection inlines the
+    five status values and the archive-rename rule. Folder-note
+    description in `## Conventions by Page Type` corrected: folder
+    notes *may* include a `## Conventions` block stating rules
+    inline, contradicting the previous "they hold the index block,
+    not the conventions" claim.
+
 ### Removed
 
 - `docs/releases/` directory and the GitHub Releases UI step from the

@@ -445,7 +445,7 @@ function scaffold() {
 
   writeCreateOnly(join(pmFolder, "decisions/decisions.md"), folderNote({
     title: "decisions",
-    intro: "Record of decisions made. Typed entries (ADR / PRD / MKT / VND / POL / NEG / EXP) capture one significant decision each: context, options, the call, and the consequences. ADRs are one type, not the only kind. See SKILL.md \"PM-folder rules\" for the type legend.",
+    intro: "Record of decisions made. Each file is one typed decision: architecture (`ADR`), product (`PRD`), market (`MKT`), vendor (`VND`), policy (`POL`), rejection (`NEG`), or experiment (`EXP`). Filenames follow `D-NNN_<type>_<slug>.md`. Bodies follow the standard shape: Context, Options Considered, Decision, Consequences, Realization Notes, Related, Navigation. (See `templates/decision.md` for the full template; see `templates/README.md` \"Conventions by Page Type → Decisions\" for the body shape reference.)",
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 

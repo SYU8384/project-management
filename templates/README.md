@@ -41,7 +41,7 @@ owner: PM
 | `decisions/` | Decision log (first-class PM lane at the project root) | Typed records of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. ADRs are one type, not the only kind |
 | `features/` | Curated per-feature pages | "Tell me everything about feature X" — points into system/, decisions/, and roadmap/plans/ |
 | `history/` | Completed work | Chronological daily logs of shipped changes, fixes, decisions, archive events |
-| `archive/` | Superseded material | Old docs and plans replaced by current product, system, roadmap, or planning docs |
+| `archive/` | Superseded material | Old docs and plans replaced by current product, system, roadmap, or `roadmap/plans/` and `decisions/` docs |
 | `CURRENT_STATUS.md` | Weekly snapshot | Top priorities, blocked, recent wins, major risks, stale docs |
 
 ## Folder Structure
@@ -146,7 +146,7 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 
 ## Conventions by Page Type
 
-Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `roadmap/plans/plans.md`, `decisions/decisions.md`, `features/features.md`, `history/2026-06/2026-06.md`) follow the universal shape in `templates/folder-note.md` — they hold the index block, not the conventions.
+Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `roadmap/plans/plans.md`, `decisions/decisions.md`, `features/features.md`, `history/2026-06/2026-06.md`) follow the universal shape in `templates/folder-note.md` and may include a `## Conventions` block stating the rules that apply to that lane inline.
 
 ### Docs guide notes (`docs/<Guide>/<slug>.md`)
 
@@ -171,10 +171,15 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 
 - **Filename:** `YYYY-MM-DD_slug.md` (date prefix from `created:` frontmatter). The numbered `NN_slug.md` convention is deprecated; do not renumber active notes when adopting this scheme.
 - **H1:** slug only, no number, no date prefix — `# initial-decisions`, not `# 01_initial-decisions` or `# 2026-05-22_initial-decisions`.
-- **Status values:** `proposed` (under discussion, not yet approved), `active` (in flight), `shipped` (work done, file kept for historical reference), `rejected` (proposal declined), `superseded` (replaced by a newer plan or decision). These are planning-specific; the global schema documents them in `SKILL.md` "Frontmatter Schema → Planning".
+- **Status values:** five values, all from the planning lifecycle:
+  - `proposed` — under discussion, not yet approved
+  - `active` — in flight
+  - `shipped` — work done, file kept for historical reference
+  - `rejected` — proposal declined
+  - `superseded` — replaced by a newer plan or decision
 - **`archived:` field:** when a planning file moves to `archive/`, set `archived: <date>` (the move date) in the frontmatter; keep the original `created:` field. `status:` and `archived:` are **orthogonal** — a shipped-then-archived plan keeps `status: shipped`; a rejected-then-archived plan keeps `status: rejected`; a superseded-then-archived plan keeps `status: superseded`.
 - **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
-- **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
+- **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). This rename is mandatory. Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.

@@ -25,9 +25,16 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
 
 - **Filename:** `YYYY-MM-DD_slug.md` (date prefix from `created:` frontmatter). See `templates/decision.md` for decision filenames.
 - **H1:** the slug only (no number, no date prefix).
-- **Status:** `proposed` for plans not yet approved; `active` for in-flight plans; `shipped` for plans where all work is done and the file is kept for historical reference; `rejected` for proposals that were declined; `superseded` for plans replaced by a newer plan or decision. These five values are planning-specific; the global schema documents them in `SKILL.md` "Frontmatter Schema → Planning".
+- **Status:** five values, all from the planning lifecycle:
+  - `proposed` — under discussion, not yet approved
+  - `active` — in flight
+  - `shipped` — work done, file kept for historical reference
+  - `rejected` — proposal declined
+  - `superseded` — replaced by a newer plan or decision
+
+  These are planning-specific; the global schema in `SKILL.md` "Frontmatter Schema → Planning" documents them as the canonical set.
 - **Archived field:** when a planning file moves to `archive/`, set `archived: <date>` in the frontmatter (the date of the move). The `status` field is **not** changed: a shipped-then-archived plan keeps `status: shipped`; a rejected-then-archived plan keeps `status: rejected`; a superseded-then-archived plan keeps `status: superseded`. `archived:` is the file-location marker; `status:` is the lifecycle marker. They are orthogonal.
-- **Archive rename:** when retiring, rename to `archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`) — this rename rule is mandatory and is documented in `SKILL.md` "Planning To Roadmap Sync".
+- **Archive rename:** when retiring, rename to `archive/<slug>-archived.md` — drop the date prefix, preserve the slug, append `-archived`. This rename is mandatory.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
