@@ -425,6 +425,10 @@ async function main() {
           for (const line of result.suggestedHistory) process.stdout.write(`  ${line}\n`);
         }
       }
+      if (result && Array.isArray(result.manualReview) && result.manualReview.length > 0) {
+        process.stdout.write("\nManual review required (these items need human judgement, not auto-fix):\n");
+        for (const line of result.manualReview) process.stdout.write(`  - ${line}\n`);
+      }
       anyApplied = true;
     } catch (err) {
       process.stderr.write(`Migration ${migration.id} failed: ${err.message}\n`);
