@@ -7,43 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Declarative migration runner at `scripts/migrate.mjs` and registry at
-  `scripts/migrations/_index.mjs`. Adding a new migration is one new file
-  in `scripts/migrations/` plus one line in `_index.mjs` — the runner,
-  validator, and CLI stay the same.
-- First registered migration: `1.0.0-lane-restructure` (restructures
-  `planning/` → `roadmap/plans/`, promotes `planning/decisions/` to
-  top-level `decisions/`, renames `ADR-NNN_` to `D-NNN_ADR_`, rewrites
-  frontmatter and wikilinks; preserves `archive/` and `history/`).
-- Per-project applied-migrations ledger at `<pm_folder>/.pm/migrations.json`,
-  with `.pm/.gitignore` auto-written on first apply. The runner is
-  idempotent and safe to re-run.
-- `## Unapplied Migrations` section in `check-vault-structure.mjs` output,
-  sourced from the same registry as the runner. When this section appears
-  for the project the user is working on, the agent should name the
-  migration, list its effects, ask once per session, and run
-  `migrate.mjs --project <name>` on approval. Do not auto-migrate; do not
-  nag if the user declines.
-- `## Migrations` section in `REFERENCE.md` documenting the registry
-  pattern, CLI, ledger, authoring guide, agent behavior rules, and the
-  v1.0.0 migration.
-- New Quick Start entry `#7. Migrate an existing project` and a new
-  Triggers-table row mapping migration phrases (including implicit
-  validator detection) to the migration intent.
+## [1.0.1] - 2026-06-10
 
 ### Changed
 
-- `install.sh` default `--ref` will flip from `main` to `v1` in a follow-up
-  commit, after the `v1.0.0` tag exists on `origin`. Until then, the default
-  remains `main`. This avoids a window where a fresh `install.sh` would
-  resolve to a non-existent `v1` ref.
-- `openclaw-instruction.md` install URL will switch from `main` to `v1` in
-  the same follow-up commit.
+- `install.sh` default `--ref` is now `v1` (latest v1.x.x release). Pass
+  `--ref main` or `--channel main` for the bleeding edge.
+- `openclaw-instruction.md` install URLs use `v1` (latest v1.x.x) instead of
+  `main`.
 - `check-vault-structure.mjs` removes the legacy `LEGACY_DIRS` /
   `findings.legacy` shape in favor of the registry-driven unapplied-migrations
   check. Behavior for users with no legacy layout is unchanged.
+
+### Notes
+
+- The `1.0.0-lane-restructure` migration has been part of the registry since
+  `v1.0.0`. No new migrations in this release.
 
 ## [1.0.0] - 2026-06-10
 

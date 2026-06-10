@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/SYU8384/project-management.git"
-REF="main"
+REF="v1"
 CHANNEL=""
 SKILL_NAME="project-management"
 TARGET=""
@@ -22,7 +22,7 @@ Options:
   --dest <dir>       Custom parent skills directory.
   --name <name>      Installed skill directory name. Default: project-management.
   --repo <url>       Git repo URL. Default: https://github.com/SYU8384/project-management.git
-  --ref <ref>        Branch or tag to install. Default: main. For versioned installs, use --channel.
+  --ref <ref>        Branch or tag to install. Default: v1 (latest v1.x.x). For bleeding edge, use --ref main or --channel main.
   --channel <name>   Release channel: main (bleeding edge) or v1 (latest v1.x.x). Default: unset.
   --update           Explicitly request update behavior. Existing installs update automatically.
   --yes              Skip confirmation prompts.
