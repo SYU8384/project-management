@@ -16,7 +16,7 @@ After coding:
 - Did the change resolve or partially implement a `roadmap/plans/<date>_slug.md` plan? If yes, mark the relevant PENDING as DONE in `roadmap/done-pending.md`. If the plan is fully shipped, distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the plan to `archive/<slug>-archived.md`.
 - Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`; if it has engineering symptoms, root cause, solution, verification, or recurrence value, also update `docs/Developer Guide/known-bugs.md`.
 - Did a new idea, declined proposal, or backlog candidate appear? If yes, update `roadmap/ideas.md`.
-- Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md` (use `ADR` for architecture; other types per `SKILL.md` "PM-folder rules").
+- Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md`. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment).
 - Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
 - Always add a `history/YYYY-MM/history-YYYY-MM-DD.md` bullet for what changed and why (use Conventional Commits prefixes: `feat:`, `fix:`, etc.).
 

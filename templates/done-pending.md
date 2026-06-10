@@ -5,7 +5,6 @@ iconColor: "#16a34a"
 tags:
   - <project>
   - roadmap
-  - wip
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_reviewed: <YYYY-MM-DD>

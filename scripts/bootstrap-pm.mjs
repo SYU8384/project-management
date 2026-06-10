@@ -220,6 +220,7 @@ function folderNote({
   intro,
   subfolders = [],
   notes: noteLinks = [],
+  conventions = "",
   navigation,
 }) {
   const subfolderBody = subfolders.length
@@ -228,7 +229,8 @@ function folderNote({
   const notesBody = noteLinks.length
     ? noteLinks.map(([target, label, desc]) => `- [[${target}|${label}]] - ${desc}`).join("\n")
     : "- *(no items)*";
-  return `${baseFm(title, "index")}# ${title}\n\n${intro}\n\n<!-- vault-maintain:index:start -->\n## Subfolders\n\n${subfolderBody}\n\n## Notes\n\n${notesBody}\n<!-- vault-maintain:index:end -->\n\n${navigation}`;
+  const conventionsBlock = conventions ? `\n## Conventions\n\n${conventions}\n` : "";
+  return `${baseFm(title, "index")}# ${title}\n\n${intro}\n\n<!-- vault-maintain:index:start -->\n## Subfolders\n\n${subfolderBody}\n\n## Notes\n\n${notesBody}\n<!-- vault-maintain:index:end -->${conventionsBlock}\n${navigation}`;
 }
 
 function page(title, pageType, body, owner = "PM", extra = {}) {
@@ -369,7 +371,7 @@ function scaffold() {
 
   writeCreateOnly(join(pmFolder, "archive/archive.md"), folderNote({
     title: "archive",
-    intro: "Superseded material replaced by current product, system, roadmap, or decisions docs.",
+    intro: "Superseded material replaced by current product, system, roadmap, or `roadmap/plans/` and `decisions/` docs.",
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`]),
   }));
 
@@ -417,6 +419,10 @@ function scaffold() {
   writeCreateOnly(join(pmFolder, "features/features.md"), folderNote({
     title: "features",
     intro: "Curated per-feature pages that point into system, decisions, and roadmap/plans docs.",
+    conventions: `- **One feature per page.** A "feature" is a coherent user-facing capability (chat, memory, email) or a coherent technical pillar (runtime, isolation).
+- **Body sections:** Status (alpha/beta/stable/deprecated), Current Behavior, Known Issues, Roadmap, Relevant Decisions, Source of Truth.
+- **Frontmatter fields:** \`pageType: feature\`, \`status\` (alpha/beta/stable/deprecated), \`owner\`, \`source_of_truth\` (path to the system/ doc that is canonical for this feature), \`roadmap_source\` (path to the relevant roadmap section).
+- **Don't duplicate content.** Feature pages *point* to system/, \`roadmap/plans/\`, and \`decisions/\`; they don't *replace* them. If a system/ doc changes, the feature page's \`source_of_truth\` link is still valid; no edit needed unless the feature itself changes.`,
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 
@@ -440,6 +446,19 @@ function scaffold() {
   writeCreateOnly(join(pmFolder, "roadmap/plans/plans.md"), folderNote({
     title: "plans",
     intro: "Concrete plans, implementation strategies, and design approaches. Active plans are mirrored in `roadmap/done-pending.md`; completed plans move to `archive/`. Significant decisions live in `decisions/` and are cited from the plan, not duplicated here.",
+    conventions: `- **Filename:** \`YYYY-MM-DD_slug.md\` (date prefix from \`created:\` frontmatter). See \`templates/decision.md\` for decision filenames.
+- **H1:** the slug only (no number, no date prefix).
+- **Status:** five values, all from the planning lifecycle:
+  - \`proposed\` — under discussion, not yet approved
+  - \`active\` — in flight
+  - \`shipped\` — work done, file kept for historical reference
+  - \`rejected\` — proposal declined
+  - \`superseded\` — replaced by a newer plan or decision
+- **Archived field:** when a planning file moves to \`archive/\`, set \`archived: <date>\` in the frontmatter (the date of the move). The \`status\` field is **not** changed: a shipped-then-archived plan keeps \`status: shipped\`; a rejected-then-archived plan keeps \`status: rejected\`; a superseded-then-archived plan keeps \`status: superseded\`. \`archived:\` is the file-location marker; \`status:\` is the lifecycle marker. They are orthogonal.
+- **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` — drop the date prefix, preserve the slug, append \`-archived\`. This rename is mandatory.
+- **Owner:** typically \`PM\`. Use \`Platform team\` or \`Operator\` for plans owned by another team.
+- **Cross-link:** when a planning note is approved, add a \`## YYYY-MM-DD_slug\` section to \`roadmap/done-pending.md\` with the planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
+- **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.`,
     navigation: nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 

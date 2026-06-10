@@ -212,10 +212,10 @@ const OPTIONAL_DIRS = [
 // Folder notes (one .md at the top of each visible PM folder serving as
 // its index) are governed by `templates/folder-note.md`. Hidden sync/tooling
 // folders such as `.stfolder`, `.stversions`, and `.workspace` are ignored.
-// The body should hold the index block and at most one optional extra `##`
-// section; "Conventions", "Format", "Lifecycle", "When to write" etc.
-// belong in the README's "Conventions by Page Type" section, not in the
-// folder note. The shape check counts `##` headings outside frontmatter
+// The body may hold the index block plus a small set of optional `##`
+// sections: a per-lane `## Conventions` block is allowed (and recommended
+// for lanes with lane-specific rules, e.g. `roadmap/plans/`, `features/`,
+// `decisions/`). The shape check counts `##` headings outside frontmatter
 // and fails if a folder note has accumulated more than 4.
 const IGNORED_DIR_NAMES = new Set([".git", ".obsidian", "node_modules"]);
 const FOLDER_NOTE_MAX_SECTIONS = 4;
@@ -657,7 +657,7 @@ function emit() {
   if (findings.folderNotes.violations.length > 0) {
     lines.push("## Folder Note Shape Violations");
     lines.push("");
-    lines.push(`Folder notes follow \`templates/folder-note.md\`: at most ${FOLDER_NOTE_MAX_SECTIONS} \`##\` sections (Subfolders, Notes, Navigation, + optional 1 extra). Move "Conventions", "Format", "Lifecycle", "When to write" etc. to the README's "Conventions by Page Type" section.`);
+    lines.push(`Folder notes follow \`templates/folder-note.md\`: at most ${FOLDER_NOTE_MAX_SECTIONS} \`##\` sections (Subfolders, Notes, Navigation, + optional 1 extra such as a per-lane \`## Conventions\` block).`);
     lines.push("");
     for (const v of findings.folderNotes.violations) {
       lines.push(`- \`${v.path}\`: ${v.sections} sections — strip non-essential sections.`);

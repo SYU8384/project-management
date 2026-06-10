@@ -18,7 +18,7 @@ owner: PM
 ---
 # D-NNN: <short title>
 
-> **Decision type:** `<decision_type>`. See `SKILL.md` "PM-folder rules" for the type legend. ADRs are an `ADR` instance, not a separate artifact class.
+> **Decision type:** `<decision_type>` (`ADR` / `PRD` / `MKT` / `VND` / `POL` / `NEG` / `EXP`).
 
 ## Status
 

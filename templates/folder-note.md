@@ -44,6 +44,8 @@ before the check-vault-structure guard fails):
     `Back to roadmap`)
 
 Conventions by page type live in `templates/README.md` under
-"Conventions by Page Type" — not in this template. The folder note is
-an index, not a teaching document.
+"Conventions by Page Type". A folder note *may* include its own
+`## Conventions` block when the lane has lane-specific rules that
+should be stated inline at the point of use (e.g. `roadmap/plans/`,
+`features/`, `decisions/`).
 -->

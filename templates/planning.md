@@ -32,7 +32,7 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
   - `rejected` — proposal declined
   - `superseded` — replaced by a newer plan or decision
 
-  These are planning-specific; the global schema in `SKILL.md` "Frontmatter Schema → Planning" documents them as the canonical set.
+  These five values are the planning lifecycle.
 - **Archived field:** when a planning file moves to `archive/`, set `archived: <date>` in the frontmatter (the date of the move). The `status` field is **not** changed: a shipped-then-archived plan keeps `status: shipped`; a rejected-then-archived plan keeps `status: rejected`; a superseded-then-archived plan keeps `status: superseded`. `archived:` is the file-location marker; `status:` is the lifecycle marker. They are orthogonal.
 - **Archive rename:** when retiring, rename to `archive/<slug>-archived.md` — drop the date prefix, preserve the slug, append `-archived`. This rename is mandatory.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.

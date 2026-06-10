@@ -38,7 +38,7 @@ owner: PM
 | `docs/Quick Commands/` | Command recipes | Copy-pasteable commands; longer explanation belongs in Admin or Developer Guide |
 | `roadmap/` | Future and active PM state | MVP priorities, known issues, planning-note mirrored done/pending status, lightweight general done/pending, ideas, and scoped plans under `roadmap/plans/` |
 | `roadmap/plans/` | Concrete plans | Implementation plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight |
-| `decisions/` | Decision log (first-class PM lane at the project root) | Typed records of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. ADRs are one type, not the only kind |
+| `decisions/` | Decision log (first-class PM lane at the project root) | Typed records of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types |
 | `features/` | Curated per-feature pages | "Tell me everything about feature X" — points into system/, decisions/, and roadmap/plans/ |
 | `history/` | Completed work | Chronological daily logs of shipped changes, fixes, decisions, archive events |
 | `archive/` | Superseded material | Old docs and plans replaced by current product, system, roadmap, or `roadmap/plans/` and `decisions/` docs |

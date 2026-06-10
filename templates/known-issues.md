@@ -6,7 +6,6 @@ tags:
   - <project>
   - roadmap
   - issues
-  - wip
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_reviewed: <YYYY-MM-DD>

@@ -407,7 +407,7 @@ Standard frontmatter fields for all notes in a project vault. Old notes may lack
 |---|---|---|---|
 | `title` | Required | string | Human-readable title |
 | `created` | Required | `YYYY-MM-DD` | File creation date |
-| `pageType` | Required | `planning` \| `system` \| `feature` \| `adr` \| `roadmap` \| `history` \| `index` \| `note` | Drives downstream tooling (stale detection, search filters) |
+| `pageType` | Required | `planning` \| `system` \| `feature` \| `decision` \| `roadmap` \| `history` \| `index` \| `note` | Drives downstream tooling (stale detection, search filters) |
 | `aliases` | Optional | `[string, ...]` | Backlink-friendly alternative titles |
 | `tags` | Optional | `[string, ...]` | Existing convention; free-form |
 | `updated` | Recommended | `YYYY-MM-DD` | Last meaningful edit; default `= created` if omitted |
@@ -427,7 +427,7 @@ Standard frontmatter fields for all notes in a project vault. Old notes may lack
 - `deprecated` — no longer recommended; kept for historical record
 - `superseded` — replaced by another decision; pair with a new decision's `supersedes` field
 
-Add `decision_type: <ADR | PRD | MKT | VND | POL | NEG | EXP>`, `decision_date: YYYY-MM-DD`, and (if applicable) `supersedes: <D-id>`. `decisions/` is a typed first-class PM lane at the project root; ADRs are one type of decision, not the only kind. See `SKILL.md` "PM-folder rules" for the full convention.
+Add `decision_type: <ADR | PRD | MKT | VND | POL | NEG | EXP>`, `decision_date: YYYY-MM-DD`, and (if applicable) `supersedes: <D-id>`. `decisions/` is a typed first-class PM lane at the project root.
 
 **Feature (`pageType: feature`):** the base `status` field uses feature maturity:
 - `alpha` — internal only, breaking changes expected
@@ -756,7 +756,7 @@ A copyable snippet is provided in each template. Project repos that adopt the pr
 5. Did the change resolve or partially implement a `roadmap/plans/<date>_slug.md` plan? If yes, mark the relevant PENDING as DONE in `roadmap/done-pending.md`. If the plan is fully shipped, distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the plan to `archive/<slug>-archived.md`.
 6. Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`; if it has engineering symptoms, root cause, fix, verification, or recurrence value, also update `docs/Developer Guide/known-bugs.md`.
 7. Did a new idea, declined proposal, or backlog candidate appear? If yes, update `roadmap/ideas.md`.
-8. Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md` (type defaults to `ADR` for architecture shifts; see `SKILL.md` "PM-folder rules" for the type legend).
+8. Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md`. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment). Architecture shifts default to `ADR`.
 9. Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
 10. Always add a `history/YYYY-MM/history-YYYY-MM-DD.md` bullet for what changed and why (use Conventional Commits prefixes — see "History Conventions").
 

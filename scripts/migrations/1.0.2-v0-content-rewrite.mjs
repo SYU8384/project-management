@@ -440,12 +440,12 @@ function processDecisionsFolderNote(file, ctx) {
 
   const oldIntroMatch = updated.match(/Architecture Decision Records \(ADRs\) for[^\n]*\n(?:Each ADR captures[^\n]*\n)?(?:ADRs are short records[^\n]*\n?)?/);
   if (oldIntroMatch) {
-    const newIntro =
-      "Record of decisions made for the project. Typed entries (ADR / PRD / MKT / VND / POL / NEG / EXP) capture one significant decision each: context, options, the call, and the consequences. ADRs are one type, not the only kind. See SKILL.md \"PM-folder rules\" for the type legend and `templates/decision.md` for the body shape.";
-    updated = updated.replace(oldIntroMatch[0], newIntro + "\n");
-    k = true;
-    ctx.log("intro", relative(ctx.pmFolder, file));
-  }
+const newIntro =
+        "Record of decisions made for the project. Each file is one typed decision: architecture (`ADR`), product (`PRD`), market (`MKT`), vendor (`VND`), policy (`POL`), rejection (`NEG`), or experiment (`EXP`). Filenames follow `D-NNN_<type>_<slug>.md`. Bodies follow the standard shape: Context, Options Considered, Decision, Consequences, Realization Notes, Related, Navigation. (See `templates/decision.md` for the full template; see `templates/README.md` \"Conventions by Page Type → Decisions\" for the body shape reference.)";
+      updated = updated.replace(oldIntroMatch[0], newIntro + "\n");
+      k = true;
+      ctx.log("intro", relative(ctx.pmFolder, file));
+    }
 
   const logSection = updated.match(/## Decisions Log\n[\s\S]*?(?=\n## |\n*$)/);
   if (logSection) {
@@ -490,9 +490,14 @@ function processPlansFolderNote(file, ctx) {
 
 - **Filename:** \`YYYY-MM-DD_slug.md\` (date prefix from \`created:\` frontmatter). See \`templates/decision.md\` for decision filenames.
 - **H1:** the slug only (no number, no date prefix).
-- **Status:** \`proposed\` for plans not yet approved; \`active\` for in-flight plans; \`shipped\` for plans where all work is done and the file is kept for historical reference; \`rejected\` for proposals that were declined; \`superseded\` for plans replaced by a newer plan or decision. These five values are planning-specific; the global schema documents them in \`SKILL.md\` "Frontmatter Schema → Planning".
+- **Status:** five values, all from the planning lifecycle:
+  - \`proposed\` — under discussion, not yet approved
+  - \`active\` — in flight
+  - \`shipped\` — work done, file kept for historical reference
+  - \`rejected\` — proposal declined
+  - \`superseded\` — replaced by a newer plan or decision
 - **Archived field:** when a planning file moves to \`archive/\`, set \`archived: <date>\` in the frontmatter (the date of the move). The \`status\` field is **not** changed: a shipped-then-archived plan keeps \`status: shipped\`; a rejected-then-archived plan keeps \`status: rejected\`; a superseded-then-archived plan keeps \`status: superseded\`. \`archived:\` is the file-location marker; \`status:\` is the lifecycle marker. They are orthogonal.
-- **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` (drop the date prefix, preserve the slug, append \`-archived\`) — this rename rule is mandatory and is documented in \`SKILL.md\` "Planning To Roadmap Sync".
+- **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` — drop the date prefix, preserve the slug, append \`-archived\`. This rename is mandatory.
 - **Owner:** typically \`PM\`. Use \`Platform team\` or \`Operator\` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a \`## YYYY-MM-DD_slug\` section to \`roadmap/done-pending.md\` with the planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
@@ -519,15 +524,14 @@ function processArchiveFolderNote(file, ctx) {
 }
 
 function processDonePending(file, ctx) {
-  const original = readFile(file);
-  if (!original) return false;
-  const updated = original.replace(
-    /^## (\d{4}-\d{2}-\d{2}_)([a-z0-9-]+)\s*$/gm,
-    "## $2",
-  );
-  if (updated === original) return false;
-  writeFile(file, updated, ctx);
-  return true;
+  // No-op: v1.0.2 originally stripped the date prefix from ## YYYY-MM-DD_slug
+  // headings in done-pending.md, but the canonical convention (README,
+  // templates/planning.md, REFERENCE.md, and check-pm-consistency.mjs) all
+  // require the date prefix in the mirror section heading. Stripping it
+  // created a validator-vs-migration contradiction. This pass is preserved
+  // for backward-compatibility with the v1.0.2 migration's documented
+  // detect()/plan() entry but does not modify file content.
+  return false;
 }
 
 function processDecisionFile(file, ctx) {

@@ -196,7 +196,7 @@ function runFor(target) {
     if (rel.startsWith("archive/") && !isFolderNote(rel, project) && rel !== "archive/archive.md" && !rel.endsWith("-archived.md")) {
       issues.push(`${rel}: visible archive file should use *-archived.md`);
     }
-    if (rel.startsWith("roadmap/plans/")) {
+    if (rel.startsWith("roadmap/plans/") && !isFolderNote(rel, project)) {
       if (!donePending.includes(`## ${stem(rel)}`)) issues.push(`${rel}: missing roadmap/done-pending mirror section`);
     }
     for (const match of content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)) {

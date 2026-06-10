@@ -23,42 +23,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `templates/README.md`'s "Conventions by Page Type" document the
   lane.
 
-### Changed
+(Held for the v1.1.0 minor release; the meetings lane is a new
+feature, not a patch-grade change.)
 
-- Folder-note templates (`decisions/`, `roadmap/plans/`) and the
-  project-root `README.md` template no longer use apologetic v0.x
-  contrast or defer rules to `SKILL.md`; rules are stated inline at the
-  point of use. Specifically:
-  - `decisions/decisions.md` intro rewritten to enumerate the seven
-    decision types inline (`ADR / PRD / MKT / VND / POL / NEG / EXP`),
-    state the filename pattern (`D-NNN_<type>_<slug>.md`), and state
-    the body shape inline. Removed the v0.x apology "ADRs are one
-    type, not the only kind" and the forward reference to `SKILL.md`
-    "PM-folder rules" for the type legend. Kept `templates/decision.md`
-    as a legitimate template pointer.
-  - `roadmap/plans/plans.md` `## Conventions` section inlines the
-    five planning status values (`proposed / active / shipped /
-    rejected / superseded`) as a bulleted list and the archive-rename
-    rule (`archive/<slug>-archived.md` — drop the date prefix,
-    preserve the slug, append `-archived`). Removed the forward
-    references to `SKILL.md` "Frontmatter Schema → Planning" and
-    "Planning To Roadmap Sync" for those rules.
-  - `templates/README.md` archive-row description updated to
-    reference `roadmap/plans/` and `decisions/` lanes (was the v0.x
-    "or planning docs" tail). Planning-notes subsection inlines the
-    five status values and the archive-rename rule. Folder-note
-    description in `## Conventions by Page Type` corrected: folder
-    notes *may* include a `## Conventions` block stating rules
-    inline, contradicting the previous "they hold the index block,
-    not the conventions" claim.
+## [1.0.4] - 2026-06-10
 
-### Removed
+Quality + correctness patch. No new features. Resolves three
+high-severity contradictions in the v1.0.0/v1.0.2 pipeline (planning-mirror
+false positive, validator-vs-migration date-prefix mismatch, v0.x text
+preserved in the v1.0.2 migration), plus a sweep of remaining v0.x
+apologetic framing and SKILL.md forward-refs that the v1.0.3 cleanup
+missed.
 
-- `docs/releases/` directory and the GitHub Releases UI step from the
-  maintainer checklist. The skill is small enough that a per-version
-  prose-copy layer duplicates `CHANGELOG.md` without adding value.
-  `CHANGELOG.md` is now the single source of truth for what changed in
-  each version; `VERSION` and the git tag are the versioned snapshot.
+### Fixed
+
+- `scripts/check-pm-consistency.mjs`: the planning-mirror check now
+  excludes folder notes (`roadmap/plans/plans.md` is a folder note and
+  was being falsely flagged as needing a `## plans` mirror in
+  `roadmap/done-pending.md`). A freshly-bootstrapped project now
+  passes the consistency check on first run.
+- `scripts/migrations/1.0.2-v0-content-rewrite.mjs`:
+  - `processDonePending` no longer strips the date prefix from
+    `## YYYY-MM-DD_slug` headings in `done-pending.md`. The validator
+    (`check-pm-consistency.mjs`) and the documented convention (README,
+    `templates/planning.md`, REFERENCE.md) all require the date
+    prefix; stripping it caused every plan to fail validation after
+    the v1.0.2 migration ran. The pass is preserved as a no-op for
+    backward compatibility with the v1.0.2 detect()/plan() entries.
+  - The decisions intro string written by `processDecisionsFolderNote`
+    now matches the cleaned v1.0.3 bootstrap text (no "ADRs are one
+    type" apology, no forward reference to `SKILL.md` "PM-folder
+    rules"; the seven-type legend is inlined).
+  - The `## Conventions` block written by `processPlansFolderNote` now
+    inlines the five planning status values as a bulleted list and
+    inlines the archive-rename rule (no forward references to
+    `SKILL.md` "Frontmatter Schema → Planning" or "Planning To Roadmap
+    Sync").
+- `scripts/check-vault-structure.mjs`: removed the comment (line 215-219)
+  and error-message text (line 660) claiming that folder notes
+  shouldn't have `## Conventions` blocks. v1.0.3 established that
+  folder notes *may* include `## Conventions` (used by `roadmap/plans/`,
+  `features/`, `decisions/`).
+- `scripts/bootstrap-pm.mjs`:
+  - The bootstrap now includes `## Conventions` blocks in
+    `roadmap/plans/plans.md` and `features/features.md`, matching
+    `templates/planning.md` and `templates/features.md`. Before this
+    fix, freshly-bootstrapped projects had plans/features folder
+    notes without `## Conventions`, while the templates had them — a
+    bootstrap-vs-template contradiction.
+  - The archive folder-note intro now reads "Superseded material
+    replaced by current product, system, roadmap, or `roadmap/plans/`
+    and `decisions/` docs." (previously missing the `roadmap/plans/`
+    reference).
+- `templates/done-pending.md`, `templates/known-issues.md`,
+  `templates/ideas.md`: removed `wip` from the example frontmatter
+  tags. `wip` is v0.x vocabulary that the v1.0.2 migration's
+  `detect()` would flag on freshly-bootstrapped projects.
+- `templates/folder-note.md`: rewrote the HTML comment that
+  incorrectly claimed folder notes are index-only and shouldn't hold
+  conventions.
+- `templates/README.md` `decisions/` row: dropped the v0.x
+  "ADRs are one type, not the only kind" trailing apology (the row
+  already enumerates the seven types inline).
+- `templates/decision.md` line 21 blockquote: simplified to
+  `**Decision type:** \`<decision_type>\` (\`ADR\` / \`PRD\` / \`MKT\` /
+  \`VND\` / \`POL\` / \`NEG\` / \`EXP\`).` (removed the apologetic
+  "ADRs are an `ADR` instance, not a separate artifact class" framing
+  and the "See `SKILL.md` 'PM-folder rules' for the type legend"
+  forward reference).
+- `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` and
+  `templates/PR_BODY_TEMPLATE.md`: replaced the "(use `ADR` for
+  architecture; other types per `SKILL.md` 'PM-folder rules')"
+  forward reference with an inline enumeration of all seven type codes.
+- `REFERENCE.md`:
+  - Replaced `adr` with `decision` in the `pageType` schema table.
+  - Removed the apologetic + forward-reference sentence at line 430
+    ("ADRs are one type of decision, not the only kind. See `SKILL.md`
+    'PM-folder rules' for the full convention").
+  - Removed the "see `SKILL.md` 'PM-folder rules' for the type legend"
+    forward reference at line 759; the seven-type codes are now
+    enumerated inline.
 
 ## [1.0.3] - 2026-06-10
 

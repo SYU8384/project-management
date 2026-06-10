@@ -49,7 +49,7 @@
      - [ ] roadmap/plans/<date>_slug.md → move to archive/ if fully shipped: ...
 
      Decisions affected:
-     - [ ] New decision if significant: decisions/D-NNN_<type>_<slug>.md (use `ADR` for architecture; other types per SKILL.md "PM-folder rules")
+     - [ ] New decision if significant: decisions/D-NNN_<type>_<slug>.md. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment)
      - [ ] Existing decision if assumption changed: decisions/D-NNN_<type>_<slug>.md (write a superseding decision; do not edit the accepted body)
 
      Folder indexes affected:
