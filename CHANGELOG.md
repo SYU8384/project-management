@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-11
+
 ### Added
 
 - `meetings/` as an **optional** meeting records lane. Two new
@@ -22,9 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Where Information Goes" lane table and a new subsection in
   `templates/README.md`'s "Conventions by Page Type" document the
   lane.
-
-(Held for the v1.1.0 minor release; the meetings lane is a new
-feature, not a patch-grade change.)
 
 ## [1.0.4] - 2026-06-10
 
