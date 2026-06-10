@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-10
+
+### Fixed
+
+- `README.md` was stale relative to v1.0.0/v1.0.1:
+  - The Versioning section described the v1.0.0 default-install behavior
+    ("pulls `main` (bleeding edge)") instead of the v1.0.1 default
+    ("pulls `v1` (latest v1.x.x)"). Updated with a "how to check your
+    current version" one-liner (`cat <skill_dir>/VERSION`).
+  - The README did not document the migration registry, the migration
+    runner, or the per-project ledger. Added a `## Migrations` section
+    listing the two currently registered migrations, the `migrate.mjs`
+    CLI flags (`--list`, `--dry-run`, `--project`, `--pm-folder`,
+    `--migration <id>`, `--yes`), and the `.pm/migrations.json` ledger
+    location.
+  - The Repository Map did not list `scripts/migrate.mjs`,
+    `scripts/migrations/`, or `docs/releases/`. Added all three.
+  - The validator table row for `check-vault-structure.mjs` did not
+    mention migration detection. Updated to note that it emits
+    `## Unapplied Migrations` for the migration registry.
+  - The `decisions/` lane row in PM Folder Model did not list the
+    decision type codes. Updated to include `ADR / PRD / MKT / VND /
+    POL / NEG / EXP`.
+
+No behavioral change. Doc-only patch.
+
 ## [1.0.2] - 2026-06-10
 
 ### Added

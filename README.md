@@ -140,10 +140,10 @@ Most users do not need to edit this manually after setup. The guided setup flow 
 
 This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
 
-- **Default install (this revision):** pulls `main` (bleeding edge). The follow-up commit will flip the default to the `v1` channel after the `v1.0.0` tag exists.
+- **Default install (v1.0.1+):** pulls `v1` (latest `v1.x.x` release). Use `--ref main` or `--channel main` for the bleeding edge.
 - **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
 - **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
-- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file.
+- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file. To check the currently installed version without re-running the installer: `cat <skill_dir>/VERSION`.
 
 The version is printed after every install or update:
 
@@ -217,7 +217,7 @@ Each project gets a Markdown folder with stable lanes:
 | `features/` | Curated "tell me everything about this feature" pages that point into system and planning docs. |
 | `roadmap/` | MVP priorities, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
 | `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight. |
-| `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. |
+| `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. Type codes: `ADR / PRD / MKT / VND / POL / NEG / EXP`. |
 | `history/` | Chronological logs of completed work, organized by year-month. |
 | `archive/` | Superseded material replaced by current docs. |
 
@@ -294,6 +294,47 @@ When using an individual script, an explicit PM-folder path scans that folder di
 
 Projects registered with `access: unavailable` are skipped cleanly because the collaborator has no local PM folder yet.
 
+## 🔁 Migrations
+
+Breaking PM-folder changes (lane moves, file renames, schema promotions) ship as **registered migrations** so existing projects can adopt them without losing content. The runner applies them idempotently and records what it did to a per-project ledger.
+
+When the validator finds a registered migration that has not been applied to a project, it emits a `## Unapplied Migrations` section that names the specific migration, lists its effects, and tells the user how to run it. The agent offers to run the migration once per session, scoped to the project in scope.
+
+### Currently registered migrations
+
+| Migration | What it does |
+|---|---|
+| `1.0.0-lane-restructure` | Move `planning/` → `roadmap/plans/`; promote `planning/decisions/` to top-level `decisions/`; rename `ADR-NNN_*.md` → `D-NNN_ADR_*.md`; rewrite frontmatter and wikilinks. `archive/` and `history/` are preserved untouched. |
+| `1.0.2-v0-content-rewrite` | Rewrite v0.x body text and frontmatter fields the v1.0.0 migration missed: `decisions/decisions.md` intro, `roadmap/plans/plans.md` H1 and `## Conventions`, `archive/archive.md` phrasing, `## Relevant ADRs` → `## Relevant Decisions`, v0.x tags, decision body shape, decision title/H1, plan H1 → slug-only, broken wikilinks, and `roadmap/done-pending.md` date-prefixed headers. Surfaces manual-review items for plan status/body mismatches, decision content authoring, and known-issues theoretical-risk wording. |
+
+### Running migrations
+
+List the registered migrations and their descriptions:
+
+```bash
+node <skill_dir>/scripts/migrate.mjs --list
+```
+
+Preview what a migration will change without applying it:
+
+```bash
+node <skill_dir>/scripts/migrate.mjs --project <Name> --dry-run
+```
+
+Apply all unapplied migrations to a project:
+
+```bash
+node <skill_dir>/scripts/migrate.mjs --project <Name> --yes
+```
+
+Apply a specific migration by id (escape hatch for partial-failure recovery):
+
+```bash
+node <skill_dir>/scripts/migrate.mjs --pm-folder <path> --migration 1.0.2-v0-content-rewrite --yes
+```
+
+The runner is **idempotent**: re-running on a fully-migrated project prints `No applicable migrations.` Each project's applied migrations are recorded at `<pm_folder>/.pm/migrations.json` (hidden dir, auto-gitignored on first apply).
+
 ## 🧰 Repository Map
 
 | Path | Purpose |
@@ -307,9 +348,12 @@ Projects registered with `access: unavailable` are skipped cleanly because the c
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
 | [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator. |
-| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator. |
+| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Unapplied Migrations` for the migration registry. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
+| [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
+| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations (`1.0.0-lane-restructure.mjs`, `1.0.2-v0-content-rewrite.mjs`) and the registry index (`_index.mjs`). |
+| [`docs/releases/`](./docs/releases/) | Per-version release notes (`vX.Y.Z.md`) ready to paste into the GitHub Release UI. |
 | [`LICENSE`](./LICENSE) | MIT license. |
 
 ## 📐 Design Principles
