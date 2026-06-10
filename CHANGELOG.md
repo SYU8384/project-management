@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- `docs/releases/` directory and the GitHub Releases UI step from the
+  maintainer checklist. The skill is small enough that a per-version
+  prose-copy layer duplicates `CHANGELOG.md` without adding value.
+  `CHANGELOG.md` is now the single source of truth for what changed in
+  each version; `VERSION` and the git tag are the versioned snapshot.
+
 ## [1.0.3] - 2026-06-10
 
 ### Fixed

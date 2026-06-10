@@ -163,7 +163,8 @@ To cut a new release:
 4. Push: `git push origin main`.
 5. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary>"`.
 6. Push the tag: `git push origin vX.Y.Z`.
-7. On GitHub, draft a Release at `https://github.com/SYU8384/project-management/releases/new?tag=vX.Y.Z` and paste the `## [X.Y.Z]` section of `CHANGELOG.md` as the release body.
+
+That's it. `CHANGELOG.md` is the single source of truth for what changed in each version; `VERSION` and the git tag are the versioned snapshot. The skill is small enough that an additional release-notes layer (per-version prose files, GitHub Releases UI paste) doesn't pay for itself.
 
 Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, run the `gstack-ship` skill (if installed) or manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
 
@@ -353,7 +354,6 @@ The runner is **idempotent**: re-running on a fully-migrated project prints `No 
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/migrations/`](./scripts/migrations/) | Registered migrations (`1.0.0-lane-restructure.mjs`, `1.0.2-v0-content-rewrite.mjs`) and the registry index (`_index.mjs`). |
-| [`docs/releases/`](./docs/releases/) | Per-version release notes (`vX.Y.Z.md`) ready to paste into the GitHub Release UI. |
 | [`LICENSE`](./LICENSE) | MIT license. |
 
 ## 📐 Design Principles
