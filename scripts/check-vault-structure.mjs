@@ -6,9 +6,8 @@
  * folder + file structure is in place. Emits a pass/fail report.
  *
  * Required:
- *   - Folders: planning/, roadmap/, system/, history/, archive/, docs/, features/
+ *   - Folders: roadmap/, system/, history/, archive/, docs/, features/
  *   - Root files: README.md, PRODUCT.md, <Project>.md, CURRENT_STATUS.md
- *   - Planning index: planning/planning.md
  *   - Roadmap standard notes: mvp-priorities.md, known-issues.md,
  *     done-pending.md, ideas.md
  *   - System index: system/system.md (or at least one system/*.md)
@@ -17,7 +16,7 @@
  *   - History index: history/history.md
  *
  * Optional but recommended:
- *   - planning/decisions/ subfolder
+ *   - decisions/ subfolder (typed decision log; required once any decision exists)
  *
  * Usage:
  *   node scripts/check-vault-structure.mjs                                # scan CWD
@@ -47,7 +46,7 @@
 
 import { existsSync, readdirSync, statSync, readFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 function findSkillDir() {
   let current = dirname(fileURLToPath(import.meta.url));
@@ -160,7 +159,6 @@ function resolveTargets() {
 let vaultRoot = null;
 
 const REQUIRED_DIRS = [
-  "planning",
   "roadmap",
   "system",
   "history",
@@ -184,10 +182,6 @@ const REQUIRED_ROOT_FILES = [
   // <Project>.md is checked separately: any single additional .md at root
 ];
 
-const REQUIRED_PLANNING_FILES = [
-  "planning/planning.md",
-];
-
 const REQUIRED_ROADMAP_FILES = [
   "roadmap/mvp-priorities.md",
   "roadmap/known-issues.md",
@@ -208,8 +202,12 @@ const REQUIRED_INDEX_FILES = [
 ];
 
 const OPTIONAL_DIRS = [
-  "planning/decisions",
+  "decisions",
 ];
+
+// Migration-debt warnings are sourced from the registry at
+// `scripts/migrations/_index.mjs` so they stay in sync as new migrations
+// are added. See checkMigrations() below.
 
 // Folder notes (one .md at the top of each visible PM folder serving as
 // its index) are governed by `templates/folder-note.md`. Hidden sync/tooling
@@ -227,6 +225,7 @@ const findings = {
   project: { found: null, present: false },
   system: { hasSystemMd: false, hasAnySystemDoc: false },
   optional: { missing: [], present: [] },
+  unappliedMigrations: [],
   folderNames: { violations: [] },
   folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [] },
   docsNames: { violations: [] },
@@ -288,14 +287,6 @@ function checkRequired() {
     findings.required.missing.push(`file: <Project>.md (one .md at root beyond README/PRODUCT/CURRENT_STATUS)`);
   }
 
-  for (const file of REQUIRED_PLANNING_FILES) {
-    if (isFile(file)) {
-      findings.required.present.push(`file: ${file}`);
-    } else {
-      findings.required.missing.push(`file: ${file}`);
-    }
-  }
-
   for (const file of REQUIRED_ROADMAP_FILES) {
     if (isFile(file)) {
       findings.required.present.push(`file: ${file}`);
@@ -330,6 +321,49 @@ function checkOptional() {
     } else {
       findings.optional.missing.push(`dir: ${dir}/`);
     }
+  }
+}
+
+function scriptDir() {
+  return dirname(fileURLToPath(import.meta.url));
+}
+
+async function checkMigrations() {
+  const skillDir = dirname(scriptDir());
+  const indexPath = join(scriptDir(), "migrations", "_index.mjs");
+  let registry;
+  try {
+    registry = await import(pathToFileURL(indexPath).href);
+  } catch {
+    process.stderr.write(
+      `note: migration registry unavailable; skipping migration-debt check\n`
+    );
+    return;
+  }
+  if (!registry || !Array.isArray(registry.default)) return;
+  for (const spec of registry.default) {
+    const filePath = join(scriptDir(), "migrations", spec);
+    let mod;
+    try {
+      mod = await import(pathToFileURL(filePath).href);
+    } catch {
+      continue;
+    }
+    const m = mod && mod.default;
+    if (!m || typeof m.detect !== "function") continue;
+    let needed;
+    try {
+      needed = await m.detect({ pmFolder: vaultRoot });
+    } catch {
+      continue;
+    }
+    if (!needed) continue;
+    const describe = typeof m.describe === "string" ? m.describe : "";
+    const firstLine = describe.split("\n")[0].trim();
+    const runHint = `Run \`node ${skillDir}/scripts/migrate.mjs --pm-folder ${vaultRoot}\` (or pass --project <name> --config <configPath> if applicable) to apply it.`;
+    findings.unappliedMigrations.push(
+      `Migration \`${m.id}\` is unapplied. ${runHint} ${firstLine}`
+    );
   }
 }
 
@@ -582,6 +616,17 @@ function emit() {
     lines.push("");
   }
 
+  if (findings.unappliedMigrations.length > 0) {
+    lines.push("## Unapplied Migrations");
+    lines.push("");
+    lines.push("The following registered migrations are needed by this project:");
+    lines.push("");
+    for (const m of findings.unappliedMigrations) {
+      lines.push(`- ${m}`);
+      lines.push("");
+    }
+  }
+
   if (findings.required.missing.length === 0 && findings.optional.missing.length === 0) {
     lines.push("All required and optional items are in place.");
   }
@@ -694,12 +739,13 @@ function issueTotal() {
     + findingsRef.roadmapShape.violations.length;
 }
 
-function runFor(target) {
+async function runFor(target) {
   vaultRoot = target.vault;
   findings.required = { missing: [], present: [] };
   findings.project = { found: null, present: false };
   findings.system = { hasSystemMd: false, hasAnySystemDoc: false };
   findings.optional = { missing: [], present: [] };
+  findings.unappliedMigrations = [];
   findings.folderNames = { violations: [] };
   findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [] };
   findings.docsNames = { violations: [] };
@@ -709,6 +755,7 @@ function runFor(target) {
 
   checkRequired();
   checkOptional();
+  await checkMigrations();
   checkFolderNames();
   checkFolderNotes();
   checkDocsNames();
@@ -723,7 +770,7 @@ const targets = resolveTargets();
 let totalIssues = 0;
 for (const target of targets) {
   console.log(`\n# Vault Structure Report — ${target.label}\n`);
-  totalIssues += runFor(target);
+  totalIssues += await runFor(target);
 }
 
 process.exit(totalIssues > 0 ? 1 : 0);

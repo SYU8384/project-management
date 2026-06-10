@@ -18,7 +18,7 @@ It works especially well with an Obsidian vault, but the convention is plain Mar
 | 🧹 Repair existing folders | Finds missing indexes, stale schemas, broken conventions, roadmap drift, and folder-note problems. |
 | 📝 Log completed work | Updates current-state docs first, then writes a Conventional Commits-style history entry. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
-| 🧩 Track plans and decisions | Creates planning notes, mirrors active work into `roadmap/done-pending.md`, and records ADRs. |
+| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, and records typed decisions under `decisions/`. |
 | 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
 | 🤝 Integrate code repos | Adds an `AGENTS.md` PM section so coding agents know what to read and update. |
 | 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
@@ -134,6 +134,39 @@ Example registry:
 
 Most users do not need to edit this manually after setup. The guided setup flow registers projects for you.
 
+<a id="versioning"></a>
+
+## 🏷️ Versioning
+
+This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
+
+- **Default install (this revision):** pulls `main` (bleeding edge). The follow-up commit will flip the default to the `v1` channel after the `v1.0.0` tag exists.
+- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
+- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
+- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file.
+
+The version is printed after every install or update:
+
+```text
+==> Installed version: 1.0.0
+```
+
+<a id="releasing"></a>
+
+## 📦 Releasing (Maintainers)
+
+To cut a new release:
+
+1. Bump `VERSION` to the new `MAJOR.MINOR.PATCH`.
+2. Add a new top entry to `CHANGELOG.md` under `## [Unreleased]` (or rename `## [Unreleased]` to the versioned heading) with `Added / Changed / Deprecated / Removed / Fixed / Security` sections.
+3. Commit: `git commit -m "release: vX.Y.Z"`.
+4. Push: `git push origin main`.
+5. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary>"`.
+6. Push the tag: `git push origin vX.Y.Z`.
+7. On GitHub, draft a Release at `https://github.com/SYU8384/project-management/releases/new?tag=vX.Y.Z` and paste the `## [X.Y.Z]` section of `CHANGELOG.md` as the release body.
+
+Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, run the `gstack-ship` skill (if installed) or manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
+
 <a id="start-with-one-prompt"></a>
 
 ## 🚀 After Installer: Start With One Prompt
@@ -182,8 +215,9 @@ Each project gets a Markdown folder with stable lanes:
 | `docs/Developer Guide/` | Engineering workflows: local setup, codebase structure, APIs, schemas, migrations, prompts, tests, release mechanics, and `known-bugs.md`. |
 | `docs/Quick Commands/` | Copy-pasteable commands; longer explanations link back to Admin or Developer Guide. |
 | `features/` | Curated "tell me everything about this feature" pages that point into system and planning docs. |
-| `roadmap/` | MVP priorities, known issues, ideas, and active done/pending work. |
-| `planning/` | Concrete plans and architecture decisions that are not fully shipped yet. |
+| `roadmap/` | MVP priorities, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
+| `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight. |
+| `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. |
 | `history/` | Chronological logs of completed work, organized by year-month. |
 | `archive/` | Superseded material replaced by current docs. |
 
@@ -199,7 +233,7 @@ Read the project's PM README routing map
         |
         v
 Update affected current-state docs
-system/ + docs/ + features/ + roadmap/ + planning/
+system/ + docs/ + features/ + roadmap/ + decisions/
         |
         v
 Update folder-note indexes and navigation
@@ -268,7 +302,7 @@ Projects registered with `access: unavailable` are skipped cleanly because the c
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
 | [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
-| [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, ADRs, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
+| [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, decisions, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |

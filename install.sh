@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/SYU8384/project-management.git"
 REF="main"
+CHANNEL=""
 SKILL_NAME="project-management"
 TARGET=""
 DEST_PARENT=""
@@ -21,7 +22,8 @@ Options:
   --dest <dir>       Custom parent skills directory.
   --name <name>      Installed skill directory name. Default: project-management.
   --repo <url>       Git repo URL. Default: https://github.com/SYU8384/project-management.git
-  --ref <ref>        Branch or tag to install. Default: main.
+  --ref <ref>        Branch or tag to install. Default: main. For versioned installs, use --channel.
+  --channel <name>   Release channel: main (bleeding edge) or v1 (latest v1.x.x). Default: unset.
   --update           Explicitly request update behavior. Existing installs update automatically.
   --yes              Skip confirmation prompts.
   --help            Show this help.
@@ -29,6 +31,7 @@ Options:
 Examples:
   curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
   curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target codex --yes
+  curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --channel v1 --yes
 USAGE
 }
 
@@ -102,11 +105,16 @@ parse_args() {
         REPO_URL="$2"
         shift 2
         ;;
-      --ref)
-        [[ $# -ge 2 ]] || die "--ref requires a value."
-        REF="$2"
-        shift 2
-        ;;
+    --ref)
+      [[ $# -ge 2 ]] || die "--ref requires a value."
+      REF="$2"
+      shift 2
+      ;;
+    --channel)
+      [[ $# -ge 2 ]] || die "--channel requires a value."
+      CHANNEL="$2"
+      shift 2
+      ;;
       --yes|-y)
         YES=1
         shift
@@ -191,6 +199,12 @@ install_or_update() {
   else
     info "Keeping existing projects.json"
   fi
+
+  local installed_version="unknown"
+  if [[ -f "$install_dir/VERSION" ]]; then
+    installed_version="$(tr -d '[:space:]' < "$install_dir/VERSION")"
+  fi
+  info "Installed version: $installed_version"
 }
 
 main() {
@@ -209,6 +223,13 @@ main() {
 
   [[ -n "$DEST_PARENT" ]] || die "No destination selected."
   [[ "$SKILL_NAME" != *"/"* && "$SKILL_NAME" != "." && "$SKILL_NAME" != ".." ]] || die "Invalid skill name: $SKILL_NAME"
+
+  case "$CHANNEL" in
+    "") ;;
+    main) REF="main" ;;
+    v1) REF="v1" ;;
+    *) die "Unknown --channel: $CHANNEL. Supported: main, v1." ;;
+  esac
 
   local install_dir="$DEST_PARENT/$SKILL_NAME"
 
