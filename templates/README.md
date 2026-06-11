@@ -181,8 +181,20 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 ### Roadmap notes (`roadmap/*.md`)
 
 - **Ideas:** follow `templates/ideas.md`: `## Contents`, `## Status Key` (with the color-coded status scheme — see "Status color scheme" below), `## Idea Register` (4-column table with colored status in the Status column), five status buckets (`## Brainstorming` / `## Scoping` / `## Approved` / `## Implemented` / `## Declined`), `## Idea Details` (one section per idea with a colored Status line), and `## Navigation`. Use stable IDs such as `IDEA-001`; do not rely on list position for identity. The color scheme is adopted in `decisions/D-008_POL_ideas-status-colors.md`.
-- **Known issues:** follow `templates/known-issues.md`: `## Contents`, `## Active`, `## Fixed`, `## Deferred`, and `## Navigation`. Domain-specific grouping belongs under those sections as labels or `###` subsections.
-- **MVP priorities:** follow `templates/mvp-priorities.md`: `## Contents`, `## Alpha Goal`, `## MVP Priorities`, `## Not Yet MVP`, and `## Navigation`.
+- **Known issues:** follow `templates/known-issues.md` (OpenManager format). Three top-level sections: `## Active` (lead paragraph describing the domain-grouped convention), `## Fixed` (lead paragraph noting that fixed entries are retained in their original domain context until they no longer need it), `## Deferred`. Each section is grouped by `### <Domain>` H3 subsections (e.g., `### Migrations`, `### Validators`, `### AGENTS.md integration`, `### CLI surface`, `### Documentation`). Each item uses one of the OpenManager checkbox formats:
+  - `- [ ] **PENDING (YYYY-MM-DD):** <description>.` — active items.
+  - `- [ ] **PENDING:** <description>.` — active items without a date.
+  - `- [x] **FIXED (YYYY-MM-DD):** <description>.` — fixed items.
+  - `- [x] **FIXED (YYYY-MM-DD, in commit \`<hash>\`):** <description>.` — fixed items with commit reference.
+  - `- [ ] **DEFERRED:** <description>.` — deferred items.
+
+  The active `### <Domain>` subsections can be named with a `(YYYY-MM-DD_slug)` suffix when the items belong to a specific planning note (e.g., `### Sidebar Nav Card (2026-06-03_chat-as-continuous-tab Task 1.2)`). Active items are mirrored to `docs/Developer Guide/known-bugs.md` with engineering root-cause/solution/verification shape. The convention is adopted in `decisions/D-009_POL_known-issues-format.md`.
+- **MVP priorities:** follow `templates/mvp-priorities.md` (OpenManager format). `## Alpha Goal` (one-line summary of the current validation goal); `## MVP Priorities` grouped by `### <Lane>` H3 subsections (e.g., `### Bootstrap`, `### Validations`, `### Migrations`, `### AGENTS.md integration`, `### CLI surface`, `### Documentation`, `### OpenClaw PM-agent integration`); `## Not Yet MVP` (bare `- [ ]` bullets, no status prefix). Each MVP item uses the OpenManager checkbox format:
+  - `- [x] **DONE:** <description>.` — shipped items.
+  - `- [x] **DONE (YYYY-MM-DD):** <description>.` — shipped items with a date.
+  - `- [ ] **PENDING:** <description>.` — in-flight items.
+
+  The lane breakdown is project-specific; the bootstrap writes a worked example with the project-management skill's natural lanes (Bootstrap / Validations / Migrations / AGENTS.md integration / CLI surface / Documentation / OpenClaw PM-agent integration). Users replace the example lanes with their own project's lanes. The convention is adopted in `decisions/D-010_POL_mvp-priorities-format.md`.
 - **Done/pending:** follow `templates/done-pending.md`. The file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a `Planning note:` line, a DONE/PENDING checklist, and `Relevant decisions:` / `Relevant features:` bullets; (b) **general done/pending items** without a dedicated planning note, organized by date. Planning-note mirrors always take priority in the file's order. The H2 for a planning-note mirror is the slug only (e.g., `## v1.5.0 backlog from post-v1.4.1 audit`), not the date-prefixed stem — the validator at `scripts/check-pm-consistency.mjs` accepts both date-prefixed and slug-only H2. The convention is adopted in `decisions/D-007_POL_done-pending-format.md`.
 - **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` mirror section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
 

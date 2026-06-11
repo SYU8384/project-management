@@ -20,6 +20,13 @@ owner: PM
 
 - [[#Alpha Goal]]
 - [[#MVP Priorities]]
+- [[#Bootstrap]]
+- [[#Validations]]
+- [[#Migrations]]
+- [[#AGENTS.md integration]]
+- [[#CLI surface]]
+- [[#Documentation]]
+- [[#OpenClaw PM-agent integration]]
 - [[#Not Yet MVP]]
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
@@ -30,11 +37,39 @@ owner: PM
 
 ## MVP Priorities
 
-*(no items)*
+### Bootstrap
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
+
+### Validations
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
+- [ ] **PENDING:** <capability name>. <brief description of what still needs to ship>.
+
+### Migrations
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
+
+### AGENTS.md integration
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
+
+### CLI surface
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
+
+### Documentation
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
+
+### OpenClaw PM-agent integration
+
+- [x] **DONE:** <capability name>. Shipped vX.Y.Z. <brief description>.
 
 ## Not Yet MVP
 
-*(no items)*
+- **<capability name>** — <one-line description of the deferred capability>. *Not yet committed; tracked in `roadmap/ideas.md` "Brainstorming".*
+- **<capability name>** — <one-line description>. *Not yet committed.*
 
 ## Navigation
 

@@ -69,6 +69,19 @@ Adopted two new conventions surfaced during the post-v1.4.1 audit of the project
 ### Fixed
 - `scripts/check-pm-consistency.mjs:195`: the validator's `done-pending.md` mirror check now accepts both `## YYYY-MM-DD_slug` (date-prefixed) and `## <slug>`-only H2 (per the new convention). F8 from the v1.5.0 audit resolved.
 
+## [Unreleased] - known-issues + mvp-priorities formats
+
+Two more conventions from the OpenManager project formalized for the skill. Pairs with the previous `[Unreleased] - done-pending format + ideas status colors` block.
+
+### Added
+- `decisions/D-009_POL_known-issues-format.md` — `known-issues.md` uses the OpenManager domain-grouped format. Three top-level sections (`## Active` / `## Fixed` / `## Deferred`), each grouped by `### <Domain>` H3 subsections. Item format: `- [x] **FIXED (YYYY-MM-DD, in commit \`<hash>\`):** ...` / `- [ ] **PENDING (YYYY-MM-DD):** ...` / `- [ ] **DEFERRED:** ...`. Lead paragraphs document the convention inline.
+- `decisions/D-010_POL_mvp-priorities-format.md` — `mvp-priorities.md` uses the OpenManager lane-grouped format. `## Alpha Goal` (one-line summary); `## MVP Priorities` grouped by `### <Lane>` H3 subsections; `## Not Yet MVP` uses bare `- [ ]` bullets. Item format: `- [x] **DONE:**` / `- [x] **DONE (YYYY-MM-DD):**` / `- [ ] **PENDING:**`.
+
+### Changed
+- `scripts/bootstrap-pm.mjs`: `mvp-priorities.md` and `known-issues.md` are now scaffolded in the OpenManager format. The `mvp-priorities.md` scaffold has worked examples in 7 lane subsections (Bootstrap / Validations / Migrations / AGENTS.md integration / CLI surface / Documentation / OpenClaw PM-agent integration). The `known-issues.md` scaffold has worked examples in 5 domain subsections (Migrations / Validators / AGENTS.md integration / CLI surface / Documentation) plus lead paragraphs in `## Active` and `## Fixed`.
+- `templates/mvp-priorities.md` and `templates/known-issues.md`: reference templates updated to the new format with worked examples.
+- `templates/README.md`: "Conventions by Page Type → Roadmap notes" — `Known issues` and `MVP priorities` bullets expanded to document the new formats (domain-grouped `###` subsections, OpenManager item format, lead paragraphs, mirror relationship to `known-bugs.md`).
+
 ## [1.4.0] - 2026-06-10
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
