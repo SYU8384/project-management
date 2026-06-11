@@ -27,19 +27,13 @@ Open bugs, risks, and blockers for <Project>. Keep engineering root-cause knowle
 - [[#AGENTS.md integration]]
 - [[#CLI surface]]
 - [[#Documentation]]
-- [[#Fixed]]
-- [[#Migrations]]
-- [[#Validators]]
-- [[#Documentation]]
 - [[#Deferred]]
-- [[#Validators]]
-- [[#CLI surface]]
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
 
 ## Active
 
-Active items are grouped by domain below. Checked fixed entries are preserved in their original domain context for now so links and historical references remain stable.
+Active items are grouped by domain below. **Fixed items are migrated to `docs/Developer Guide/known-bugs.md`** (the engineering knowledge base) and removed from this file. A `### <Domain>` section that becomes fully fixed (no remaining active items) is archived to `archive/known-issues-<domain>-archived.md` per the planning-note archive convention. `## Deferred` items stay in this file until re-opened.
 
 ### Migrations
 
@@ -60,22 +54,6 @@ Active items are grouped by domain below. Checked fixed entries are preserved in
 ### Documentation
 
 *(no items)*
-
-## Fixed
-
-Fixed entries are currently retained in their original domain context under `## Active` to preserve nearby bug history. Move newly fixed standalone issues here when they no longer need domain context.
-
-### Migrations
-
-- [x] **FIXED (YYYY-MM-DD):** <one-line description>. Root cause. Resolution. Commit `<hash>`.
-
-### Validators
-
-- [x] **FIXED (YYYY-MM-DD):** <one-line description>. Root cause. Resolution. Commit `<hash>`.
-
-### Documentation
-
-- [x] **FIXED (YYYY-MM-DD):** <one-line description>. Root cause. Resolution. Commit `<hash>`.
 
 ## Deferred
 

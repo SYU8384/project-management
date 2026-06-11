@@ -82,7 +82,18 @@ Two more conventions from the OpenManager project formalized for the skill. Pair
 - `templates/mvp-priorities.md` and `templates/known-issues.md`: reference templates updated to the new format with worked examples.
 - `templates/README.md`: "Conventions by Page Type → Roadmap notes" — `Known issues` and `MVP priorities` bullets expanded to document the new formats (domain-grouped `###` subsections, OpenManager item format, lead paragraphs, mirror relationship to `known-bugs.md`).
 
-## [1.4.0] - 2026-06-10
+## [Unreleased] - known-issues lifecycle refinement
+
+A refinement of the OpenManager `known-issues.md` format (introduced in the previous `[Unreleased] - known-issues + mvp-priorities formats` block). The lifecycle rule: fixed items migrate to `known-bugs.md`, and whole `### <Domain>` sections archive when fully fixed. The pre-v1.4.1 `## Fixed` section is removed from `known-issues.md`.
+
+### Changed
+- `scripts/bootstrap-pm.mjs`: `known-issues.md` no longer writes a `## Fixed` section. The lead paragraph in `## Active` now documents the migration rule: fixed items migrate to `docs/Developer Guide/known-bugs.md`; whole `### <Domain>` sections archive when fully fixed; `## Deferred` items stay.
+- `templates/known-issues.md`: reference template updated to match. The `## Fixed` section is removed from the scaffold; the lead paragraph in `## Active` documents the migration rule.
+- `templates/README.md`: "Conventions by Page Type → Roadmap notes → Known issues" updated to document the lifecycle rule. The bullet now describes only `## Active` and `## Deferred` (no `## Fixed` section). The OpenManager item format list is reduced to PENDING / PENDING (date) / DEFERRED; FIXED variants are removed from the canonical list.
+- `decisions/D-009_POL_known-issues-format.md`: a new `## Lifecycle` sub-section documents the migration rule. The previous "Positive" bullet about the lead paragraphs in `## Active` and `## Fixed` is removed (no more `## Fixed` lead paragraph). `## Realization Notes` updated to mention the lifecycle rule.
+
+### Fixed
+- `scripts/check-vault-structure.mjs`: the roadmap-shape-violation check for `roadmap/known-issues.md` no longer requires `## Fixed`. The new convention (per D-009 Lifecycle) drops the `## Fixed` section entirely; fixed items migrate to `known-bugs.md` and whole `### <Domain>` sections archive when fully fixed. The validator now requires only `## Contents` / `## Active` / `## Deferred` / `## Navigation`.
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
 

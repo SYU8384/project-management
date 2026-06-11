@@ -503,7 +503,6 @@ function checkRoadmapShape() {
     ["roadmap/known-issues.md", [
       "Contents",
       "Active",
-      "Fixed",
       "Deferred",
       "Navigation",
     ]],

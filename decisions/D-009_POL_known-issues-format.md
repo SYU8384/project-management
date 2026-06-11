@@ -55,15 +55,26 @@ The convention is documented in `templates/README.md` "Conventions by Page Type 
 - **Positive**: the convention is documented. A new user reading the skill's `templates/README.md` knows exactly what `known-issues.md` should look like.
 - **Positive**: the OpenManager project's format is now the skill's canonical format. Existing OpenManager users get the convention formalized; new users get it from the start.
 - **Positive**: domain grouping makes it easy to find bugs by area (Migrations / Validators / etc.) without scanning a long flat list.
-- **Positive**: the lead paragraphs in `## Active` and `## Fixed` document the convention inline; a reader doesn't have to consult the conventions doc to understand the layout.
 - **Negative**: the format is more complex than the pre-v1.4.1 flat format. A user with no existing bug tracking has more sections to fill. The worked examples in the bootstrap show the format; the user replaces with their own content.
 - **Negative**: the convention is not enforced by the validator. A future validator could check that `### <Domain>` subsections exist and that each item has a `**STATUS (DATE):**` prefix; not yet built.
 
+## Lifecycle
+
+The lifecycle rule is part of this convention, not a separate decision. The rule:
+
+- **Active items** are tracked in `known-issues.md` `## Active` (PM-level summary) AND mirrored to `docs/Developer Guide/known-bugs.md` (engineering root cause / solution / verification). The PM-level entry is one line; the engineering entry has the full body shape from the OpenManager format.
+- **Fixed items** are **migrated to `docs/Developer Guide/known-bugs.md`** and removed from `known-issues.md`. The PM-level tracker is strictly for items still being worked on or triaged; the engineering knowledge base is the source of truth for fix details.
+- **A `### <Domain>` section that becomes fully fixed** (no remaining active items) is **archived to `archive/known-issues-<domain>-archived.md`** per the planning-note archive convention. The archived file is a historical snapshot; the engineering knowledge lives in `known-bugs.md` `## Fixed Bugs`.
+- **`## Deferred` items** stay in `known-issues.md` until re-opened.
+- **No `## Fixed` section** in `known-issues.md`. The section is removed entirely; fixed items live in `known-bugs.md` only.
+
+The lifecycle is a refinement of the OpenManager format. The pre-v1.4.1 format had a `## Fixed` section; the new convention drops it.
+
 ## Realization Notes
 
-- The `templates/known-issues.md` and the `bootstrap-pm.mjs` inline content are updated to match the new format.
-- The `templates/README.md` "Conventions by Page Type → Roadmap notes → Known issues" section documents the format.
-- The user's PM folder (the project-management skill itself) was the first to use the new format. The convention was captured same-day.
+- The `templates/known-issues.md` and the `bootstrap-pm.mjs` inline content are updated to match the new format (no `## Fixed` section; lead paragraph documents the migration rule).
+- The `templates/README.md` "Conventions by Page Type → Roadmap notes → Known issues" section documents the format and the lifecycle rule.
+- The user's PM folder (the project-management skill itself) was the first to apply the new convention. On 2026-06-12, the 7 fixed items were removed from `known-issues.md`; the `### Documentation` section (all 4 items fixed) was archived to `archive/known-issues-documentation-archived.md`; the `## Fixed` section was dropped. The 2 active items (1 in `### Migrations`, 1 in `### Validators`) and the 2 deferred items stay.
 
 ## Related
 
