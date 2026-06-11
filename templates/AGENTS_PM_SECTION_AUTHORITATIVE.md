@@ -28,7 +28,7 @@ If the PM folder path is unknown, check `~/.config/project-management/projects.j
 
 When reviewing or merging a PR, check whether the PR body has a useful `PM folder impact` section.
 
-If the section is missing, empty, vague, or says the PM folder was unavailable locally:
+If the section is missing, empty, or vague:
 - Inspect the PR diff, commits, changed files, tests, migrations, and release notes.
 - Infer the PM updates needed across `system/`, `docs/User Guide/`, `docs/Admin Guide/`, `docs/Developer Guide/`, `docs/Developer Guide/known-bugs.md`, `docs/Quick Commands/`, `features/`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `roadmap/done-pending.md`, `roadmap/plans/`, `decisions/`, folder indexes, and `history/`.
 - Write a concrete PM update plan before merge, or immediately after merge if the PR must land first.

@@ -44,9 +44,11 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 
 Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `openclaw`, or `--dest <path>` for a custom directory.
 
-### After install: trigger phrases for your coding agent
+## 🎯 Triggers (coding-agent users)
 
-If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, restart your coding agent and use these. The order below follows a new user's natural flow: **register your project first** (`setup this repo` or `setup as collaborator`), then use verify / reconcile to clean state, and reserve migrate for the narrow case of migrations-only. Use `log this` after code changes in authoritative projects.
+If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, after install + first setup the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`. Restart your coding agent and use these phrases.
+
+The order below follows a new user's natural flow: **register your project first** (`setup this repo` or `setup as collaborator`), then use verify / reconcile to clean state, and reserve migrate for the narrow case of migrations-only. Use `log this` after code changes in authoritative projects.
 
 | You want to | Say | When to use | What happens |
 |---|---|---|---|
@@ -57,7 +59,7 @@ If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair,
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
 
-After install + first setup, the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`.
+If you have code access but no PM folder at all, none of these apply — see **Access model** below.
 
 ## 🛡️ Access model
 
@@ -65,7 +67,9 @@ The skill behaves differently depending on whether you own the PM folder or are 
 
 - **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, or `reconcile this project` to fix an existing one.
 - **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode. You need the PM folder mounted read-only (e.g., via OneDrive read-link, Syncthing read-only mirror) to use this mode.
-- **Contributor (no PM access)** — the skill is not really for you. You have code access but no PM folder: either the maintainer doesn't share the PM folder with you, or the maintainer doesn't use the skill at all. Don't run `setup as collaborator` — there's nothing to register on your side. When you open a PR, fill in the "PM folder impact" section in the PR body (per `templates/PR_BODY_TEMPLATE.md`) describing what PM updates your change implies. The *maintainer's* agent reads your PR body and applies the PM folder updates on their side. The skill is what the *maintainer* runs; for the contributor side, the convention is the PR body, not the skill.
+- **Contributor (no PM access)** — the skill is not really for you. You have code access but no PM folder: either the maintainer doesn't share the PM folder with you, or the maintainer doesn't use the skill at all. Don't run `setup as collaborator` — there's nothing to register on your side.
+
+If you have code access but no PM folder, leave the "PM folder impact" section of your PR body empty. The maintainer's agent reads the code diff and applies PM updates on their side. (A read-only collaborator with PM folder read access should fill in the per-lane checkboxes in the same section — they can see the PM folder, so they can be specific.)
 
 The `access` field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this field before every write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident. Projects with no PM access aren't registered in `projects.json` at all; the maintainer registers them on the maintainer's side, and the contributor workflow is via PR body, not the skill.
 
@@ -123,22 +127,16 @@ Every visible folder has a folder-note index named after the folder, including h
 
 ## 🔄 Workflow
 
-```text
-User or agent finishes meaningful work
-        |
-        v
-Read the project's PM README routing map
-        |
-        v
-Update affected current-state docs
-system/ + docs/ + features/ + roadmap/ + decisions/
-        |
-        v
-Update folder-note indexes and navigation
-        |
-        v
-Write the final history/YYYY-MM/history-YYYY-MM-DD.md entry
-```
+The workflow has three branches — one per access mode. The owner's path is the only one that writes the PM folder directly; collaborators and contributors route their work through the PR body.
+
+| Step | `access: authoritative` | `access: read-only` | No PM access |
+|---|---|---|---|
+| 1. Read the project's PM README | Yes (routing map) | Yes (context only) | (skip — no PM folder) |
+| 2. Update current-state docs (`system/`, `docs/`, `features/`, `roadmap/`, `decisions/`) | Yes | No | No |
+| 3. Update folder-note indexes and navigation | Yes | No | No |
+| 4. Write `history/YYYY-MM/history-YYYY-MM-DD.md` | Yes | No | No |
+| 5. PR body's `PM folder impact` section | n/a | Fill in the per-lane checkboxes (be specific) | Leave the section empty |
+| After merge | (done) | Maintainer applies PM updates from the PR body | Maintainer inspects the code diff and infers PM updates |
 
 History is written last because it records what changed after the durable docs have already been updated.
 
@@ -181,7 +179,13 @@ This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags
 - **Default install (v1.0.1+):** pulls `v1` (latest `v1.x.x` release). Use `--ref main` or `--channel main` for the bleeding edge.
 - **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
 - **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
-- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file. To check the currently installed version without re-running the installer: `cat <skill_dir>/VERSION`.
+- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file.
+
+**Check the installed version** without re-running the installer:
+
+```bash
+cat <skill_dir>/VERSION
+```
 
 The version is printed after every install or update:
 
@@ -202,7 +206,7 @@ To cut a new release:
 
 That's it. `CHANGELOG.md` is the single source of truth for what changed in each version; `VERSION` and the git tag are the versioned snapshot. The skill is small enough that an additional release-notes layer (per-version prose files, GitHub Releases UI paste) doesn't pay for itself.
 
-Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, run the `gstack-ship` skill (if installed) or manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
+Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
 
 ## 📄 License
 

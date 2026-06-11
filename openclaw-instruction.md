@@ -208,7 +208,7 @@ Common routes:
 
 Maintainer PR PM backfill:
 - When reviewing or merging a PR, check whether the PR body has a useful `PM folder impact` section.
-- If the section is missing, empty, vague, or says the PM folder was unavailable locally, inspect the PR diff, commits, changed files, tests, migrations, and release notes.
+- If the section is missing, empty, or vague, inspect the PR diff, commits, changed files, tests, migrations, and release notes.
 - Infer the PM updates needed across `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, and `history/`.
 - For `access: authoritative`, apply the PM updates directly before merge or immediately after merge.
 - For `access: read-only`, write a maintainer-facing PM update plan instead of editing.

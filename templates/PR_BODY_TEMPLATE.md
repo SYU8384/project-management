@@ -12,15 +12,16 @@
 
 ## PM folder impact
 
-<!-- Required: describe what PM folder docs (if any) should be updated to reflect this PR.
-     See the project-management skill's "Contributor Workflow" section for guidance.
+<!-- Fill in the checkboxes below if you have PM folder access (read or write).
+     If you have no PM folder access, leave this section empty — the maintainer's
+     agent will read the code diff and apply the PM updates on their side.
 
-     The PM folder is separate from this code repo. These items are suggestions;
-     the maintainer (or a maintainer-side agent) will apply the actual PM updates
-     after this PR is merged.
+     The PM folder is separate from this code repo. The checkboxes below are
+     suggestions; the maintainer (or a maintainer-side agent) will apply the
+     actual PM updates after this PR is merged.
 
-     If you do not have PM folder access, write:
-     "PM folder unavailable locally; maintainer must infer and apply PM updates."
+     See the project-management skill's "Contributor Workflow" section for the
+     full convention.
 
      System docs affected:
      - [ ] system/<topic>.md — what changed: ...

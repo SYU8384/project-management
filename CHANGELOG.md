@@ -46,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/check-stale-docs.mjs`: removed `"OpenManager.md"` from the hardcoded `SKIP_FILES` set (project-specific artifact, not part of the PM-folder convention).
 - `CHANGELOG.md [Unreleased] ### Added` (this file, the entry above): the line still said "three access modes" after the enum was narrowed — rewritten to match the final two-modes-plus-contributor-case state.
 
+## [Unreleased] - structural refactor
+
+### Changed
+- `README.md` structural refactor (no factual change): promoted the trigger-phrases H3 to its own H2 `## 🎯 Triggers (coding-agent users)` between Quick Start and Access model; folded the post-install line into the new H2's lead; split the third Access model bullet into a short lead + a follow-up paragraph (see "Contributor workflow tightened" below); added a single cross-reference at the bottom of the trigger table pointing to the Access model section; replaced the single-path Workflow ASCII diagram with a 3-column table covering all three access modes; split the Versioning section to separate install options from the version-check command; dropped the `gstack-ship` parenthetical reference in the Releasing section.
+- Contributor workflow tightened across `README.md`, `templates/PR_BODY_TEMPLATE.md`, `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`, `REFERENCE.md`, and `openclaw-instruction.md`: a contributor with no PM folder access now leaves the PR body's `PM folder impact` section empty instead of writing a "PM folder unavailable locally" signal line. The maintainer reads the code diff directly. The `AGENTS_PM_SECTION_READONLY.md` (read-only) workflow is unchanged — read-only collaborators still fill in the per-lane checkboxes.
+
 ## [1.4.0] - 2026-06-10
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.

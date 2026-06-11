@@ -859,15 +859,14 @@ If a feature, fix, or change has **multi-step work, multi-session work, or many 
 
 ## Contributor Workflow
 
-For projects with external collaborators, the convention is that **every PR body includes a "PM folder impact" section** that lists what PM folder docs should be updated to reflect the PR's changes.
+For projects with external collaborators, the convention is that **every PR body includes a "PM folder impact" section** that lists what PM folder docs should be updated to reflect the PR's changes. **A contributor with no PM folder access at all leaves the section empty** — the maintainer's agent reads the code diff and applies PM updates on their side, with no PM work required from the contributor.
 
 A copyable PR body template is provided in `templates/PR_BODY_TEMPLATE.md`. Project repos should copy it to `.github/PULL_REQUEST_TEMPLATE.md` (or the platform's equivalent) and adapt as needed. The maintainer (or an agent acting on their behalf) applies the PM updates *after* the PR is merged — the PM folder is typically a separate vault from the code repo, so the PM updates don't go in the PR itself.
 
 **The pattern for the contributor:**
 
 1. Open a PR in the code repo.
-2. In the PR body, fill in the "PM folder impact" section. If the contributor has no PM folder access, write: "PM folder unavailable locally; maintainer must infer and apply PM updates."
-3. When PM access is available, check the boxes for:
+2. In the PR body, fill in the "PM folder impact" section if you have PM folder access. Check the boxes for:
    - System docs affected (and what changed)
    - User Guide, Admin Guide, Developer Guide, and Quick Commands docs affected
    - Roadmap known issues or ideas affected
@@ -875,10 +874,11 @@ A copyable PR body template is provided in `templates/PR_BODY_TEMPLATE.md`. Proj
    - History entries needed (the date and bullet)
    - Planning notes affected (updated, superseded, or moved to archive)
    - ADRs affected (new or existing)
+3. If you have no PM folder access, leave the section empty. The maintainer's agent reads the code diff and applies the PM updates on their side.
 4. Submit the PR.
-5. After the PR is merged, the maintainer (or a maintainer-side agent) reads the PR's "PM folder impact" section and applies the corresponding PM updates.
+5. After the PR is merged, the maintainer (or a maintainer-side agent) reads the PR's "PM folder impact" section (if present) and applies the corresponding PM updates.
 
-The maintainer's job is to translate the contributor's "PM folder impact" claim into actual PM folder edits. This keeps the contributor focused on the code change while ensuring the PM folder stays in sync.
+The maintainer's job is to translate the contributor's "PM folder impact" claim into actual PM folder edits, and to backfill from the code diff when the section is empty. This keeps the contributor focused on the code change while ensuring the PM folder stays in sync.
 
 ### Maintainer PR PM Backfill
 
@@ -888,11 +888,10 @@ When reviewing or merging a PR:
 
 1. Check whether the PR body has a useful `PM folder impact` section.
 2. If the section is complete, verify it against the diff and apply the needed PM updates after merge.
-3. If the section is missing, empty, vague, or says `PM folder unavailable locally`, inspect the PR diff, commits, changed files, tests, migrations, and release notes.
+3. If the section is missing, empty, or vague, inspect the PR diff, commits, changed files, tests, migrations, and release notes.
 4. Infer the PM updates needed across `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, and `history/`.
 5. For authoritative projects, apply the PM updates directly before merge or immediately after merge. If the PR must land first, write the PM update plan before merge so the follow-up is explicit.
 6. For read-only projects, produce a maintainer-facing PM update plan instead of editing the PM folder.
-7. For PRs from contributors with no PM folder access (PR body says "PM folder unavailable locally"), record that PM access is missing and ask the contributor or a maintainer-side PM agent to apply the updates.
 
 Do not block a contributor solely because they lacked PM folder access. The merge/review agent owns PM backfill for maintainer-side workflows.
 
