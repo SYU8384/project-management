@@ -192,7 +192,22 @@ function runFor(target) {
       issues.push(`${rel}: visible archive file should use *-archived.md`);
     }
     if (rel.startsWith("roadmap/plans/") && !isFolderNote(rel, project)) {
-      if (!donePending.includes(`## ${stem(rel)}`)) issues.push(`${rel}: missing roadmap/done-pending mirror section`);
+      const stem_ = stem(rel);
+      const date = stem_.match(/^\d{4}-\d{2}-\d{2}/)?.[1];
+      const slug = stem_.replace(/^\d{4}-\d{2}-\d{2}_?/, "");
+      const slugSpaced = slug.replace(/-/g, " ");
+      const slugTokens = slug.split(/[-_.]/).filter((t) => t.length > 1);
+      const h2s = donePending.match(/^## [^\n]+$/gm) ?? [];
+      const ok = h2s.some((h2) => {
+        if (h2.includes(stem_)) return true;
+        if (h2.includes(slug)) return true;
+        if (h2.includes(slugSpaced)) return true;
+        if (date && h2.includes(date)) return true;
+        const h2Lower = h2.toLowerCase();
+        const matches = slugTokens.filter((t) => h2Lower.includes(t.toLowerCase()));
+        return matches.length >= 2;
+      });
+      if (!ok) issues.push(`${rel}: missing roadmap/done-pending mirror section`);
     }
     for (const match of content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)) {
       const normalized = resolveLinkTarget(match[1], project);

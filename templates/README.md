@@ -180,11 +180,25 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 
 ### Roadmap notes (`roadmap/*.md`)
 
-- **Ideas:** follow `templates/ideas.md`: `## Contents`, `## Status Key`, `## Idea Register`, five status buckets, `## Idea Details`, and `## Navigation`. Use stable IDs such as `IDEA-001`; do not rely on list position for identity.
+- **Ideas:** follow `templates/ideas.md`: `## Contents`, `## Status Key` (with the color-coded status scheme — see "Status color scheme" below), `## Idea Register` (4-column table with colored status in the Status column), five status buckets (`## Brainstorming` / `## Scoping` / `## Approved` / `## Implemented` / `## Declined`), `## Idea Details` (one section per idea with a colored Status line), and `## Navigation`. Use stable IDs such as `IDEA-001`; do not rely on list position for identity. The color scheme is adopted in `decisions/D-008_POL_ideas-status-colors.md`.
 - **Known issues:** follow `templates/known-issues.md`: `## Contents`, `## Active`, `## Fixed`, `## Deferred`, and `## Navigation`. Domain-specific grouping belongs under those sections as labels or `###` subsections.
 - **MVP priorities:** follow `templates/mvp-priorities.md`: `## Contents`, `## Alpha Goal`, `## MVP Priorities`, `## Not Yet MVP`, and `## Navigation`.
-- **Done/pending:** follow `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`.
-- **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
+- **Done/pending:** follow `templates/done-pending.md`. The file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a `Planning note:` line, a DONE/PENDING checklist, and `Relevant decisions:` / `Relevant features:` bullets; (b) **general done/pending items** without a dedicated planning note, organized by date. Planning-note mirrors always take priority in the file's order. The H2 for a planning-note mirror is the slug only (e.g., `## v1.5.0 backlog from post-v1.4.1 audit`), not the date-prefixed stem — the validator at `scripts/check-pm-consistency.mjs` accepts both date-prefixed and slug-only H2. The convention is adopted in `decisions/D-007_POL_done-pending-format.md`.
+- **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` mirror section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
+
+#### Status color scheme (`ideas.md`)
+
+Each status carries a colored round icon, in three places: the Status Key table, the Idea Register's Status column, and the Idea Details `**Status:**` line. Cross-platform implementation uses the Unicode colored circle emojis (🟣/🟡/🔵/🟢/🔴) which render in any markdown viewer.
+
+| Status | Color | Emoji |
+|---|---|---|
+| Brainstorming | purple | 🟣 |
+| Scoping | yellow | 🟡 |
+| Approved | blue | 🔵 |
+| Implemented | green | 🟢 |
+| Declined | red | 🔴 |
+
+The section headers (`## Brainstorming` / `## Scoping` / etc.) and the per-idea wikilinks in those sections are plain text without emojis; only the Status Key, Register, and Details use the color.
 
 ### Planning notes (`roadmap/plans/YYYY-MM-DD_slug.md`)
 
@@ -200,7 +214,7 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 - **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
 - **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). This rename is mandatory. Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file.
+- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2 (F8 fix).
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
 ### Feature pages (`features/<feature>.md`)

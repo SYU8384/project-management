@@ -52,6 +52,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `README.md` structural refactor (no factual change): promoted the trigger-phrases H3 to its own H2 `## 🎯 Triggers (coding-agent users)` between Quick Start and Access model; folded the post-install line into the new H2's lead; split the third Access model bullet into a short lead + a follow-up paragraph (see "Contributor workflow tightened" below); added a single cross-reference at the bottom of the trigger table pointing to the Access model section; replaced the single-path Workflow ASCII diagram with a 3-column table covering all three access modes; split the Versioning section to separate install options from the version-check command; dropped the `gstack-ship` parenthetical reference in the Releasing section.
 - Contributor workflow tightened across `README.md`, `templates/PR_BODY_TEMPLATE.md`, `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`, `REFERENCE.md`, and `openclaw-instruction.md`: a contributor with no PM folder access now leaves the PR body's `PM folder impact` section empty instead of writing a "PM folder unavailable locally" signal line. The maintainer reads the code diff directly. The `AGENTS_PM_SECTION_READONLY.md` (read-only) workflow is unchanged — read-only collaborators still fill in the per-lane checkboxes.
 
+## [Unreleased] - done-pending format + ideas status colors
+
+Adopted two new conventions surfaced during the post-v1.4.1 audit of the project-management skill's own PM folder. The user's project (the project-management skill itself) was the first to use the new formats; this release formalizes them for future projects.
+
+### Added
+- `decisions/D-007_POL_done-pending-format.md` — `done-pending.md` holds two lanes: planning-note mirrors (slug-only H2, `Planning note:` line, DONE/PENDING checklist, `Relevant decisions:` / `Relevant features:` bullets) and general done/pending items without a dedicated planning note, organized by date.
+- `decisions/D-008_POL_ideas-status-colors.md` — `ideas.md` uses colored round emojis (🟣 Brainstorming, 🟡 Scoping, 🔵 Approved, 🟢 Implemented, 🔴 Declined) in the Status Key, the Idea Register's Status column, and the Idea Details `**Status:**` line.
+
+### Changed
+- `scripts/bootstrap-pm.mjs`: `roadmap/done-pending.md` and `roadmap/ideas.md` are now scaffolded in the new format. The `done-pending.md` scaffold includes a worked example planning-note-mirror section; the `ideas.md` scaffold includes a worked IDEA-001 example with the color scheme.
+- `templates/done-pending.md`: updated to the two-lane format with the worked example.
+- `templates/ideas.md`: updated with the color-scheme lead note, emoji-prefixed Status Key, and emoji'd Idea Register.
+- `templates/README.md`: "Conventions by Page Type → Roadmap notes" section updated to document the new `done-pending.md` two-lane structure, the slug-only H2, and the `ideas.md` status color scheme. A new "Status color scheme" sub-section lists the 5 status-to-color mappings.
+
+### Fixed
+- `scripts/check-pm-consistency.mjs:195`: the validator's `done-pending.md` mirror check now accepts both `## YYYY-MM-DD_slug` (date-prefixed) and `## <slug>`-only H2 (per the new convention). F8 from the v1.5.0 audit resolved.
+
 ## [1.4.0] - 2026-06-10
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
