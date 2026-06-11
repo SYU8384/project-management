@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-10
+
+`projects.json` moves from the skill root to a user-specific location at `~/.config/project-management/projects.json` (XDG-conformant). This keeps the skill portable and user-agnostic — the same skill can be shipped to another user without leaking personal paths, and skill reinstalls no longer clobber user config.
+
+### Added
+
+- `scripts/lib/paths.mjs`: shared path-resolution helpers. `resolveProjectsConfigPath(explicitConfigPath)` returns the path with strict precedence: `--config <path>` flag (highest) → `~/.config/project-management/projects.json`. `findSkillDir()` and `getUserConfigDir()` round out the module.
+- `bootstrap-pm.mjs` writes `projects.json` to `~/.config/project-management/projects.json` on first run (creating the directory if missing). The `_comment` field is stripped from the user file.
+
+### Changed
+
+- All seven scripts (`bootstrap-pm.mjs`, `migrate.mjs`, `check-pm.mjs`, `check-pm-consistency.mjs`, `check-vault-structure.mjs`, `check-stale-docs.mjs`, `check-agents.mjs`) now resolve `projects.json` via `scripts/lib/paths.mjs`. None reads from `<skill_dir>/projects.json`.
+- `install.sh` no longer writes `projects.json` to the skill root. The bootstrap script handles it at the user location.
+- `templates/projects.template.json` includes a `_comment` field documenting that v1.3.0+ copies this content to the user location, not the skill root.
+- Documentation updated across `README.md`, `SKILL.md`, `openclaw-instruction.md`, `REFERENCE.md`, `templates/CURRENT_STATUS.md`, `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`, and `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` to document the new user location.
+- Removed all `<skill_dir>/projects.json` references from example commands and error messages.
+
+### Migration note (existing users)
+
+If you previously had `projects.json` at `<skill_dir>/projects.json`, move it once:
+
+```bash
+mv <skill_dir>/projects.json ~/.config/project-management/projects.json
+```
+
+v1.3.0+ scripts will not read from the skill-root location. If neither file exists after the move, the next bootstrap run will create the file at the user location.
+
 ## [1.2.0] - 2026-06-10
 
 A focused release addressing the audit findings from the post-v1.1.0 coherence + practicality pass. Most material is template/validator/migration refinement; no breaking changes for fresh bootstraps.

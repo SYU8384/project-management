@@ -15,7 +15,7 @@
  * Usage:
  *   node scripts/check-stale-docs.mjs                                  # scan CWD
  *   node scripts/check-stale-docs.mjs /path/to/vault/root              # scan explicit root
- *   node scripts/check-stale-docs.mjs                                  # auto-discover <skill_dir>/projects.json
+ *   node scripts/check-stale-docs.mjs                                  # auto-discover ~/.config/project-management/projects.json
  *   node scripts/check-stale-docs.mjs --config <path>                  # read projects from config; iterates
  *   node scripts/check-stale-docs.mjs --project <name> --config <p>   # scan a single project from config
  *
@@ -40,22 +40,10 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { resolveProjectsConfigPath } from "./lib/paths.mjs";
+
 const DEFAULT_STALE_DAYS = Number(process.env.STALE_DAYS ?? 30);
 const DEFAULT_VERY_STALE_DAYS = Number(process.env.VERY_STALE_DAYS ?? 90);
-
-function findSkillDir() {
-  let current = dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(join(current, "SKILL.md"))) return current;
-    const parent = dirname(current);
-    if (parent === current) return null;
-    current = parent;
-  }
-  return null;
-}
-
-const SKILL_DIR = findSkillDir();
-const DEFAULT_CONFIG = SKILL_DIR ? join(SKILL_DIR, "projects.json") : null;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -75,11 +63,9 @@ function parseArgs(argv) {
 const CLI = parseArgs(process.argv);
 
 async function loadConfig() {
-  const configPath = CLI.config
-    ? resolve(CLI.config)
-    : CLI.vault
-      ? null
-    : (DEFAULT_CONFIG && existsSync(DEFAULT_CONFIG) ? DEFAULT_CONFIG : null);
+  const configPath = CLI.vault
+    ? null
+    : resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
   if (!configPath) return null;
   const raw = await readFile(configPath, "utf8");
   return { config: JSON.parse(raw), source: configPath };
@@ -107,7 +93,7 @@ async function resolveTargets() {
     if (!CLI.vault) {
       console.error(
         `NOTE: no projects.json auto-discovered and no <vault> argument given.\n` +
-        `      Pass --config <skill_dir>/projects.json to iterate known projects,\n` +
+        `      projects.json lives at ~/.config/project-management/projects.json (v1.3.0+).\n` +
         `      or pass an explicit <vault> path to scan a single directory.\n` +
         `      Falling back to CWD scan (${process.cwd()}).\n`
       );

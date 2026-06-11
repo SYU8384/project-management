@@ -54,8 +54,16 @@ After install/update, set:
 
 ```text
 skill_dir = <chosen project-management install path>
-projects_json = <skill_dir>/projects.json
+projects_json = ~/.config/project-management/projects.json
 ```
+
+`projects_json` is **not** at `<skill_dir>/projects.json`. v1.3.0+ stores `projects.json` at the user-specific XDG path `~/.config/project-management/projects.json`. If the install was an upgrade from a pre-v1.3.0 install and the file is still at `<skill_dir>/projects.json`, move it once:
+
+```bash
+mv <skill_dir>/projects.json ~/.config/project-management/projects.json
+```
+
+v1.3.0+ scripts will not read from the skill-root location.
 
 If the user uses a custom OpenClaw skill root, ask for the exact path. OpenClaw can load skills from workspace skills, project `.agents/skills`, personal `~/.agents/skills`, managed/local `~/.openclaw/skills`, bundled skills, and configured extra directories. Do not use `~/.openclaw/shared-skills` as a public default.
 
@@ -83,8 +91,10 @@ If `projects.json` is missing, copy:
 to:
 
 ```text
-<projects_json>
+~/.config/project-management/projects.json
 ```
+
+(Use `mkdir -p` first if `~/.config/project-management/` does not exist.)
 
 Set `skill_dir` to `<skill_dir>` when writing the registry. Ask the user for real project paths. Do not invent paths.
 
@@ -266,9 +276,10 @@ For each available registered project, run:
 
 ```bash
 node <skill_dir>/scripts/check-pm.mjs \
-  --project <ProjectName> \
-  --config <projects_json>
+  --project <ProjectName>
 ```
+
+If the project is in a non-default `projects.json` location, pass `--config <projects_json>`. v1.3.0+ resolves `projects.json` from `~/.config/project-management/projects.json` by default.
 
 If validation fails and the project has `access: authoritative`, ask whether to repair the PM folder. If access is `read-only` or `unavailable`, report suggested fixes without editing.
 

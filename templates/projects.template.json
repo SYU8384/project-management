@@ -1,4 +1,5 @@
 {
+  "_comment": "This file is a starter template. v1.3.0+ no longer uses this file at the skill root. The bootstrap script (scripts/bootstrap-pm.mjs) copies this content to ~/.config/project-management/projects.json on first run. Replace the empty strings with your actual vault_root and per-project paths before first use.",
   "vault_root": "",
   "skill_dir": "",
   "projects": {

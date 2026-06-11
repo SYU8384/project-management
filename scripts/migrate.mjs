@@ -45,6 +45,8 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFileSync } from "node:child_process";
 
+import { resolveProjectsConfigPath } from "./lib/paths.mjs";
+
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
 const MIGRATIONS_DIR = join(SCRIPT_DIR, "migrations");
@@ -62,7 +64,7 @@ const USAGE = `Usage:
 function parseArgs(argv) {
   const out = {
     project: null,
-    configPath: resolve(SKILL_DIR, "projects.json"),
+    configPath: null, // resolved after parsing via resolveProjectsConfigPath()
     pmFolder: null,
     migration: null,
     list: false,
@@ -341,6 +343,11 @@ if (cli.help) {
 if (cli.force && !cli.migration) {
   process.stderr.write("--force requires --migration <id>.\n");
   process.exit(2);
+}
+
+// Resolve projects.json path: --config flag wins, else ~/.config/project-management/projects.json.
+if (!cli.configPath) {
+  cli.configPath = resolveProjectsConfigPath(null);
 }
 
 main().catch((err) => {

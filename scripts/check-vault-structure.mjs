@@ -21,7 +21,7 @@
  * Usage:
  *   node scripts/check-vault-structure.mjs                                # scan CWD
  *   node scripts/check-vault-structure.mjs /path/to/vault/root            # scan explicit root
- *   node scripts/check-vault-structure.mjs                                # auto-discover <skill_dir>/projects.json
+ *   node scripts/check-vault-structure.mjs                                # auto-discover ~/.config/project-management/projects.json
  *   node scripts/check-vault-structure.mjs --config <path>                # read projects from config; iterates
  *   node scripts/check-vault-structure.mjs --project <name> --config <p> # scan a single project from config
  *
@@ -48,19 +48,9 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-function findSkillDir() {
-  let current = dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(join(current, "SKILL.md"))) return current;
-    const parent = dirname(current);
-    if (parent === current) return null;
-    current = parent;
-  }
-  return null;
-}
+import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 
 const SKILL_DIR = findSkillDir();
-const DEFAULT_CONFIG = SKILL_DIR ? join(SKILL_DIR, "projects.json") : null;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -82,10 +72,8 @@ function parseArgs(argv) {
 const CLI = parseArgs(process.argv);
 
 function loadConfigPath() {
-  if (CLI.config) return resolve(CLI.config);
   if (CLI.vault) return null;
-  if (DEFAULT_CONFIG && existsSync(DEFAULT_CONFIG)) return DEFAULT_CONFIG;
-  return null;
+  return resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
 }
 
 function isTemplateConfig(cfg) {
@@ -110,7 +98,7 @@ function resolveTargets() {
     if (!CLI.vault) {
       console.error(
         `NOTE: no projects.json auto-discovered and no <vault> argument given.\n` +
-        `      Pass --config <skill_dir>/projects.json to iterate known projects,\n` +
+        `      projects.json lives at ~/.config/project-management/projects.json (v1.3.0+).\n` +
         `      or pass an explicit <vault> path to scan a single directory.\n` +
         `      Falling back to CWD scan (${process.cwd()}).\n`
       );

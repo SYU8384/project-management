@@ -10,19 +10,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-function findSkillDir() {
-  let current = dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(join(current, "SKILL.md"))) return current;
-    const parent = dirname(current);
-    if (parent === current) return null;
-    current = parent;
-  }
-  return null;
-}
+import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 
 const SKILL_DIR = findSkillDir();
-const DEFAULT_CONFIG = SKILL_DIR ? join(SKILL_DIR, "projects.json") : null;
 const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
 
 function parseArgs(argv) {
@@ -39,10 +29,8 @@ function parseArgs(argv) {
 const CLI = parseArgs(process.argv);
 
 function loadConfigPath() {
-  if (CLI.config) return resolve(CLI.config);
   if (CLI.vault) return null;
-  if (DEFAULT_CONFIG && existsSync(DEFAULT_CONFIG)) return DEFAULT_CONFIG;
-  return null;
+  return resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
 }
 
 function isTemplateConfig(cfg) {

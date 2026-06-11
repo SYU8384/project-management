@@ -15,6 +15,7 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { homedir } from "node:os";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
@@ -74,7 +75,7 @@ function parseArgs(argv) {
     }
   }
 
-  for (const key of ["project", "pmFolder", "phase", "config"]) {
+  for (const key of ["project", "pmFolder", "phase"]) {
     if (!out[key]) {
       console.error(`Missing required --${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}`);
       usage();
@@ -131,7 +132,9 @@ const project = cli.project;
 const projectSlug = slugify(project);
 const pmFolder = resolve(cli.pmFolder);
 const codeRepo = cli.codeRepo === null ? null : resolve(cli.codeRepo);
-const configPath = resolve(cli.config);
+const configPath = cli.config
+  ? resolve(cli.config)
+  : join(homedir(), ".config", "project-management", "projects.json");
 const vaultRoot = cli.vaultRoot ? resolve(cli.vaultRoot) : dirname(pmFolder);
 const date = cli.date;
 const month = monthOf(date);
@@ -262,6 +265,7 @@ function substituteTemplate(name, replacements) {
 function loadConfig() {
   if (!existsSync(configPath)) {
     const starter = JSON.parse(readFileSync(join(TEMPLATE_DIR, "projects.template.json"), "utf8"));
+    delete starter._comment;
     starter.skill_dir = SKILL_DIR;
     starter.vault_root = vaultRoot;
     return starter;

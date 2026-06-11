@@ -1,6 +1,6 @@
 ## PM folder
 
-This project has a PM folder at `<pm_folder>` (replace with the actual path; see `projects.json` at the root of the project-management skill for the canonical mapping).
+This project has a PM folder at `<pm_folder>` (replace with the actual path; see `~/.config/project-management/projects.json` for the canonical mapping — `projects.json` lives at the user-specific XDG location from v1.3.0+, not at the skill root).
 
 Before coding:
 - Read the project's PM folder `README.md` to know the routing map.
@@ -22,7 +22,7 @@ After coding:
 
 The full convention is documented in the project-management skill at `<skill_dir>/SKILL.md` (specifically the "Coding Agent Integration" subsection).
 
-If the PM folder path is unknown, check the project-management skill's `projects.json` for the project's `pm_folder` field, or ask the maintainer.
+If the PM folder path is unknown, check `~/.config/project-management/projects.json` (user-specific, from v1.3.0+) for the project's `pm_folder` field, or ask the maintainer.
 
 ### Maintainer PR review
 

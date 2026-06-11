@@ -14,7 +14,7 @@ When opening a PR:
 - Do NOT make PM folder edits from this checkout.
 
 After PM access is granted:
-- Update the project-management skill's `projects.json` entry from `access: "unavailable"` to `access: "read-only"` or `access: "authoritative"`.
+- Update `~/.config/project-management/projects.json` (user-specific, from v1.3.0+) entry from `access: "unavailable"` to `access: "read-only"` or `access: "authoritative"`.
 - Add the real `pm_folder` path.
 - Replace this section with the matching read-only or authoritative PM folder section.
 

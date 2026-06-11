@@ -84,18 +84,33 @@ Installing into OpenClaw with the installer only installs or updates the skill f
 git clone https://github.com/SYU8384/project-management.git ~/.agents/skills/project-management
 ```
 
-Manual clones do not create `projects.json`. After cloning, create it if needed:
+Manual clones do not create `projects.json`. v1.3.0+ writes `projects.json` to `~/.config/project-management/projects.json` (user-specific XDG location), not to the skill directory. To seed it manually:
 
 ```bash
-cd <skill_dir>
-cp templates/projects.template.json projects.json
+mkdir -p ~/.config/project-management
+cp <skill_dir>/templates/projects.template.json ~/.config/project-management/projects.json
 ```
+
+Then edit `~/.config/project-management/projects.json` to fill in your real `vault_root`, `skill_dir`, and project entries. The bootstrap script (`scripts/bootstrap-pm.mjs`) does this automatically on first run.
+
+**Existing users on pre-v1.3.0:** move your file once:
+
+```bash
+mv <skill_dir>/projects.json ~/.config/project-management/projects.json
+```
+
+v1.3.0+ scripts will not read from the skill-root location.
 
 Restart your agent after installing or updating the skill.
 
 ### Local Registry (Advanced)
 
-`projects.json` is private local config and is gitignored. The installer creates it from `templates/projects.template.json` if it does not already exist.
+`projects.json` is private local config and is gitignored. From v1.3.0 it lives at `~/.config/project-management/projects.json` (user-specific), not in the skill directory. The path resolution precedence is:
+
+1. `--config <path>` flag (highest).
+2. `~/.config/project-management/projects.json` (default).
+
+The skill-root `projects.json` is **not** read; the path is no longer fallback-resolved. Existing users on pre-v1.3.0 must move their file once.
 
 `<skill_dir>` is whichever install path you chose, such as:
 
@@ -268,10 +283,16 @@ Or run the primary validator directly:
 node scripts/check-pm.mjs
 ```
 
-It auto-discovers `projects.json` when run from this skill repo. You can also scan one project explicitly:
+It auto-discovers `projects.json` from `~/.config/project-management/projects.json` (user-specific, v1.3.0+). You can also scan one project explicitly:
 
 ```bash
-node scripts/check-pm.mjs --project MyProject --config projects.json
+node scripts/check-pm.mjs --project MyProject
+```
+
+Or pass `--config` to point at a non-default location:
+
+```bash
+node scripts/check-pm.mjs --project MyProject --config ~/.config/project-management/projects.json
 ```
 
 Run `setup this repo` or `setup as collaborator` before project-scoped validation so `projects.json` has a real entry for the project.
@@ -345,7 +366,7 @@ The runner is **idempotent**: re-running on a fully-migrated project prints `No 
 | [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, decisions, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
-| [`templates/projects.template.json`](./templates/projects.template.json) | Starter registry for local project paths. |
+| [`templates/projects.template.json`](./templates/projects.template.json) | Starter for `projects.json`; the bootstrap script copies it to `~/.config/project-management/projects.json` on first run. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
 | [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator. |
@@ -365,7 +386,7 @@ The runner is **idempotent**: re-running on a fully-migrated project prints `No 
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
-- **The skill is portable.** `projects.json` is local and gitignored; the repo itself contains only reusable conventions, templates, and scripts.
+- **The skill is portable.** `projects.json` lives at `~/.config/project-management/projects.json` (user-specific, gitignored); the repo itself contains only reusable conventions, templates, and scripts.
 
 ## 📄 License
 

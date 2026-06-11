@@ -193,12 +193,10 @@ install_or_update() {
   fi
 
   [[ -f "$install_dir/SKILL.md" ]] || die "Installed directory is missing SKILL.md."
-  if [[ ! -f "$install_dir/projects.json" ]]; then
-    cp "$install_dir/templates/projects.template.json" "$install_dir/projects.json"
-    info "Created local projects.json from template"
-  else
-    info "Keeping existing projects.json"
-  fi
+  # NOTE: `projects.json` lives at `~/.config/project-management/projects.json`,
+  # not in the skill directory. The bootstrap script (run after install) creates
+  # it there on first use. v1.3.0+ no longer writes projects.json to the
+  # skill root; existing pre-v1.3.0 installs should manually `mv` their file.
 
   local installed_version="unknown"
   if [[ -f "$install_dir/VERSION" ]]; then
@@ -250,7 +248,7 @@ Installed or updated project-management at:
 Next steps:
   1. Restart your agent so it discovers the skill.
   2. Use the skill and say: setup this repo
-  3. Advanced/manual fallback: edit $install_dir/projects.json with your vault and project paths.
+  3. Advanced/manual fallback: edit ~/.config/project-management/projects.json (created by the bootstrap script on first setup) with your vault and project paths.
 EOF
 }
 

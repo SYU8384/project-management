@@ -17,7 +17,9 @@ Primary command:
 
 ```bash
 node <skill_dir>/scripts/check-pm.mjs
-node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json
+node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>
+# --config is only needed for non-default locations; v1.3.0+ defaults to
+# ~/.config/project-management/projects.json
 ```
 
 The wrapper runs all focused validators and returns nonzero if any check fails. The individual scripts remain available for debugging specific failures.
@@ -35,7 +37,7 @@ node <skill_dir>/scripts/check-pm.mjs
 For one registered project, prefer:
 
 ```bash
-node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json
+node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>
 ```
 
 The wrapper runs:
@@ -195,7 +197,7 @@ Preserves `archive/` and `history/` untouched. Idempotent: re-running is a no-op
 
 ### Project Detection
 
-If your setup has multiple projects, identify which one applies from the context (channel, working directory, recent files, explicit mention). The user's own config (`projects.json` at the skill root) is the canonical place for project paths and metadata.
+If your setup has multiple projects, identify which one applies from the context (channel, working directory, recent files, explicit mention). The user's own config (`~/.config/project-management/projects.json` from v1.3.0+) is the canonical place for project paths and metadata.
 
 If no signal is clear, ask which project applies before logging.
 
@@ -469,7 +471,7 @@ These are planning-specific values. The base `archived:` field is used separatel
 
 ### Stale detection
 
-Notes with `last_reviewed` more than 30 days old are flagged as **stale**. Notes never reviewed or more than 90 days old are **very stale**. Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json` to generate the full validation report; surface the stale-doc summary in `CURRENT_STATUS.md` under "Stale Docs".
+Notes with `last_reviewed` more than 30 days old are flagged as **stale**. Notes never reviewed or more than 90 days old are **very stale**. Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` to generate the full validation report; surface the stale-doc summary in `CURRENT_STATUS.md` under "Stale Docs". v1.3.0+ resolves `projects.json` from `~/.config/project-management/projects.json` by default.
 
 ### Stale detection is report-only
 
@@ -565,7 +567,7 @@ kind: mixed
 
 The user's project paths live in a separate config file, not in the skill text. This keeps the skill portable and user-agnostic — the same skill can be shipped to another user without leaking personal paths.
 
-**Config file location:** `projects.json` at the skill root, alongside `SKILL.md`. The file is the user's actual instance and may be gitignored or committed per their preference. A blank starter lives at `templates/projects.template.json`.
+**Config file location:** v1.3.0+ stores `projects.json` at `~/.config/project-management/projects.json` (XDG-conformant user-specific location), not in the skill directory. This keeps the skill portable and user-agnostic — the same skill can be shipped to another user without leaking personal paths. A blank starter lives at `templates/projects.template.json`. Path resolution precedence: `--config <path>` flag (highest) → user-specific `projects.json`. The skill-root `projects.json` is **not** read; pre-v1.3.0 users must move their file once (`mv <skill_dir>/projects.json ~/.config/project-management/projects.json`).
 
 **Config file shape:**
 
@@ -593,7 +595,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `projects.<name>.notes` — one-line description (optional).
 - `projects.<name>.access` — `"authoritative"` (you own the PM folder; you can edit it directly), `"read-only"` (the PM folder is shared; you can read but not edit), or `"unavailable"` (you have code access but no PM folder access yet). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). `pm_folder` may be empty/null only when `access` is `"unavailable"`.
 
-**Auto-bootstrap on first use.** If `<skill_dir>/projects.json` is missing when the agent starts work, copy `templates/projects.template.json` to `<skill_dir>/projects.json` and walk the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
+**Auto-bootstrap on first use.** v1.3.0+: if `~/.config/project-management/projects.json` is missing when the agent starts work, the bootstrap script (`scripts/bootstrap-pm.mjs`) copies `templates/projects.template.json` to the user location and walks the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
 **Validation requires registration.** If a collaborator runs `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` while `projects.json` is still the empty template, the validators must stop with an actionable setup message. The correct next step is to use the skill and say "setup as collaborator" or "setup this repo" so the agent can register `access`, `code_repo`, and `pm_folder` (unless access is unavailable).
 
@@ -623,7 +625,7 @@ First infer what is safe to infer:
 
 - Current working directory classification: clear code repo, clear PM folder, registered project path, or empty/unrecognized.
 - Repo/project name from the directory name, package metadata, README, or git remote.
-- Existing project entry in `<skill_dir>/projects.json`.
+- Existing project entry in `~/.config/project-management/projects.json`.
 - Existing `AGENTS.md` and whether it already has a `## PM folder` section.
 - Existing PM folder path if `projects.json` already has one.
 - Project description hints from README/package/docs.
@@ -696,7 +698,7 @@ Never create a private "canonical" PM folder for a collaborator unless the user 
 - A project's one-line description should change.
 - A project's access level changes (e.g., promoting a read-only contributor to authoritative, or a collaborator's project becoming read-only because you no longer maintain it).
 
-**Script auto-discovery.** The bundled validation scripts (`<skill_dir>/scripts/check-pm.mjs` plus the focused checks it runs) walk up from their own location looking for a sibling `SKILL.md`; the `projects.json` next to that `SKILL.md` is the default config. Explicit `--config <path>` always wins. An explicit PM-folder path scans that folder directly and bypasses auto-discovered config. Running `node <skill_dir>/scripts/check-pm.mjs` with no arguments validates every available project registered in the skill's local config.
+**Script auto-discovery.** v1.3.0+: the bundled validation scripts read `projects.json` from `~/.config/project-management/projects.json` by default. Path resolution precedence: `--config <path>` flag (highest) → user-specific `projects.json`. The skill-root `projects.json` is **not** read; pre-v1.3.0 installs must move their file once. An explicit PM-folder path scans that folder directly and bypasses config-based project discovery. Running `node <skill_dir>/scripts/check-pm.mjs` with no arguments validates every available project registered in the local config.
 
 **Why a config file instead of placeholders in the skill text?** Placeholders like `<vault_root>` would require the agent or scripts to substitute them, and would clutter the skill prose. A config file is the right abstraction for "user-specific runtime state" — the skill describes the *convention*; the config holds the *user's instance*.
 
@@ -743,7 +745,7 @@ When a coding agent works in a project's code repo, the PM folder is the source 
 - **Read-only projects** — the section tells the agent to read the PM folder for context, but to use the PR body template (`templates/PR_BODY_TEMPLATE.md`) to suggest PM folder changes. The maintainer applies the changes after merge. See `templates/AGENTS_PM_SECTION_READONLY.md`.
 - **Unavailable PM projects** — the section tells the agent that no PM folder is available locally. It should ask the maintainer for access, use code repo docs only, and fill the PR body template's PM impact section instead of inventing PM folder edits. See `templates/AGENTS_PM_SECTION_UNAVAILABLE.md`.
 
-The agent checks the project's `access` field in `<skill_dir>/projects.json` (`authoritative`, `read-only`, or `unavailable`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
+The agent checks the project's `access` field in `~/.config/project-management/projects.json` (`authoritative`, `read-only`, or `unavailable`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
 
 A copyable snippet is provided in each template. Project repos that adopt the project-management skill should add the appropriate section to their `AGENTS.md`. The skill is the canonical reference; the project repo's `AGENTS.md` is a thin pointer to it.
 
@@ -802,7 +804,7 @@ An OpenClaw PM agent using this bootstrap should:
 
 1. Read `<skill_dir>/SKILL.md` for routing rules.
 2. Read `<skill_dir>/REFERENCE.md` for setup, validation, repair, schema, or bootstrap details.
-3. Use `<skill_dir>/projects.json` to find project PM folders and access levels.
+3. Use `~/.config/project-management/projects.json` (v1.3.0+) to find project PM folders and access levels.
 4. Read each project PM folder `README.md` before deciding where information belongs.
 5. Respect access:
    - `authoritative` — edit PM folder directly.
@@ -953,8 +955,9 @@ node <skill_dir>/scripts/bootstrap-pm.mjs \
   --code-repo <code_repo_or_null> \
   --phase <phase> \
   --notes "<one-line description>" \
-  --config <skill_dir>/projects.json \
   --vault-root <vault_root>
+# --config is only needed for non-default locations; v1.3.0+ defaults to
+# ~/.config/project-management/projects.json
 ```
 
 Use `--dry-run` first when the user wants a preview, and `--date YYYY-MM-DD` when bootstrapping for a specific date.
@@ -972,7 +975,7 @@ After the script runs, audit and refine the generated docs. Empty code repos pro
 Finally, run:
 
 ```bash
-node <skill_dir>/scripts/check-pm.mjs --project <ProjectName> --config <skill_dir>/projects.json
+node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>
 ```
 
 The validation checks structure, stale-doc metadata, frontmatter, folder notes, links, planning mirrors, and AGENTS.md PM section drift.
