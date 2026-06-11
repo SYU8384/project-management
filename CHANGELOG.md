@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `## 🛡️ Access model` section in the README, between Quick Start and What It Does. Explains the three access modes (`authoritative` / `read-only` / `unavailable`) so the reader knows whether the skill will edit their PM folder directly, fill in a PR body, or ask the maintainer for access. Points to `REFERENCE.md` for the full per-mode behavior.
+
 ### Changed
 
+- README Quick Start trigger table: reordered to reconcile → verify → migrate (recommended first-time pick is the all-in-one fix). Added a "When to use" column so the relationship between reconcile / verify / migrate is explicit. Renamed "Result" → "What happens" for clarity.
 - README consolidated: the previous `## 🚀 Quick Start`, `## ⚙️ Install Or Update`, `## Local Registry (Advanced)`, and `## 🚀 After Installer: Start With One Prompt` sections are merged into one canonical `## 🚀 Quick Start` section at the top of the README. Three install paths (OpenClaw, interactive installer, manual) are presented with the OpenClaw-vs-coding-agent distinction explicit. Trigger phrases are scoped to "Path B / C only" so OpenClaw users don't see them as required. README is ~30% shorter; net removal of ~120 lines of redundant install content.
 - Top-of-README badge `install-or-update` → `quick-start`. Anchor `<a id="install-or-update">` replaced with `<a id="quick-start">`.
+- README: dropped the redundant `## 🧪 Validation And Integration Checks` and `## 🔁 Migrations` sections. The integration is now stated in the Quick Start trigger table (reconcile does validate + repair + migrate in one command); the Migrations subsection, runner CLI, and per-check script reference are in `REFERENCE.md` for the developer who needs them.
 
 ## [1.4.0] - 2026-06-10
 

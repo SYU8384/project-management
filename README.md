@@ -46,18 +46,30 @@ Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `o
 
 ### After install: trigger phrases for your coding agent
 
-If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, restart your coding agent and use these:
+If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, restart your coding agent and use these. The order below is the recommended flow: start with reconcile (the all-in-one fix), use verify when you want a report without any changes, and reserve migrate for the narrow case of migrations-only.
 
-| You want to | Say | Result |
-|---|---|---|
-| Bootstrap a new project's PM folder | `setup this repo` | Creates PM folder + registers project |
-| Register as a collaborator | `setup as collaborator` | Adds read-only or unavailable access |
-| Verify a project is clean | `verify setup` | Runs all four focused validators |
-| **Reconcile (validate + repair + migrate)** | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
-| Apply pending migrations only | `migrate this project` | Runs `migrate.mjs` for unapplied migrations |
-| Log a code change | `log this` | Updates affected current-state docs + history |
+| You want to | Say | When to use | What happens |
+|---|---|---|---|
+| Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | First-time pick after install, or after a long stretch without running the skill. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
+| Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs all four focused validators. No mutation. |
+| Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
+| Bootstrap a new project's PM folder | `setup this repo` | First time you set up a project. | Creates PM folder + registers project as `access: authoritative`. |
+| Register as a collaborator | `setup as collaborator` | When you have code access but don't own the PM folder. | Registers `access: read-only` or `unavailable` based on your input. |
+| Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
 
 After install + first setup, the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`.
+
+## 🛡️ Access model
+
+The skill behaves differently depending on whether you own the PM folder or are a collaborator on a project whose PM folder is maintained by someone else. Pick your path at setup time; the agent uses the access mode you register to decide which files to write, what `AGENTS.md` section to install, and which trigger phrases to expose.
+
+- **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, or `reconcile this project` to fix an existing one.
+- **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode.
+- **Collaborator without PM access yet** (`access: unavailable`): you have code access but the PM folder doesn't exist locally or you can't read it. The agent asks the maintainer for access, uses code-repo docs only, and writes a "PM folder unavailable locally" note in your PR body. Use `setup as collaborator` to register this mode.
+
+The access field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this field before every write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident.
+
+The full per-access-mode behavior (what `AGENTS.md` gets written, what trigger phrases fire, what the contributor-vs-maintainer workflow looks like for read-only and unavailable projects) is in `REFERENCE.md` → "Coding Agent Integration."
 
 ## ✨ What It Does
 
@@ -129,103 +141,6 @@ Write the final history/YYYY-MM/history-YYYY-MM-DD.md entry
 ```
 
 History is written last because it records what changed after the durable docs have already been updated.
-
-## 🧪 Validation And Integration Checks
-
-Manual validation is optional, but agents use these checks during setup, repair, and OpenClaw alignment audits. The primary check validates both the PM folder and the registered code repo `AGENTS.md` integration.
-
-Ask an agent to run the integrated setup check with any of these trigger phrases:
-
-```text
-verify setup
-validate setup
-check setup
-audit setup
-verify project setup
-validate project setup
-check PM setup
-run setup checks
-```
-
-Or run the primary validator directly:
-
-```bash
-node scripts/check-pm.mjs
-```
-
-It auto-discovers `projects.json` from `~/.config/project-management/projects.json` (user-specific, v1.3.0+). You can also scan one project explicitly:
-
-```bash
-node scripts/check-pm.mjs --project MyProject
-```
-
-Or pass `--config` to point at a non-default location:
-
-```bash
-node scripts/check-pm.mjs --project MyProject --config ~/.config/project-management/projects.json
-```
-
-Run `setup this repo` or `setup as collaborator` before project-scoped validation so `projects.json` has a real entry for the project.
-
-Pass a real config file path for `--config`; shell file descriptors such as `/dev/fd/*` are not a supported public interface.
-
-The wrapper runs all focused checks and exits nonzero if any check fails:
-
-| Script | Purpose |
-|---|---|
-| `bootstrap-pm.mjs` | Owner setup scaffold: registers a project, creates the canonical PM folder, and wires code repo `AGENTS.md`. |
-| `check-pm.mjs` | Primary entry point; runs all PM validation checks in sequence. |
-| `check-vault-structure.mjs` | Required PM layout, guide folders, folder notes, semantic casing, and roadmap note sections. |
-| `check-stale-docs.mjs` | Missing or old `last_reviewed` metadata. |
-| `check-pm-consistency.mjs` | Visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and sync-conflict cleanup. |
-| `check-agents.mjs` | Registered code repo `AGENTS.md` presence, PM section template, access mode, and placeholder drift. |
-
-Use the individual scripts directly when debugging a specific class of failure.
-
-When using an individual script, an explicit PM-folder path scans that folder directly. Auto-discovered `projects.json` is used only when no path is provided or when `--config` is passed.
-
-Projects registered with `access: unavailable` are skipped cleanly because the collaborator has no local PM folder yet.
-
-## 🔁 Migrations
-
-Breaking PM-folder changes (lane moves, file renames, schema promotions) ship as **registered migrations** so existing projects can adopt them without losing content. The runner applies them idempotently and records what it did to a per-project ledger.
-
-When the validator finds a registered migration that has not been applied to a project, it emits a `## Unapplied Migrations` section that names the specific migration, lists its effects, and tells the user how to run it. The agent offers to run the migration once per session, scoped to the project in scope.
-
-### Currently registered migrations
-
-| Migration | What it does |
-|---|---|
-| `1.0.0-lane-restructure` | Move `planning/` → `roadmap/plans/`; promote `planning/decisions/` to top-level `decisions/`; rename `ADR-NNN_*.md` → `D-NNN_ADR_*.md`; rewrite frontmatter and wikilinks. `archive/` and `history/` are preserved untouched. |
-| `1.0.2-v0-content-rewrite` | Rewrite v0.x body text and frontmatter fields the v1.0.0 migration missed: `decisions/decisions.md` intro, `roadmap/plans/plans.md` H1 and `## Conventions`, `archive/archive.md` phrasing, `## Relevant ADRs` → `## Relevant Decisions`, v0.x tags, decision body shape, decision title/H1, plan H1 → slug-only, broken wikilinks, and `roadmap/done-pending.md` date-prefixed headers. Surfaces manual-review items for plan status/body mismatches, decision content authoring, and known-issues theoretical-risk wording. |
-
-### Running migrations
-
-List the registered migrations and their descriptions:
-
-```bash
-node <skill_dir>/scripts/migrate.mjs --list
-```
-
-Preview what a migration will change without applying it:
-
-```bash
-node <skill_dir>/scripts/migrate.mjs --project <Name> --dry-run
-```
-
-Apply all unapplied migrations to a project:
-
-```bash
-node <skill_dir>/scripts/migrate.mjs --project <Name> --yes
-```
-
-Apply a specific migration by id (escape hatch for partial-failure recovery):
-
-```bash
-node <skill_dir>/scripts/migrate.mjs --pm-folder <path> --migration 1.0.2-v0-content-rewrite --yes
-```
-
-The runner is **idempotent**: re-running on a fully-migrated project prints `No applicable migrations.` Each project's applied migrations are recorded at `<pm_folder>/.pm/migrations.json` (hidden dir, auto-gitignored on first apply).
 
 ## 🧰 Repository Map
 
