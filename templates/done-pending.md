@@ -1,4 +1,5 @@
 ---
+title: done-pending
 aliases: [done-pending]
 icon: "LiTrendingUp"
 iconColor: "#16a34a"

@@ -7,6 +7,7 @@ tags:
   - <decision_type>
   - <area>
 created: <YYYY-MM-DD>
+# Convention-only fields (not enforced by validators):
 decision_date: <YYYY-MM-DD>
 supersedes: <D-id>     # omit (or set to null) if this decision does not supersede another
 updated: <YYYY-MM-DD>

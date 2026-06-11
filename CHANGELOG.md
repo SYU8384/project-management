@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-10
+
+A focused release addressing the audit findings from the post-v1.1.0 coherence + practicality pass. Most material is template/validator/migration refinement; no breaking changes for fresh bootstraps.
+
+### Added
+
+- `scripts/migrate.mjs --force --migration <id>` flag: bypasses the applied-migrations ledger for the targeted migration. Use this when a migration's `detect()` patterns are extended after you already ran it — without `--force`, the ledger blocks re-running. Most users running v1.2.0 will *not* need this; it's a recovery path for the case where the extended 1.0.2 migration (below) needs to fire on existing projects.
+- `scripts/check-vault-structure.mjs --fix`: creates missing folder notes from `templates/folder-note.md` (substitutes the project name and current date). Does not fix shape violations (extra `##` sections).
+- `scripts/check-pm-consistency.mjs --fix`: rewrites the `pageType:` frontmatter field on files where it doesn't match the expected value derived from the file's path. Inserts the field if it's missing. Does not add or rename other fields.
+- `templates/planning.md`: `## Related` body section, with placeholder comment for decision / system / feature links. The `## Conventions` block already references this section; the section now exists.
+- `templates/meetings.md` and `templates/README.md → Conventions by Page Type → Meeting records`: documented `status: active` (in-progress meeting) alongside the default `status: closed`.
+
+### Changed
+
+- `scripts/migrations/1.0.2-v0-content-rewrite.mjs`: extended coverage.
+  The migration's `detect()` and `apply()` now match v1.0.0/v1.0.1/v1.0.2/v1.0.3-era text patterns in addition to the original v0.x patterns. Existing projects that already ran the migration pre-v1.2.0 can re-trigger the extended coverage with `migrate.mjs --force --migration 1.0.2-v0-content-rewrite`. The migration's `from` is now `<1.2.0`; the `to` is `1.2.0`.
+- `scripts/migrations/1.0.2-v0-content-rewrite.mjs`: manual-review messages now include file:line references (`<file>:<line>:`) so the user can jump directly to the offending text in their editor.
+- `scripts/bootstrap-pm.mjs`: the `folderNote()` helper accepts an optional `conventions` parameter; the bootstrap's `plans.md` and `features.md` calls now pass the lane-specific `## Conventions` text. Matches the templates.
+- `templates/README.md` "Live PM Folder Rule": expanded with an "always safe (no ask needed)" / "ask before" split, so the agent has a clearer heuristic.
+- `templates/known-issues.md`, `templates/ideas.md`, `templates/done-pending.md`, `templates/mvp-priorities.md`: added `title:` frontmatter field (these templates previously omitted it, which would have caused the consistency check to fail if a user copied the template directly).
+- `templates/known-bugs.md`: added `updated:` frontmatter field (was missing).
+- `templates/decision.md`: comment clarifies `decision_date` and `supersedes` are convention-only (not enforced by validators). The validator checks the 6 base fields only.
+- `REFERENCE.md` "Frontmatter Schema": reconciled schema-vs-validator — `updated`, `last_reviewed`, `status`, `owner` are now marked **Required** (matching what `check-pm-consistency.mjs` actually enforces).
+- `SKILL.md` Quick Start item 3: added a post-bootstrap note that the user should populate `CURRENT_STATUS.md` and run `check-pm.mjs --project <name>` to verify.
+- `openclaw-instruction.md`: added an `## meetings/ lane — optional` section documenting the convention.
+- `SKILL.md` and `README.md`: tightened the "planning docs" phrasing in the archive and features lane rows to reference `roadmap/plans/` and `decisions/` explicitly.
+- `templates/README.md` "Naming Conventions" table: added a "Meeting records" row for the `meetings/YYYY-MM-DD_<topic-slug>.md` filename pattern.
+
+### Migration note
+
+If you ran `1.0.0-lane-restructure` followed by `1.0.2-v0-content-rewrite` before v1.2.0, your existing PM folders still have the v1.0.0/v1.0.1/v1.0.2/v1.0.3-era text in `decisions/decisions.md` and `roadmap/plans/plans.md` `## Conventions` block. Re-running the migration on v1.2.0+ cleans them:
+
+```bash
+node <skill_dir>/scripts/migrate.mjs --pm-folder <path> --migration 1.0.2-v0-content-rewrite --force --yes
+```
+
+The `--force` is required because the migration is in your `.pm/migrations.json` ledger from the prior run. The dry-run form is `--dry-run` instead of `--yes`.
+
 ## [1.1.0] - 2026-06-11
 
 ### Added

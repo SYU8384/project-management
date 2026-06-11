@@ -59,6 +59,10 @@ projects_json = <skill_dir>/projects.json
 
 If the user uses a custom OpenClaw skill root, ask for the exact path. OpenClaw can load skills from workspace skills, project `.agents/skills`, personal `~/.agents/skills`, managed/local `~/.openclaw/skills`, bundled skills, and configured extra directories. Do not use `~/.openclaw/shared-skills` as a public default.
 
+### `meetings/` lane — optional
+
+The skill supports an optional `meetings/` lane for projects with a meeting-recording agent (e.g., OpenClaw observing a group chat and producing meeting records). This lane is **not auto-scaffolded**; create it on demand by copying `templates/meetings.md` (folder-note template) and `templates/meeting-record.md` (content-note template) into a new `meetings/` folder in the project. Decisions and plans cited from meeting records are *not duplicated* — they get their own `decisions/D-NNN_<type>_<slug>.md` and `roadmap/plans/YYYY-MM-DD_<slug>.md` files.
+
 ## 3. Check Whether The Skill Is Set Up
 
 Inspect `<projects_json>`.

@@ -6,7 +6,7 @@
  * Hidden dot-directories are ignored as sync/tooling state.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,10 +26,11 @@ const DEFAULT_CONFIG = SKILL_DIR ? join(SKILL_DIR, "projects.json") : null;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const out = { vault: null, config: null, project: null };
+  const out = { vault: null, config: null, project: null, fix: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--config" || args[i] === "-c") out.config = args[++i];
     else if (args[i] === "--project" || args[i] === "-p") out.project = args[++i];
+    else if (args[i] === "--fix") out.fix = true;
     else if (!args[i].startsWith("-")) out.vault = args[i];
   }
   return out;
@@ -176,7 +177,30 @@ function runFor(target) {
       if (!fm[key]) issues.push(`${rel}: missing ${key}`);
     }
     const expected = expectedPageType(rel, project, fm.pageType);
-    if (fm.pageType !== expected) issues.push(`${rel}: pageType ${fm.pageType}, expected ${expected}`);
+    if (fm.pageType !== expected) {
+      if (CLI.fix) {
+        // --fix: rewrite pageType in the file's frontmatter
+        const abs = join(vaultRoot, rel);
+        try {
+          const original = readFileSync(abs, "utf8");
+          let updated;
+          if (/^pageType:\s*.+$/m.test(original)) {
+            updated = original.replace(/^pageType:\s*.+$/m, `pageType: ${expected}`);
+          } else {
+            // pageType missing entirely; insert it after the `title:` line in frontmatter
+            updated = original.replace(/^(title:\s*.+)$/m, `$1\npageType: ${expected}`);
+          }
+          if (updated !== original) {
+            writeFileSync(abs, updated);
+            process.stdout.write(`fixed: ${rel} pageType → ${expected}\n`);
+            continue;
+          }
+        } catch (err) {
+          process.stderr.write(`--fix failed for ${rel}: ${err.message}\n`);
+        }
+      }
+      issues.push(`${rel}: pageType ${fm.pageType}, expected ${expected}`);
+    }
     if (fm.status === "archived") issues.push(`${rel}: status must not be archived; use archived: date`);
     if (fm.pageType === "history") {
       if (/^history\/\d{4}-\d{2}\/history-\d{4}-\d{2}-\d{2}/.test(rel) && !fm.kind) {

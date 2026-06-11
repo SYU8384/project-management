@@ -1,4 +1,5 @@
 ---
+title: MVP priorities
 aliases: [mvp-priorities]
 icon: "LiTrendingUp"
 iconColor: "#16a34a"

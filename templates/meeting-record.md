@@ -8,7 +8,7 @@ created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 last_reviewed: <YYYY-MM-DD>
 pageType: note
-status: closed
+status: closed             # use "active" while the meeting is in progress; switch to "closed" when it ends
 owner: PM
 ---
 # <topic>

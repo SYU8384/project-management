@@ -29,6 +29,7 @@ This lane is *not* auto-scaffolded by `bootstrap-pm.mjs`. To use it, create the 
 - **Body sections:** see `templates/meeting-record.md` for the full shape. At minimum: Attendees, Agenda, Discussion, Decisions Made, Action Items.
 - **Decisions and plans are not duplicated here.** A meeting that produces a decision gets a `decisions/D-NNN_<type>_<slug>.md`; the meeting record cites it. Same for plans: a meeting that produces a plan gets a `roadmap/plans/YYYY-MM-DD_<slug>.md`; the meeting record cites it. The meeting record is the *source*; the decision and plan are the *formalized outputs*.
 - **Append-mostly.** Don't rewrite a past meeting record to reflect later developments; cite the new artifact instead.
+- **Status on meeting records:** `active` while the meeting is in progress; `closed` once it ends (the default for a finished record). Agent producing the record in real time should set `active` and switch to `closed` when the meeting concludes.
 
 ## Navigation
 

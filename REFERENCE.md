@@ -410,11 +410,11 @@ Standard frontmatter fields for all notes in a project vault. Old notes may lack
 | `pageType` | Required | `planning` \| `system` \| `feature` \| `decision` \| `roadmap` \| `history` \| `index` \| `note` | Drives downstream tooling (stale detection, search filters) |
 | `aliases` | Optional | `[string, ...]` | Backlink-friendly alternative titles |
 | `tags` | Optional | `[string, ...]` | Existing convention; free-form |
-| `updated` | Recommended | `YYYY-MM-DD` | Last meaningful edit; default `= created` if omitted |
-| `last_reviewed` | Recommended | `YYYY-MM-DD` | Last human/agent review pass; powers stale detection |
-| `status` | Recommended | (lifecycle, per `pageType`) | Lifecycle status. Valid values depend on `pageType`; see the pageType-specific sections below |
+| `updated` | Required | `YYYY-MM-DD` | Last meaningful edit; default `= created` if omitted |
+| `last_reviewed` | Required | `YYYY-MM-DD` | Last human/agent review pass; powers stale detection |
+| `status` | Required | (lifecycle, per `pageType`) | Lifecycle status. Valid values depend on `pageType`; see the pageType-specific sections below. `history/YYYY-MM/history-YYYY-MM-DD.md` files omit this field (use `kind: changelog \| worklog \| mixed` instead) |
 | `archived` | Optional | `YYYY-MM-DD` | File-location marker: present (with a date) when the file has been moved to `archive/`. Does NOT replace `status` — `status` still carries the lifecycle (a shipped-then-archived plan keeps `status: shipped` and adds `archived: <date>`) |
-| `owner` | Recommended | string (role or name) | E.g. `PM`, `Platform team`, `Operator` |
+| `owner` | Required | string (role or name) | E.g. `PM`, `Platform team`, `Operator` |
 | `source_of_truth` | Optional | path | Canonical source for this topic; use on `feature` pages and high-traffic `system/` docs |
 | `related` | Optional | `[path, ...]` | Cross-links to other notes |
 

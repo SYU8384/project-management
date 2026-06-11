@@ -137,12 +137,16 @@ function detect({ pmFolder }) {
   if (existsSync(decisionsMd)) {
     const c = readFile(decisionsMd);
     if (c && (c.includes("Architecture Decision Records (ADRs) for") || c.includes("## Decisions Log"))) return true;
+    // v1.0.0/v1.0.1/v1.0.2/v1.0.3-era intro
+    if (c && /Typed entries \(ADR \/ PRD \/ MKT \/ VND \/ POL \/ NEG \/ EXP\) capture one significant decision each/.test(c)) return true;
   }
 
   if (existsSync(plansMd)) {
     const c = readFile(plansMd);
     if (c && /^# planning\s*$/m.test(c)) return true;
     if (c && !c.includes("## Conventions")) return true;
+    // v1.0.0/v1.0.1/v1.0.2/v1.0.3-era ## Conventions block (forward-ref to SKILL.md)
+    if (c && /## Conventions[\s\S]*?SKILL\.md/.test(c)) return true;
   }
 
   if (existsSync(archiveMd)) {
@@ -339,7 +343,7 @@ function plan({ pmFolder }) {
   if (existsSync(donePendingMd)) {
     const c = readFile(donePendingMd);
     if (c && /^## \d{4}-\d{2}-\d{2}_[a-z0-9-]+\s*$/m.test(c)) {
-      lines.push("Rewrite roadmap/done-pending.md: date-prefixed ## YYYY-MM-DD_slug section headers → slug-only ## slug");
+      lines.push("roadmap/done-pending.md: no-op (validator + docs require ## YYYY-MM-DD_slug; the v1.0.2-era prefix-stripping rewrite was reverted in v1.0.4 because it contradicted the convention)");
     }
   }
 
@@ -438,14 +442,20 @@ function processDecisionsFolderNote(file, ctx) {
   let updated = original;
   let k = false;
 
-  const oldIntroMatch = updated.match(/Architecture Decision Records \(ADRs\) for[^\n]*\n(?:Each ADR captures[^\n]*\n)?(?:ADRs are short records[^\n]*\n?)?/);
-  if (oldIntroMatch) {
-const newIntro =
-        "Record of decisions made for the project. Each file is one typed decision: architecture (`ADR`), product (`PRD`), market (`MKT`), vendor (`VND`), policy (`POL`), rejection (`NEG`), or experiment (`EXP`). Filenames follow `D-NNN_<type>_<slug>.md`. Bodies follow the standard shape: Context, Options Considered, Decision, Consequences, Realization Notes, Related, Navigation. (See `templates/decision.md` for the full template; see `templates/README.md` \"Conventions by Page Type → Decisions\" for the body shape reference.)";
-      updated = updated.replace(oldIntroMatch[0], newIntro + "\n");
-      k = true;
-      ctx.log("intro", relative(ctx.pmFolder, file));
-    }
+  const newIntro =
+    "Record of decisions made for the project. Each file is one typed decision: architecture (`ADR`), product (`PRD`), market (`MKT`), vendor (`VND`), policy (`POL`), rejection (`NEG`), or experiment (`EXP`). Filenames follow `D-NNN_<type>_<slug>.md`. Bodies follow the standard shape: Context, Options Considered, Decision, Consequences, Realization Notes, Related, Navigation. (See `templates/decision.md` for the full template; see `templates/README.md` \"Conventions by Page Type → Decisions\" for the body shape reference.)";
+
+  // v0.x intro: "Architecture Decision Records (ADRs) for..."
+  const v0IntroMatch = updated.match(/Architecture Decision Records \(ADRs\) for[^\n]*\n(?:Each ADR captures[^\n]*\n)?(?:ADRs are short records[^\n]*\n?)?/);
+  // v1.0.0/v1.0.1/v1.0.2/v1.0.3-era intro: "Record of decisions made for the project. Typed entries (ADR / PRD / ...) capture one significant decision each: ..."
+  const v1IntroMatch = updated.match(/Record of decisions made for the project\.\s*Typed entries \(ADR \/ PRD \/ MKT \/ VND \/ POL \/ NEG \/ EXP\) capture one significant decision each[^]*?See SKILL\.md[^]*?for the body shape\./);
+
+  let introMatch = v0IntroMatch || v1IntroMatch;
+  if (introMatch) {
+    updated = updated.replace(introMatch[0], newIntro);
+    k = true;
+    ctx.log("intro", relative(ctx.pmFolder, file));
+  }
 
   const logSection = updated.match(/## Decisions Log\n[\s\S]*?(?=\n## |\n*$)/);
   if (logSection) {
@@ -485,8 +495,7 @@ function processPlansFolderNote(file, ctx) {
     ctx.log("title", relative(ctx.pmFolder, file));
   }
 
-  if (!updated.includes("## Conventions")) {
-    const conventions = `## Conventions
+  const cleanedConventions = `## Conventions
 
 - **Filename:** \`YYYY-MM-DD_slug.md\` (date prefix from \`created:\` frontmatter). See \`templates/decision.md\` for decision filenames.
 - **H1:** the slug only (no number, no date prefix).
@@ -502,12 +511,32 @@ function processPlansFolderNote(file, ctx) {
 - **Cross-link:** when a planning note is approved, add a \`## YYYY-MM-DD_slug\` section to \`roadmap/done-pending.md\` with the planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
+## Related
+
+<!-- Add related decisions, system docs, and feature pages here, one per line:
+- [[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
+- [[Projects/<Project>/system/<topic>|<topic>]] — system doc that implements this plan
+- [[Projects/<Project>/features/<feature>|<feature>]] — feature page affected by this plan
+-->
+
 `;
+
+  if (!updated.includes("## Conventions")) {
     const navIdx = updated.indexOf("## Navigation");
     if (navIdx !== -1) {
-      updated = updated.slice(0, navIdx) + conventions + updated.slice(navIdx);
+      updated = updated.slice(0, navIdx) + cleanedConventions + updated.slice(navIdx);
       k = true;
       ctx.log("conventions-added", relative(ctx.pmFolder, file));
+    }
+  } else {
+    // v1.0.0/v1.0.1/v1.0.2/v1.0.3-era ## Conventions blocks contain forward references
+    // to SKILL.md ("Frontmatter Schema → Planning", "Planning To Roadmap Sync") that
+    // v1.0.4 cleaned. Replace such blocks with the canonical text.
+    const oldConventionsMatch = updated.match(/## Conventions\n[\s\S]*?(?=\n## |\n*$)/);
+    if (oldConventionsMatch && /SKILL\.md/.test(oldConventionsMatch[0])) {
+      updated = updated.replace(oldConventionsMatch[0], cleanedConventions.replace(/\n$/, ""));
+      k = true;
+      ctx.log("conventions-cleaned", relative(ctx.pmFolder, file));
     }
   }
 
@@ -636,19 +665,24 @@ function apply({ pmFolder, ctx }) {
     if (!fmMatch) continue;
     const fmStatus = fmMatch[1];
     if (/SUPERSEDED by/i.test(c) && fmStatus === "active") {
-      manualReview.push(`${f}: frontmatter status: active but body says "SUPERSEDED by …". v1.0.0 expects status: superseded. Review and update by hand.`);
+      const lineNum = c.split("\n").findIndex((l) => /SUPERSEDED by/i.test(l)) + 1;
+      manualReview.push(`${f}:${lineNum}: frontmatter status: active but body says "SUPERSEDED by …". v1.0.0 expects status: superseded. Update frontmatter by hand.`);
     }
     if (/NOT YET APPROVED/i.test(c) && fmStatus === "active") {
-      manualReview.push(`${f}: frontmatter status: active but body says "NOT YET APPROVED". v1.0.0 expects status: proposed. Review and update by hand.`);
+      const lineNum = c.split("\n").findIndex((l) => /NOT YET APPROVED/i.test(l)) + 1;
+      manualReview.push(`${f}:${lineNum}: frontmatter status: active but body says "NOT YET APPROVED". v1.0.0 expects status: proposed. Update frontmatter by hand.`);
     }
     if (/DRAFT \(/.test(c) && fmStatus === "active") {
-      manualReview.push(`${f}: frontmatter status: active but body says "DRAFT". v1.0.0 expects status: proposed. Review and update by hand.`);
+      const lineNum = c.split("\n").findIndex((l) => /DRAFT \(/.test(l)) + 1;
+      manualReview.push(`${f}:${lineNum}: frontmatter status: active but body says "DRAFT". v1.0.0 expects status: proposed. Update frontmatter by hand.`);
     }
     if (c.includes("## Decisions Locked")) {
-      manualReview.push(`${f}: contains "## Decisions Locked" section that duplicates decision-record content. v1.0.0 says "Decisions cited, not duplicated" — split each row into decisions/D-NNN_<type>_<slug>.md and cite from the plan's Related section.`);
+      const lineNum = c.split("\n").findIndex((l) => l.trim().startsWith("## Decisions Locked")) + 1;
+      manualReview.push(`${f}:${lineNum}: contains "## Decisions Locked" section that duplicates decision-record content. v1.0.0 says "Decisions cited, not duplicated" — split each row into decisions/D-NNN_<type>_<slug>.md and cite from the plan's Related section. See templates/decision.md for the decision record template.`);
     }
     if (c.includes("## Decisions (all explicit")) {
-      manualReview.push(`${f}: contains "## Decisions (all explicit, …)" section with inline decisions. v1.0.0 says these are typed decisions/D-NNN_<type>_<slug>.md files, not plan content. Split each decision into its own file.`);
+      const lineNum = c.split("\n").findIndex((l) => l.trim().startsWith("## Decisions (all explicit")) + 1;
+      manualReview.push(`${f}:${lineNum}: contains "## Decisions (all explicit, …)" section with inline decisions. v1.0.0 says these are typed decisions/D-NNN_<type>_<slug>.md files, not plan content. Split each decision into its own file; each row in this section should become its own D-NNN_<type>_<slug>.md under decisions/. See templates/decision.md.`);
     }
   }
 
@@ -678,10 +712,10 @@ function apply({ pmFolder, ctx }) {
 
 export default {
   id: "1.0.2-v0-content-rewrite",
-  from: "1.0.0",
-  to: "1.0.2",
+  from: "<1.2.0",
+  to: "1.2.0",
   describe:
-    "Rewrite v0.x body text and frontmatter fields that the v1.0.0 migration missed: decisions/decisions.md intro, plans.md H1 and conventions, archive/archive.md phrasing, ## Relevant ADRs → ## Relevant Decisions, > No ADRs yet. → > No decisions yet., templates/ADR.md → templates/decision.md, frontmatter current_behavior_source/source_of_truth/related paths (planning/ → roadmap/plans/), v0.x tags (wip, deprecated), status: in-progress → active, decision body shape (## Implementation Notes → ## Realization Notes, ## Alternatives considered → ## Options Considered), decision title/H1 (ADR-NNN: → D-NNN:), plan H1 → slug-only, broken wikilinks, and done-pending.md date-prefixed section headers. Surfaces manual-review items: plan status/body mismatches, decision content authoring, known-issues theoretical-risk wording.",
+    "Rewrite body text and frontmatter fields that the v1.0.0 migration missed. Originally targeted v0.x content; as of v1.2.0, also targets v1.0.0/v1.0.1/v1.0.2/v1.0.3-era text so existing projects can be brought up to v1.0.4-cleaned text by re-running the migration. Covers: decisions/decisions.md intro, plans.md H1 and conventions (added if missing, cleaned if it contains SKILL.md forward refs), archive/archive.md phrasing, ## Relevant ADRs → ## Relevant Decisions, > No ADRs yet. → > No decisions yet., templates/ADR.md → templates/decision.md, frontmatter current_behavior_source/source_of_truth/related paths (planning/ → roadmap/plans/), v0.x tags (wip, deprecated), status: in-progress → active, decision body shape (## Implementation Notes → ## Realization Notes, ## Alternatives considered → ## Options Considered), decision title/H1 (ADR-NNN: → D-NNN:), plan H1 → slug-only, and broken wikilinks. The done-pending.md date-prefix rewrite is a no-op (validator + docs all require ## YYYY-MM-DD_slug; stripping was a contradiction). Surfaces manual-review items: plan status/body mismatches, decision content authoring, known-issues theoretical-risk wording.",
   detect,
   plan,
   apply,

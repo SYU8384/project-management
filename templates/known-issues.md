@@ -1,4 +1,5 @@
 ---
+title: known issues
 aliases: [known-issues]
 icon: "LiTrendingUp"
 iconColor: "#16a34a"

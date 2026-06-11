@@ -1,4 +1,5 @@
 ---
+title: ideas
 aliases: [ideas]
 icon: "LiTrendingUp"
 iconColor: "#16a34a"

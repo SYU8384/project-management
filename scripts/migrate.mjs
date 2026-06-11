@@ -18,6 +18,13 @@
  *   node scripts/migrate.mjs --project <name> [--config <path>] [--yes] [--dry-run]
  *   node scripts/migrate.mjs --pm-folder <path> [--yes] [--dry-run]
  *   node scripts/migrate.mjs --list
+ *   node scripts/migrate.mjs --pm-folder <path> --migration <id> [--force] [--yes] [--dry-run]
+ *
+ * The --force flag bypasses the applied-migrations ledger for the targeted
+ * migration. Use this when a migration's detect() patterns are extended
+ * after you already ran it (e.g. the v1.2.0 extension of the v1.0.2
+ * migration's coverage to v1.0.0–v1.0.3-era text). Without --force the
+ * ledger blocks re-running.
  *
  * Exit codes:
  *   0 = no work to do, or all applicable migrations applied cleanly
@@ -61,6 +68,7 @@ function parseArgs(argv) {
     list: false,
     dryRun: false,
     yes: false,
+    force: false,
     help: false,
   };
   for (let i = 2; i < argv.length; i++) {
@@ -87,6 +95,9 @@ function parseArgs(argv) {
       case "--yes":
       case "-y":
         out.yes = true;
+        break;
+      case "--force":
+        out.force = true;
         break;
       case "--help":
       case "-h":
@@ -327,6 +338,11 @@ if (cli.help) {
   process.exit(0);
 }
 
+if (cli.force && !cli.migration) {
+  process.stderr.write("--force requires --migration <id>.\n");
+  process.exit(2);
+}
+
 main().catch((err) => {
   process.stderr.write(`Unexpected error: ${err.message}\n${err.stack ?? ""}\n`);
   process.exit(1);
@@ -378,6 +394,9 @@ async function main() {
 
   for (const migration of targets) {
     if (appliedIds.has(migration.id) && !cli.migration) {
+      continue;
+    }
+    if (appliedIds.has(migration.id) && cli.migration && !cli.force) {
       continue;
     }
 

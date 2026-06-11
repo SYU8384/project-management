@@ -458,7 +458,16 @@ function scaffold() {
 - **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` — drop the date prefix, preserve the slug, append \`-archived\`. This rename is mandatory.
 - **Owner:** typically \`PM\`. Use \`Platform team\` or \`Operator\` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a \`## YYYY-MM-DD_slug\` section to \`roadmap/done-pending.md\` with the planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
-- **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.`,
+- **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
+
+## Related
+
+<!-- Add related decisions, system docs, and feature pages here, one per line:
+- [[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
+- [[Projects/<Project>/system/<topic>|<topic>]] — system doc that implements this plan
+- [[Projects/<Project>/features/<feature>|<feature>]] — feature page affected by this plan
+-->
+`,
     navigation: nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 

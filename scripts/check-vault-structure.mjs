@@ -44,7 +44,7 @@
  * the primary check-pm.mjs wrapper.
  */
 
-import { existsSync, readdirSync, statSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -64,12 +64,14 @@ const DEFAULT_CONFIG = SKILL_DIR ? join(SKILL_DIR, "projects.json") : null;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const out = { vault: null, config: null, project: null };
+  const out = { vault: null, config: null, project: null, fix: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--config" || args[i] === "-c") {
       out.config = args[++i];
     } else if (args[i] === "--project" || args[i] === "-p") {
       out.project = args[++i];
+    } else if (args[i] === "--fix") {
+      out.fix = true;
     } else if (!args[i].startsWith("-")) {
       out.vault = args[i];
     }
@@ -640,6 +642,35 @@ function emit() {
       lines.push(`- \`${v.path}\`: expected \`${v.expected}\` — ${v.reason}.`);
     }
     lines.push("");
+  }
+
+  // --fix: create missing folder notes from templates/folder-note.md
+  if (CLI.fix && findings.folderNotes.missing.length > 0) {
+    const tmplPath = SKILL_DIR ? join(SKILL_DIR, "templates", "folder-note.md") : null;
+    if (!tmplPath || !existsSync(tmplPath)) {
+      process.stderr.write(`--fix requested but template not found at ${tmplPath}\n`);
+    } else {
+      const tmpl = readFileSync(tmplPath, "utf8");
+      let fixedCount = 0;
+      for (const indexRel of findings.folderNotes.missing) {
+        const abs = join(vaultRoot, indexRel);
+        if (existsSync(abs)) continue;
+        mkdirSync(dirname(abs), { recursive: true });
+        const title = basename(indexRel, ".md");
+        // Substitute placeholders so the template is ready to use
+        const content = tmpl
+          .replace(/<Project>/g, basename(vaultRoot))
+          .replace(/<YYYY-MM-DD>/g, new Date().toISOString().slice(0, 10))
+          .replace(/title: [^\n]+/, `title: ${title}`);
+        writeFileSync(abs, content);
+        fixedCount++;
+        process.stdout.write(`fixed: created ${indexRel}\n`);
+      }
+      if (fixedCount > 0) {
+        findings.folderNotes.missing = [];
+        process.stdout.write(`--fix: created ${fixedCount} folder note(s)\n`);
+      }
+    }
   }
 
   // Folder note coverage and shape checks

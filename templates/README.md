@@ -117,6 +117,24 @@ The management folders are live. Agents may create notes in existing folders whe
 
 Ask before creating root notes, new roadmap notes, new top-level folders, or new docs guide categories.
 
+**Always safe (no ask needed):**
+
+- Editing existing notes in any lane (system/, docs/, features/, history/, decisions/, roadmap/).
+- Adding notes to existing folders that already have a folder note (e.g., creating a new `system/<topic>.md` if `system/system.md` exists).
+- Adding `history/YYYY-MM/history-YYYY-MM-DD.md` entries when `history/YYYY-MM/YYYY-MM.md` already exists.
+- Adding notes to optional lanes that already exist (`meetings/`, custom docs categories, etc.).
+- Creating migration ledger entries in `.pm/` via the migration runner.
+
+**Ask before:**
+
+- Creating root notes (`<Project>.md`, new entries to root).
+- Creating new roadmap notes (`roadmap/mvp-priorities.md`, `roadmap/known-issues.md`, `roadmap/ideas.md`, `roadmap/done-pending.md`).
+- Creating a new top-level folder under the project root.
+- Creating a new docs guide category (`docs/<NewGuide>/`).
+- Creating new root files beyond the standard set.
+
+For the full permission policy matrix, see `REFERENCE.md` → "Permission Policy".
+
 ## Naming Conventions
 
 | Type | Convention | Example |
@@ -130,6 +148,7 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 | Date-stamped logs | `YYYY-MM/history-YYYY-MM-DD.md` (organized by year-month) | `2026-06/history-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
 | Decisions | `D-NNN_<type>_<slug>.md` (numbered globally, typed) | `D-001_ADR_tauri-opencode.md` |
+| Meeting records | `YYYY-MM-DD_<topic-slug>.md` (optional lane) | `2026-06-10_openclaw-pm-onboarding.md` |
 | Archived files | `<slug>-archived.md` (date prefix and number dropped) | `m3-return-path-archived.md` |
 
 ## Update Frequency
@@ -210,6 +229,7 @@ This is an *optional* lane for projects that have a meeting-recording agent or a
 - **Decisions and plans are not duplicated here.** A decision made in a meeting gets its own `decisions/D-NNN_<type>_<slug>.md`; the meeting record cites it. Same for plans: a meeting that produces a plan gets a `roadmap/plans/YYYY-MM-DD_<slug>.md`; the meeting record cites it. The meeting record is the *source*; the decision and plan are the *formalized outputs*.
 - **Append-mostly.** Don't rewrite a past meeting record to reflect later developments; cite the new artifact instead.
 - **Cross-link:** from `CURRENT_STATUS.md`'s Recent Wins or Major Risks section, if a meeting was the trigger.
+- **Status:** `active` while the meeting is in progress (an agent producing the record in real time); `closed` once the meeting ends (the default for a finished record).
 - **Personal prefixes:** collaborator-name prefixes (e.g. `haoyou_`) are discouraged in this folder's filenames; the validator reports them as warnings.
 
 ## Navigation Context
