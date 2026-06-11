@@ -115,7 +115,8 @@ Ask for:
 1. **Role**
    - Owner / maintainer
    - Collaborator with PM access
-   - Collaborator without PM access yet
+
+   Contributors with no PM access at all don't register projects in `projects.json`; the maintainer registers the project on the maintainer's side, and the contributor workflow is via PR body, not the skill.
 
 2. **PM folder state**
    - Create new PM folder
@@ -251,7 +252,7 @@ Report audit results in three groups:
 
 - `OK` — already aligned.
 - `Needs approval` — exact changes you recommend and the file paths affected.
-- `Blocked / missing access` — missing paths, unavailable PM folders, or choices the user must answer.
+- `Blocked / missing access` — missing paths, PM folders that aren't reachable from this machine, or choices the user must answer.
 
 ## 8. Audit Project Code Repo AGENTS.md Files
 

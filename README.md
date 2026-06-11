@@ -160,6 +160,7 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/migrations/`](./scripts/migrations/) | Registered migrations (`1.0.0-lane-restructure.mjs`, `1.0.2-v0-content-rewrite.mjs`) and the registry index (`_index.mjs`). |
+| [`scripts/lib/paths.mjs`](./scripts/lib/paths.mjs) | Shared path-resolution helpers: `findSkillDir()`, `resolveProjectsConfigPath()` (the XDG user-specific `projects.json` lookup all validators use). |
 | [`LICENSE`](./LICENSE) | MIT license. |
 
 ## 📐 Design Principles
@@ -185,7 +186,7 @@ This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags
 The version is printed after every install or update:
 
 ```text
-==> Installed version: 1.0.0
+==> Installed version: 1.4.0
 ```
 
 ## 📦 Releasing (Maintainers)

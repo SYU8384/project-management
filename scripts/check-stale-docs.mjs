@@ -141,7 +141,6 @@ const SKIP_DIRS = new Set([
 const SKIP_FILES = new Set([
   "README.md",
   "PRODUCT.md",
-  "OpenManager.md",
   "CURRENT_STATUS.md",
 ]);
 

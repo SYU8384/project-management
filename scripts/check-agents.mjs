@@ -17,11 +17,10 @@ const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const out = { vault: null, config: null, project: null };
+  const out = { config: null, project: null };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--config" || args[i] === "-c") out.config = args[++i];
     else if (args[i] === "--project" || args[i] === "-p") out.project = args[++i];
-    else if (!args[i].startsWith("-")) out.vault = args[i];
   }
   return out;
 }
@@ -29,7 +28,6 @@ function parseArgs(argv) {
 const CLI = parseArgs(process.argv);
 
 function loadConfigPath() {
-  if (CLI.vault) return null;
   return resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
 }
 
@@ -115,10 +113,6 @@ function validateProject(name, project) {
   if ((project.access === "authoritative" || project.access === "read-only") && !project.pm_folder) {
     issues.push(`access '${project.access}' requires pm_folder for AGENTS.md validation`);
   }
-
-  // Contributors with no PM access at all aren't registered in projects.json on
-  // the contributor's side, so we don't expect to see them here. If a project
-  // entry has access missing or unknown, treat it as an invalid value.
 
   const repoPath = resolve(project.code_repo);
   if (!existsSync(repoPath)) {

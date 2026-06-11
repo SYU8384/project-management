@@ -745,7 +745,7 @@ When a coding agent works in a project's code repo, the PM folder is the source 
 - **Authoritative projects** — the section tells the agent to read `system/<topic>.md` before coding and to update the PM folder directly after coding. See `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`.
 - **Read-only projects** — the section tells the agent to read the PM folder for context, but to use the PR body template (`templates/PR_BODY_TEMPLATE.md`) to suggest PM folder changes. The maintainer applies the changes after merge. See `templates/AGENTS_PM_SECTION_READONLY.md`.
 
-Projects with no PM access at all (either the maintainer doesn't use the skill, or the maintainer uses it but doesn't share the PM folder) don't get an `AGENTS.md` PM section and aren't registered in `projects.json` on the contributor's side. The contributor's role is via PR body: fill in the "PM folder impact" section per the template. The maintainer's agent reads the PR body and applies the PM folder updates on their side. The `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` template is now retired; if you encounter a reference to it, the modern equivalent is the read-only workflow + PR body convention.
+Projects with no PM access at all (either the maintainer doesn't use the skill, or the maintainer uses it but doesn't share the PM folder) don't get an `AGENTS.md` PM section and aren't registered in `projects.json` on the contributor's side. The contributor's role is via PR body: fill in the "PM folder impact" section per the template. The maintainer's agent reads the PR body and applies the PM folder updates on their side.
 
 The agent checks the project's `access` field in `~/.config/project-management/projects.json` (`authoritative` or `read-only`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
 
@@ -929,7 +929,6 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/known-bugs.md` — `docs/Developer Guide/known-bugs.md`
 - `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
-- `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` — the `## PM folder` section for `AGENTS.md` when a collaborator has code access but no PM folder access yet
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
 - `scripts/bootstrap-pm.mjs` — deterministic owner setup script for registering a project, scaffolding an authoritative PM folder, and wiring code repo `AGENTS.md`

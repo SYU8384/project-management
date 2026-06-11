@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `## 🛡️ Access model` section in the README, between Quick Start and What It Does. Explains the three access modes (`authoritative` / `read-only` / `unavailable`) so the reader knows whether the skill will edit their PM folder directly, fill in a PR body, or ask the maintainer for access. Points to `REFERENCE.md` for the full per-mode behavior.
+- New `## 🛡️ Access model` section in the README, between Quick Start and What It Does. Explains the two registered access modes (`authoritative` / `read-only`) and the contributor case (no PM access at all; the contributor workflow is via PR body, not the skill). Points to `REFERENCE.md` for the full per-mode behavior.
 
 ### Changed
 
@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `access: "unavailable"` registration mode. The `access` field is now a strict two-value enum (`authoritative` / `read-only`). Contributors with no PM access at all are not users of the skill on their side — they submit PRs with PM folder impact notes, and the maintainer's PM agent applies PM updates on merge. The `setup as collaborator` trigger now registers read-only access only.
-- `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` retired as a generated template. The file remains in the repo with a deprecation note pointing to the modern read-only + PR body convention. `scripts/check-agents.mjs::templateForAccess()` no longer returns it.
+- `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` retired as a generated template. The file has since been deleted from the repo (the modern read-only + PR body convention covers the no-PM-access case). `scripts/check-agents.mjs::templateForAccess()` no longer returns it.
 
 ### Changed (doc-only follow-ups to the access-model reframing)
 - README: Access model section reframed from three bullets (`authoritative` / `read-only` / `unavailable`) to two bullets + a "Contributor (no PM access)" case describing the PR body convention.
@@ -31,6 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/check-agents.mjs::templateForAccess()`: two branches only.
 - `openclaw-instruction.md`: `unavailable` references removed from the blank-placeholder list, intake routing, role list, access mapping, project audit, AGENTS.md template picker, and validation repair rules.
 - `SKILL.md` Quick Start item 2: routing list no longer includes "register unavailable PM access".
+
+### Fixed
+- Audit pass: removed residual contradictions and dead code that the doc-only patches above left behind.
+- `SKILL.md` Quick Start item 5: removed the `AGENTS_PM_SECTION_UNAVAILABLE.md` template mention (the template no longer exists; the agent's two-template picker in `check-agents.mjs::templateForAccess()` was already reduced to `authoritative | read-only`).
+- `openclaw-instruction.md` Setup Intake role list: dropped the third option "Collaborator without PM access yet" that the previous turn missed when rewording the access mapping.
+- `openclaw-instruction.md` audit-result group `Blocked / missing access`: rephrased "unavailable PM folders" to "PM folders that aren't reachable from this machine" to avoid collision with the retired enum value.
+- `REFERENCE.md` Coding Agent Integration: collapsed the "if you encounter a reference to it" warning (the only remaining live reference to the deleted template) into the surrounding sentence.
+- `REFERENCE.md` Templates list: dropped the bullet for `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` (the file is gone).
+- `README.md` Versioning example: `==> Installed version: 1.0.0` → `1.4.0` to match the current `VERSION` file.
+- `README.md` Repository Map: added a row for `scripts/lib/paths.mjs` (the XDG `projects.json` resolver all validators use).
+- `scripts/check-agents.mjs`: removed the dead positional-`<vault>` argument code path (it was parsed but never used; a positional arg silently degraded to a no-op exit-0). The script now always goes through `projects.json`.
+- `scripts/check-agents.mjs`: removed a dead comment about "contributors with no PM access aren't registered" that the previous turn's edit left orphaned below the access-FAIL check.
+- `scripts/check-stale-docs.mjs`: removed `"OpenManager.md"` from the hardcoded `SKIP_FILES` set (project-specific artifact, not part of the PM-folder convention).
+- `CHANGELOG.md [Unreleased] ### Added` (this file, the entry above): the line still said "three access modes" after the enum was narrowed — rewritten to match the final two-modes-plus-contributor-case state.
 
 ## [1.4.0] - 2026-06-10
 
