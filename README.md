@@ -46,15 +46,15 @@ Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `o
 
 ### After install: trigger phrases for your coding agent
 
-If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, restart your coding agent and use these. The order below is the recommended flow: start with reconcile (the all-in-one fix), use verify when you want a report without any changes, and reserve migrate for the narrow case of migrations-only.
+If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, restart your coding agent and use these. The order below follows a new user's natural flow: **register your project first** (`setup this repo` or `setup as collaborator`), then use verify / reconcile to clean state, and reserve migrate for the narrow case of migrations-only. Use `log this` after code changes in authoritative projects.
 
 | You want to | Say | When to use | What happens |
 |---|---|---|---|
-| Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | First-time pick after install, or after a long stretch without running the skill. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
-| Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs all four focused validators. No mutation. |
-| Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Bootstrap a new project's PM folder | `setup this repo` | First time you set up a project. | Creates PM folder + registers project as `access: authoritative`. |
 | Register as a collaborator | `setup as collaborator` | When you have code access but don't own the PM folder. | Registers `access: read-only` or `unavailable` based on your input. |
+| Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs all four focused validators. No mutation. |
+| Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
+| Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
 
 After install + first setup, the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`.
