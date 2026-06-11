@@ -213,9 +213,16 @@ main() {
     die "Use either --target or --dest, not both."
   fi
   if [[ -z "$TARGET" && -z "$DEST_PARENT" ]]; then
-    choose_target
+    if has_tty; then
+      choose_target
+    else
+      # Piped install (no TTY): default to the most portable target.
+      TARGET="agents"
+      DEST_PARENT="$(target_dest_parent "$TARGET")"
+      info "No --target given and no TTY available; defaulting to $TARGET ($DEST_PARENT/$SKILL_NAME)"
+    fi
   fi
-  if [[ -n "$TARGET" ]]; then
+  if [[ -n "$TARGET" && -z "$DEST_PARENT" ]]; then
     DEST_PARENT="$(target_dest_parent "$TARGET")"
   fi
 

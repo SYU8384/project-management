@@ -68,6 +68,7 @@ function parseArgs(argv) {
     pmFolder: null,
     migration: null,
     list: false,
+    json: false,
     dryRun: false,
     yes: false,
     force: false,
@@ -90,6 +91,9 @@ function parseArgs(argv) {
         break;
       case "--list":
         out.list = true;
+        break;
+      case "--json":
+        out.json = true;
         break;
       case "--dry-run":
         out.dryRun = true;
@@ -359,10 +363,20 @@ async function main() {
   const registry = await loadRegistry();
 
   if (cli.list) {
-    process.stdout.write("\nRegistered migrations (in order):\n\n");
-    for (const m of registry) {
-      process.stdout.write(`  ${m.id}\n`);
-      process.stdout.write(`    ${m.describe ?? "(no description)"}\n\n`);
+    if (cli.json) {
+      const out = registry.map((m) => ({
+        id: m.id,
+        from: m.from ?? null,
+        to: m.to ?? null,
+        describe: m.describe ?? null,
+      }));
+      process.stdout.write(JSON.stringify(out, null, 2) + "\n");
+    } else {
+      process.stdout.write("\nRegistered migrations (in order):\n\n");
+      for (const m of registry) {
+        process.stdout.write(`  ${m.id}\n`);
+        process.stdout.write(`    ${m.describe ?? "(no description)"}\n\n`);
+      }
     }
     process.exit(0);
   }

@@ -2,12 +2,47 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Install with curl](https://img.shields.io/badge/install-curl%20%7C%20bash-0f766e.svg)](#install-or-update)
-[![Setup trigger](https://img.shields.io/badge/bootstrap-say%20setup%20this%20repo-7c3aed.svg)](#start-with-one-prompt)
 [![Markdown PM folders](https://img.shields.io/badge/docs-Markdown%20%2B%20Obsidian-2563eb.svg)](#pm-folder-model)
 
 A portable agent skill for keeping project-management notes, product docs, roadmap state, and code changes in sync.
 
 It works especially well with an Obsidian vault, but the convention is plain Markdown plus a small local `projects.json` registry. The important part is behavioral: when meaningful project work happens, the agent updates the right current-state docs, indexes, roadmap notes, and history logs in the same session.
+
+## 🚀 Quick Start
+
+You have two install paths. Both end at the same place: a working PM folder.
+
+### Path A — You have an OpenClaw PM agent (recommended for PM-domain work)
+
+OpenClaw PM agents live in your chat, not in your repo. Their job is the PM work itself — brainstorming, capturing decisions and meetings, tracking progress across projects, and keeping the PM folder current. This is *broader* than what a coding agent does as a side effect of code changes (a coding agent updates the PM folder when it commits; an OpenClaw PM agent does PM work whether or not code is changing — and you can also chat with a coding agent for PM-only work, but OpenClaw's role is to make that its primary job). Use OpenClaw when the work is PM-shaped.
+
+Paste this into your OpenClaw agent:
+
+> Read https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md and follow its instructions.
+
+The OpenClaw agent installs the skill, creates `~/.config/project-management/projects.json`, runs a guided setup, and audits everything else. No further setup needed.
+
+### Path B — You use Codex / Claude / another coding agent (PM is a side effect of code work)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/v1/install.sh \
+  | bash -s -- --target agents --yes
+```
+
+`--target agents` installs to `~/.agents/skills/project-management` (the most portable target; Codex, Claude, and other agents that read agent-skills format pick this up). For other targets, use `--target codex|claude|openclaw`. For a custom directory, use `--dest<skills-dir>`. **Without `--target`** and with a TTY attached, the installer shows an interactive menu of all four targets plus a custom-directory option. **Without `--target`** and *without* a TTY, the installer defaults to `--target agents` and prints a one-line note.
+
+Restart your agent. Then say any of these in a fresh session:
+
+| You want to | Say | Result |
+|---|---|---|
+| Bootstrap a new project's PM folder | `setup this repo` | Creates PM folder + registers project |
+| Register as a collaborator | `setup as collaborator` | Adds read-only or unavailable access |
+| Verify a project is clean | `verify setup` | Runs all four focused validators |
+| **Reconcile (validate + repair + migrate)** | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
+| Apply pending migrations only | `migrate this project` | Runs `migrate.mjs` for unapplied migrations |
+| Log a code change | `log this` | Updates affected current-state docs + history |
+
+After install + first setup, the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`.
 
 ## ✨ What It Does
 

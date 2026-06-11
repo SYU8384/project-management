@@ -33,6 +33,8 @@ The five most common actions:
 
 **7. Migrate an existing project** — say "migrate this project", "run migrations", "clear migration debt", "upgrade PM", or "migrate to v1". If the validator flags an unapplied registered migration for the project you're working on, the agent offers to run `node <skill_dir>/scripts/migrate.mjs --project <name>`, names the specific migration, lists its effects, and asks once per session. Suppress re-asks within the session if the user declines. Do not surface migration debt on unrelated projects during unrelated work.
 
+**8. Reconcile a project (validate + repair + migrate)** — say "reconcile this project", "repair and migrate this project", "fix everything", "fix this project end-to-end", or "reconcile the PM folder". The agent runs `node <skill_dir>/scripts/check-pm.mjs --project <name> --fix`. The orchestrator runs validators with `--fix` (creates missing folder notes from `templates/folder-note.md`, rewrites `pageType:` mismatches), then runs pending migrations from the registry (idempotent; reads `.pm/migrations.json` ledger), then re-runs validators without `--fix` to report residual issues that need human review. Suppress re-asks within the session if the user declines. Do not surface reconciliation debt on unrelated projects during unrelated work.
+
 ---
 
 ## Triggers
@@ -56,6 +58,7 @@ Match user phrases to the right intent. If multiple intents apply, do all of the
 | "I just opened a PR", "I just merged a PR", "review a PR for PM impact" | Contributor | Contributor Workflow (REFERENCE) |
 | "this is a big task", "multi-session", "plan this out", "let me plan this", or the change has multi-step work / multi-session work / many rounds of fixes | Big task → plan first | Big Tasks Must Be Planned (REFERENCE) |
 | "migrate this project", "run migrations", "clear migration debt", "upgrade PM", "migrate to v1", or implicit detection of an unapplied registered migration by `check-pm.mjs` for the project in scope | Migrate: name the migration, list effects, ask once per session, run `node <skill_dir>/scripts/migrate.mjs` on approval | Migrations (REFERENCE) |
+| "reconcile this project", "reconcile the PM folder", "reconcile<ProjectName>", "repair and migrate this project", "repair and migrate", "fix everything", "fix this project end-to-end" | Reconcile: validate with `--fix`, apply pending migrations, re-validate. Idempotent. | Validation and Repair (REFERENCE) — Phase 3: Fix |
 
 ---
 

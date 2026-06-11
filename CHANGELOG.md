@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-10
+
+A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
+
+### Added
+
+- `scripts/check-pm.mjs --fix`: orchestrates the full reconcile workflow in four phases.
+  1. Baseline validators (report-only).
+  2. Validators with `--fix` (auto-create missing folder notes from `templates/folder-note.md`, rewrite `pageType:` mismatches).
+  3. Pending migrations from the registry (idempotent; reads `.pm/migrations.json` ledger; honors `--dry-run` and `--force`).
+  4. Re-validation (final report; residual issues surface as warnings for human review).
+  Backward compatible: without `--fix`, runs validators in report-only mode (existing behavior).
+- `scripts/migrate.mjs --list --json`: machine-readable registry output for orchestration. Default `--list` (human-readable) is unchanged.
+- New SKILL.md Quick Start item 8 ("Reconcile a project") and Triggers table row mapping phrases like `reconcile this project`, `repair and migrate this project`, `fix everything`, `reconcile the PM folder` to the `--fix` orchestration.
+
+### Changed
+
+- README Quick Start section added at the top, just below the badges. Covers the OpenClaw PM-agent path (with the unique-role framing: PM work *broader* than what a coding agent does as a side effect of code changes) and the installer path (with `--target agents` as the recommended default and a TTY-aware menu fallback). Includes a trigger-phrase table mapping user intent to action.
+- README: dropped the redundant `#start-with-one-prompt` badge (the Quick Start section now covers that content at the top).
+- `install.sh`: when no `--target` is passed AND no TTY is available (e.g., `curl | bash -s -- --yes` from a CI/script), the installer now defaults to `--target agents` instead of failing. Interactive installs (TTY attached) still show the menu. Backward compatible.
+
 ## [1.3.0] - 2026-06-10
 
 `projects.json` moves from the skill root to a user-specific location at `~/.config/project-management/projects.json` (XDG-conformant). This keeps the skill portable and user-agnostic — the same skill can be shipped to another user without leaking personal paths, and skill reinstalls no longer clobber user config.
