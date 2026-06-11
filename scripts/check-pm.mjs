@@ -3,8 +3,9 @@
  * check-pm.mjs
  *
  * Primary validation entry point for project-management PM folders.
- * Runs the focused validators in sequence and returns a nonzero exit code
- * if any check fails.
+ * Reads the validator registry at `validators/_index.mjs` (mirrors the
+ * migration registry design) and runs each registered validator in
+ * sequence. Returns a nonzero exit code if any check fails.
  *
  * With `--fix`, runs the full reconcile workflow:
  *   Phase 1: validators (report-only baseline)
@@ -21,7 +22,7 @@
 
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ARGS = process.argv.slice(2);
@@ -30,12 +31,25 @@ const fixRequested = ARGS.includes("--fix");
 const dryRunRequested = ARGS.includes("--dry-run");
 const forceRequested = ARGS.includes("--force");
 
-const CHECKS = [
-  { file: "check-vault-structure.mjs", label: "Vault structure" },
-  { file: "check-stale-docs.mjs", label: "Stale docs" },
-  { file: "check-pm-consistency.mjs", label: "PM consistency" },
-  { file: "check-agents.mjs", label: "AGENTS.md integration" },
-];
+async function loadValidatorRegistry() {
+  const indexPath = join(SCRIPT_DIR, "validators", "_index.mjs");
+  const mod = await import(pathToFileURL(indexPath).href);
+  if (!mod || !Array.isArray(mod.default)) {
+    console.error(
+      `Validator registry at ${indexPath} must default-export an array of { file, label } entries.`
+    );
+    process.exit(2);
+  }
+  for (const entry of mod.default) {
+    if (!entry.file || !entry.label) {
+      console.error(
+        `Validator registry entry is missing 'file' or 'label': ${JSON.stringify(entry)}`
+      );
+      process.exit(2);
+    }
+  }
+  return mod.default;
+}
 
 function runChild(scriptPath, extraArgs = [], opts = {}) {
   return spawnSync(process.execPath, [scriptPath, ...extraArgs], {
@@ -75,9 +89,6 @@ function findUnappliedMigrations() {
   }
   if (!Array.isArray(registry)) return [];
 
-  // For each migration, try to get the matching pm_folder(s) by running the validator
-  // once and parsing the Unapplied Migrations block. Simpler: just return all IDs.
-  // The orchestrator then runs `migrate.mjs --migration <id> --yes` per project.
   return registry.map((m) => m.id);
 }
 
@@ -90,15 +101,8 @@ function runMigrations() {
   console.log(`\n## Migrations (${migrationIds.length} registered; checking each project)\n`);
   const failures = [];
 
-  // Determine which projects to run migrations for.
-  // If --project was specified, run for that project only. Otherwise, run for
-  // every project registered in projects.json. To keep this simple, we just
-  // call `migrate.mjs --list --json` and then call `migrate.mjs --yes` once per
-  // migration id; the runner's per-project logic handles each pm_folder.
-
   for (const id of migrationIds) {
     console.log(`\n## Migration ${id}\n`);
-    // Strip flags that are orchestrator-level (--fix) but unknown to migrate.mjs.
     const safeArgs = ARGS.filter((a) => a !== "--fix");
     const args = ["--migration", id, "--yes", ...safeArgs];
     if (dryRunRequested) args.push("--dry-run");
@@ -113,35 +117,32 @@ function runMigrations() {
   return failures;
 }
 
+const REGISTRY = await loadValidatorRegistry();
 const allFailures = [];
 
-// Phase 1: baseline validators
 if (fixRequested) {
   console.log("\n========================================");
   console.log("# Phase 1: Validators (baseline)");
   console.log("========================================");
-  allFailures.push(...runChecks("Phase 1: Validators (baseline report)", CHECKS));
+  allFailures.push(...runChecks("Phase 1: Validators (baseline report)", REGISTRY));
 
-  // Phase 2: validators with --fix
   console.log("\n========================================");
   console.log("# Phase 2: Validator auto-fix");
   console.log("========================================");
-  allFailures.push(...runChecks("Phase 2: Validator auto-fix", CHECKS, ["--fix"]));
+  allFailures.push(...runChecks("Phase 2: Validator auto-fix", REGISTRY, ["--fix"]));
 
-  // Phase 3: pending migrations
   console.log("\n========================================");
   console.log("# Phase 3: Pending migrations");
   console.log("========================================");
   allFailures.push(...runMigrations());
 
-  // Phase 4: re-validate
   console.log("\n========================================");
   console.log("# Phase 4: Re-validate (final report)");
   console.log("========================================");
-  allFailures.push(...runChecks("Phase 4: Re-validate (final report)", CHECKS));
+  allFailures.push(...runChecks("Phase 4: Re-validate (final report)", REGISTRY));
 } else {
   console.log("\n# PM validation");
-  allFailures.push(...runChecks("PM validation", CHECKS));
+  allFailures.push(...runChecks("PM validation", REGISTRY));
 }
 
 if (allFailures.length > 0) {

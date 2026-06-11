@@ -41,6 +41,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
+import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 
 const DEFAULT_STALE_DAYS = Number(process.env.STALE_DAYS ?? 30);
 const DEFAULT_VERY_STALE_DAYS = Number(process.env.VERY_STALE_DAYS ?? 90);
@@ -129,6 +130,7 @@ const today = new Date().toISOString().slice(0, 10);
 
 // Per-target state (mutated by walk/scan/emit before each runFor call)
 let vaultRoot = null;
+let skipSet = new Set();
 
 const SKIP_DIRS = new Set([
   ".obsidian",
@@ -145,7 +147,9 @@ const SKIP_FILES = new Set([
 ]);
 
 const findings = {
-  neverReviewed: [],
+  missingFrontmatter: [],
+  missingLastReviewed: [],
+  unparseableLastReviewed: [],
   veryStale: [],
   stale: [],
   ok: 0,
@@ -160,6 +164,8 @@ async function walk(dir) {
       if (entry.name.startsWith(".") || SKIP_DIRS.has(entry.name)) continue;
       await walk(full);
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      const rel = relative(vaultRoot, full);
+      if (isSkipped(skipSet, rel)) continue;
       await scan(full);
     }
   }
@@ -181,17 +187,17 @@ async function scan(filePath) {
   const content = await readFile(filePath, "utf8");
   const fm = parseFrontmatter(content);
   if (!fm) {
-    findings.neverReviewed.push({ path: rel, top });
+    findings.missingFrontmatter.push({ path: rel, top });
     return;
   }
   const lastReviewed = fm.last_reviewed;
   if (!lastReviewed) {
-    findings.neverReviewed.push({ path: rel, top });
+    findings.missingLastReviewed.push({ path: rel, top });
     return;
   }
   const age = daysBetween(lastReviewed, today);
   if (age == null) {
-    findings.neverReviewed.push({ path: rel, top });
+    findings.unparseableLastReviewed.push({ path: rel, top, lastReviewed });
     return;
   }
   if (age > DEFAULT_VERY_STALE_DAYS) {
@@ -234,28 +240,34 @@ function emit() {
   lines.push(`Vault root: \`${vaultRoot}\``);
   lines.push(`Thresholds: stale > ${DEFAULT_STALE_DAYS} days, very-stale > ${DEFAULT_VERY_STALE_DAYS} days`);
   lines.push("");
-  lines.push(`**Summary:** ${findings.ok} OK, ${findings.stale.length} stale, ${findings.veryStale.length} very-stale, ${findings.neverReviewed.length} never-reviewed.`);
+  const neverTotal = findings.missingFrontmatter.length + findings.missingLastReviewed.length + findings.unparseableLastReviewed.length;
+  lines.push(`**Summary:** ${findings.ok} OK, ${findings.stale.length} stale, ${findings.veryStale.length} very-stale, ${neverTotal} with no parseable last_reviewed.`);
   lines.push("");
 
-  for (const [label, items] of [
-    ["Very Stale (>90 days)", findings.veryStale],
-    ["Stale (30-90 days)", findings.stale],
-    ["Never Reviewed", findings.neverReviewed],
+  for (const [label, items, format] of [
+    ["Very Stale (>90 days)", findings.veryStale, "stale"],
+    ["Stale (30-90 days)", findings.stale, "stale"],
+    ["Missing frontmatter", findings.missingFrontmatter, "missing-fm"],
+    ["Missing last_reviewed", findings.missingLastReviewed, "missing-lr"],
+    ["Unparseable last_reviewed", findings.unparseableLastReviewed, "unparseable-lr"],
   ]) {
     if (items.length === 0) continue;
     lines.push(`## ${label} (${items.length})`);
     lines.push("");
     for (const item of items) {
-      if (item.age != null) {
+      if (format === "stale") {
         lines.push(`- \`${item.path}\` — ${item.age} days (last_reviewed ${item.lastReviewed})`);
+      } else if (format === "unparseable-lr") {
+        lines.push(`- \`${item.path}\` — last_reviewed value \`${item.lastReviewed}\` is not a YYYY-MM-DD date; fix the frontmatter.`);
       } else {
-        lines.push(`- \`${item.path}\` — never reviewed or unparseable last_reviewed`);
+        lines.push(`- \`${item.path}\` — ${label.toLowerCase()}.`);
       }
     }
     lines.push("");
   }
 
-  if (findings.veryStale.length === 0 && findings.stale.length === 0 && findings.neverReviewed.length === 0) {
+  const totalIssues = findings.veryStale.length + findings.stale.length + neverTotal;
+  if (totalIssues === 0) {
     lines.push("All scanned files have a fresh `last_reviewed` field. Nothing to flag.");
   }
   console.log(lines.join("\n"));
@@ -263,7 +275,9 @@ function emit() {
 
 async function resetFindings() {
   findings.ok = 0;
-  findings.neverReviewed = [];
+  findings.missingFrontmatter = [];
+  findings.missingLastReviewed = [];
+  findings.unparseableLastReviewed = [];
   findings.veryStale = [];
   findings.stale = [];
 }
@@ -271,10 +285,14 @@ async function resetFindings() {
 async function runFor(target) {
   resetFindings();
   vaultRoot = target.vault;
+  skipSet = loadPmSkip(target.vault);
   console.log(`\n# Stale Docs Report — ${target.label}\n`);
+  if (skipSet.size > 0) {
+    console.log(`(Honoring .pm/skip: ${[...skipSet].join(", ")})\n`);
+  }
   await walk(target.vault);
   emit();
-  return findings.veryStale.length + findings.stale.length + findings.neverReviewed.length;
+  return findings.veryStale.length + findings.stale.length + findings.missingFrontmatter.length + findings.missingLastReviewed.length + findings.unparseableLastReviewed.length;
 }
 
 const targets = await resolveTargets();

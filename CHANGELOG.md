@@ -95,6 +95,31 @@ A refinement of the OpenManager `known-issues.md` format (introduced in the prev
 ### Fixed
 - `scripts/check-vault-structure.mjs`: the roadmap-shape-violation check for `roadmap/known-issues.md` no longer requires `## Fixed`. The new convention (per D-009 Lifecycle) drops the `## Fixed` section entirely; fixed items migrate to `known-bugs.md` and whole `### <Domain>` sections archive when fully fixed. The validator now requires only `## Contents` / `## Active` / `## Deferred` / `## Navigation`.
 
+## [Unreleased] - v1.5.0 backlog
+
+Implements the planning note `2026-06-12_v1.5.0-backlog-from-audit`. Eight features and one validator fix; closes the day-1 setup gap, makes validator errors pedagogical, and brings the orchestration layer into a registry-driven shape.
+
+### Added
+- `scripts/bootstrap-pm.mjs --access authoritative|read-only`: registers the project with the chosen access mode. Default `authoritative` for backward compatibility. The flag validates against the 2-value enum and exits 2 on invalid input. `assertConfigCanUpdate()` and `writeConfig()` now write/read the chosen value; `writeAgents()` picks the AGENTS_PM_SECTION template by `access` (read-only → `AGENTS_PM_SECTION_READONLY.md`, authoritative → `AGENTS_PM_SECTION_AUTHORITATIVE.md`). The agent's Setup Intake routes to `--access read-only` when the user picks "Collaborator with PM access", closing the F1+I1+I2 day-1 gap.
+- `scripts/validators/_index.mjs`: validator registry. Mirrors the migration registry design. Default-exports an array of `{ file, label }` entries in invocation order. Adding a new validator is one new file under `scripts/` plus one entry here. `check-pm.mjs` reads the registry at startup via dynamic import; if the registry is malformed (missing `file` or `label`), the orchestrator exits 2 (I5).
+- `scripts/lib/skip.mjs`: shared `.pm/skip` parser. The `.pm/skip` file in a project's PM folder lists filenames (one per line, `#` for comments) that the validators should ignore. Entries match against either the relative path or the basename. Wired into `check-vault-structure.mjs` (via `listMarkdownFilesUnder`), `check-stale-docs.mjs` (via `walk`), and `check-pm-consistency.mjs` (via `walk`). `check-agents.mjs` doesn't walk files, so it doesn't need the hook. The orchestrator prints `(Honoring .pm/skip: <filename>)` when the file is present (I11).
+- README trigger table: new row for `summarize this project` ("Get a one-paragraph overview of a project"). The trigger is for opening a PM folder you don't recognize — yours, a friend's, or your own after a long break. Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, `roadmap/done-pending.md`, `roadmap/known-issues.md` "Active", and the current month's `history/`. Skips `decisions/`, `features/`, `archive/`, `system/`, and the validator/ledger artifacts. Output is one 4-8 sentence paragraph (I7).
+- SKILL.md `## Triggers` table: matching `summarize this project` row.
+- `REFERENCE.md` new `## Summarize This Project` section: documents the 6 files to read, the 5 folders to skip, the output shape (one paragraph + 2-3 wikilinks), and three anti-patterns (don't read everything, don't propose changes, don't list every feature page).
+- `scripts/bootstrap-pm.mjs` bootstrap ergonomics (I3 + I4 + I12 + I13):
+  - **Grouped dry-run output** (I3): `mkdir`/`write` log lines are deferred into a `planEntries` array; the dry-run output is grouped by folder, sorted alphabetically, with one `## <folder> (N)` heading per directory. A 13-mkdir + 25-write plan is now scannable in 20 lines.
+  - **`--yes` flag** (I4): the bootstrap now accepts `--yes` to suppress interactive prompts (the bootstrap doesn't currently prompt, but the flag is reserved for future use and matches the convention used by `migrate.mjs`).
+  - **Existing-entries notice** (I4): `writeConfig()` prints `notice: <config> contains N other project entries: <names>.` when other projects exist. Lets the user see at a glance whether the new project is the first, an additional entry, or an idempotent re-run.
+  - **Summary line** (I12): the final line is `summary: 13 dirs created, 25 files written.` (or, in the new "no `--access` specified" form, `summary: 13 dirs created, 25 files written, 1 config updated, 1 AGENTS.md written.`).
+  - **Dry-run exit code** (I13): the dry-run path validates that every parent directory in the plan either already exists or is in the plan; if not, it prints an error and exits 2. Real dry-run runs exit 0 cleanly.
+
+### Changed
+- `scripts/check-stale-docs.mjs`: the `findings.neverReviewed` array was used for both "missing frontmatter" and "unparseable `last_reviewed`" cases. Split into three distinct arrays: `findings.missingFrontmatter`, `findings.missingLastReviewed`, `findings.unparseableLastReviewed`. The report now prints one section per category with a category-specific message. The "Unparseable last_reviewed" section reads `last_reviewed value \`X\` is not a YYYY-MM-DD date; fix the frontmatter.` instead of the previous "never reviewed or unparseable last_reviewed" lump (F4).
+- `scripts/check-pm-consistency.mjs`: when a file is missing `pageType`, the validator now suggests "did you mean \`pageType: <X>\`?" based on the file's path prefix. The six heuristics cover `decisions/D-*` (decision), `roadmap/plans/` (planning), `features/<slug>.md` (feature), `system/<topic>.md` (system), `history/YYYY-MM/...` (history), `docs/<Guide>/<topic>.md` (note), and `roadmap/<lane>.md` (roadmap). The `decisions/D-*` case is the original audit finding; the rest are belt-and-suspenders (F5).
+
+### Migration note
+No new migrations. The F1+I1+I2 fix moved the contributor workflow from "register `access: unavailable`" to "leave the PR body's `PM folder impact` section empty" (per D-005). The `1.4.1-unavailable-downgrade.mjs` migration for legacy entries is *not* in this release; the F6+I10 fix only mirrored the active items into `known-bugs.md`. The migration is tracked separately in `roadmap/known-issues.md` "Active → Migrations" and the `known-bugs.md` Active Bugs entry.
+
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
 
 ### Added

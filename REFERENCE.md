@@ -203,6 +203,44 @@ If no signal is clear, ask which project applies before logging.
 
 ---
 
+## Summarize This Project
+
+Use this when the user says "summarize this project", "summarize <ProjectName>", or "what's going on with this project". The trigger is a low-stakes read-only action: open a PM folder (yours, a friend's, or your own after a long break) and produce a 1-paragraph orientation.
+
+**What to read, in this order:**
+
+1. **`<pm_folder>/README.md`** — the routing map. Lists what each folder holds, the project's `Phase`, and the top-of-mind content.
+2. **`<pm_folder>/CURRENT_STATUS.md`** — current phase, top priorities, blocked items, recent wins, major risks. The "now" snapshot.
+3. **`<pm_folder>/PRODUCT.md`** — product vision, target users, principles. The "why this project exists" frame.
+4. **`<pm_folder>/roadmap/done-pending.md`** — what's in flight. Active planning notes appear as H2 sections; read the `PENDING:` bullets to understand what work is currently open.
+5. **`<pm_folder>/roadmap/known-issues.md`** "Active" — current bugs, risks, and blockers. The things the project is currently dealing with.
+6. **`<pm_folder>/history/<current-month>/`** — the last 1-2 history logs. What shipped recently and how it was recorded.
+
+**What to skip (for a one-paragraph summary):**
+
+- `decisions/` (cite only the titles in the summary; don't recap the reasoning — that's what the decisions folder is for).
+- `features/` (mention any feature pages in the summary; don't summarize each one).
+- `archive/` (irrelevant to current state).
+- `system/` (mention what the project *is*; the architecture detail is for engineers).
+- Validator reports and the `.pm/` ledger.
+
+**Output shape:**
+
+One paragraph, 4-8 sentences, covering: the project's name, what it is, current phase, top 2-3 priorities (cite `CURRENT_STATUS.md`), active planning notes / known-issues (cite `roadmap/`), and recent wins (cite `history/`). End with 2-3 wikilinks to the most-likely-next-action files (e.g., `[[README]]`, `[[CURRENT_STATUS]]`, `[[roadmap/done-pending]]`).
+
+**Anti-patterns:**
+
+- Don't read the entire PM folder. The trigger is "summarize", not "audit". Stick to the six files above.
+- Don't propose changes. The trigger is read-only. If the user wants changes, they'll say "reconcile this project" next.
+- Don't list every feature page. The summary should be navigable, not exhaustive.
+
+**Cross-references:**
+
+- The trigger is documented in `README.md`'s trigger table and `SKILL.md` "Triggers".
+- The Contributor Workflow (below) covers the case where the user can read but not write the PM folder; summarization is read-only, so it works the same for all three access modes.
+
+---
+
 ## Standard App Project Bootstrap
 
 Use this when the user asks to create project docs, bootstrap a project folder, or standardize an app/software project PM folder.

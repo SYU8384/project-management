@@ -11,6 +11,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
+import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -67,14 +68,18 @@ function resolveTargets() {
     .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project }));
 }
 
-function walk(root) {
+function walk(root, skipSet) {
   const out = [];
   function rec(abs) {
     for (const entry of readdirSync(abs, { withFileTypes: true })) {
       if (entry.name.startsWith(".")) continue;
       const child = join(abs, entry.name);
       if (entry.isDirectory()) rec(child);
-      else if (entry.isFile() && entry.name.endsWith(".md")) out.push(child);
+      else if (entry.isFile() && entry.name.endsWith(".md")) {
+        const rel = relative(root, child).split("\\").join("/");
+        if (skipSet && isSkipped(skipSet, rel)) continue;
+        out.push(child);
+      }
     }
   }
   rec(root);
@@ -130,7 +135,8 @@ function checkTarget(targets, normalizedTarget) {
 
 function runFor(target) {
   const project = target.project ?? basename(target.vault);
-  const files = walk(target.vault);
+  const skipSet = loadPmSkip(target.vault);
+  const files = walk(target.vault, skipSet);
   const targets = new Set(files.map((abs) => relative(target.vault, abs).split("\\").join("/").replace(/\.md$/, "")));
   const issues = [];
   const donePendingPath = join(target.vault, "roadmap/done-pending.md");
@@ -170,7 +176,25 @@ function runFor(target) {
           process.stderr.write(`--fix failed for ${rel}: ${err.message}\n`);
         }
       }
-      issues.push(`${rel}: pageType ${fm.pageType}, expected ${expected}`);
+      let msg = `${rel}: pageType ${fm.pageType}, expected ${expected}`;
+      if (!fm.pageType) {
+        if (rel.startsWith("decisions/D-")) {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: decision\`? (Decision files live under \`decisions/D-*\`.)`;
+        } else if (rel.startsWith("roadmap/plans/")) {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: planning\`? (Planning files live under \`roadmap/plans/\`.)`;
+        } else if (rel.startsWith("features/") && rel !== "features/features.md") {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: feature\`? (Feature files live under \`features/<slug>.md\`.)`;
+        } else if (rel.startsWith("system/") && rel !== "system/system.md") {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: system\`? (System files live under \`system/<topic>.md\`.)`;
+        } else if (rel.startsWith("history/")) {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: history\`? (History logs live under \`history/YYYY-MM/history-YYYY-MM-DD.md\`.)`;
+        } else if (rel.startsWith("docs/") && rel !== "docs/docs.md") {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: note\`? (Doc files live under \`docs/<Guide>/<topic>.md\`.)`;
+        } else if (rel.startsWith("roadmap/") && rel !== "roadmap/roadmap.md") {
+          msg = `${rel}: missing pageType. Did you mean \`pageType: roadmap\`? (Roadmap files live under \`roadmap/<lane>.md\`.)`;
+        }
+      }
+      issues.push(msg);
     }
     if (fm.status === "archived") issues.push(`${rel}: status must not be archived; use archived: date`);
     if (fm.pageType === "history") {

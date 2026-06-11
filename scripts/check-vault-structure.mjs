@@ -49,6 +49,7 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
+import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 
 const SKILL_DIR = findSkillDir();
 
@@ -133,6 +134,7 @@ function resolveTargets() {
 
 // Per-target state (mutated by check()/emit() before each runFor call)
 let vaultRoot = null;
+let skipSet = new Set();
 
 const REQUIRED_DIRS = [
   "roadmap",
@@ -455,7 +457,9 @@ function listMarkdownFilesUnder(relDir) {
       if (entry.isDirectory()) {
         walk(child);
       } else if (entry.isFile() && entry.name.endsWith(".md")) {
-        out.push(relative(vaultRoot, child).split("\\").join("/"));
+        const rel = relative(vaultRoot, child).split("\\").join("/");
+        if (isSkipped(skipSet, rel)) continue;
+        out.push(rel);
       }
     }
   }
@@ -745,6 +749,10 @@ function issueTotal() {
 
 async function runFor(target) {
   vaultRoot = target.vault;
+  skipSet = loadPmSkip(target.vault);
+  if (skipSet.size > 0) {
+    console.log(`(Honoring .pm/skip: ${[...skipSet].join(", ")})\n`);
+  }
   findings.required = { missing: [], present: [] };
   findings.project = { found: null, present: false };
   findings.system = { hasSystemMd: false, hasAnySystemDoc: false };

@@ -58,6 +58,7 @@ The order below follows a new user's natural flow: **register your project first
 | Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
+| Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, and the roadmap's `Active`/`In Flight` sections; produces a 1-paragraph summary pointing to the right files. |
 
 If you have code access but no PM folder at all, none of these apply — see **Access model** below.
 

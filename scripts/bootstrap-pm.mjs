@@ -21,6 +21,8 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
 const TEMPLATE_DIR = join(SKILL_DIR, "templates");
 
+const VALID_ACCESS_VALUES = ["authoritative", "read-only"];
+
 function usage() {
   console.error(`Usage:
   node scripts/bootstrap-pm.mjs \\
@@ -30,9 +32,11 @@ function usage() {
     --phase <phase> \\
     --notes <one-line description> \\
     --config <path> \\
+    [--access authoritative|read-only] \\
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
-    [--dry-run]
+    [--dry-run] \\
+    [--yes]
 `);
 }
 
@@ -44,15 +48,21 @@ function parseArgs(argv) {
     phase: null,
     notes: "",
     config: null,
+    access: "authoritative",
     vaultRoot: null,
     date: localDate(),
     dryRun: false,
+    yes: false,
   };
 
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--dry-run") {
       out.dryRun = true;
+      continue;
+    }
+    if (arg === "--yes") {
+      out.yes = true;
       continue;
     }
     const value = argv[++i];
@@ -66,6 +76,7 @@ function parseArgs(argv) {
     else if (arg === "--phase") out.phase = value;
     else if (arg === "--notes") out.notes = value;
     else if (arg === "--config") out.config = value;
+    else if (arg === "--access") out.access = value;
     else if (arg === "--vault-root") out.vaultRoot = value;
     else if (arg === "--date") out.date = value;
     else {
@@ -85,6 +96,12 @@ function parseArgs(argv) {
   if (out.codeRepo === null && !argv.includes("--code-repo")) {
     console.error("Missing required --code-repo <path|null>");
     usage();
+    process.exit(2);
+  }
+  if (!VALID_ACCESS_VALUES.includes(out.access)) {
+    console.error(
+      `Invalid --access: ${out.access}. Expected one of: ${VALID_ACCESS_VALUES.join(", ")}.`
+    );
     process.exit(2);
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(out.date)) {
@@ -122,7 +139,17 @@ function rel(path) {
   return path.split("\\").join("/");
 }
 
+function folderGroup(abs) {
+  return rel(dirname(abs));
+}
+
+const planEntries = [];
+
 function log(action, target, detail = "") {
+  if (cli.dryRun) {
+    planEntries.push({ action, target, detail });
+    return;
+  }
   const suffix = detail ? ` — ${detail}` : "";
   console.log(`${action}: ${target}${suffix}`);
 }
@@ -139,10 +166,8 @@ const vaultRoot = cli.vaultRoot ? resolve(cli.vaultRoot) : dirname(pmFolder);
 const date = cli.date;
 const month = monthOf(date);
 const notes = cli.notes || `${project} project.`;
+const access = cli.access;
 const linkRoot = `Projects/${project}`;
-
-const plannedWrites = [];
-const plannedDirs = [];
 
 function ensureDir(abs) {
   if (existsSync(abs)) {
@@ -150,8 +175,7 @@ function ensureDir(abs) {
     return;
   }
   if (cli.dryRun) {
-    plannedDirs.push(abs);
-    log("would mkdir", abs);
+    planEntries.push({ action: "mkdir", target: abs });
     return;
   }
   mkdirSync(abs, { recursive: true });
@@ -164,8 +188,7 @@ function writeCreateOnly(abs, content) {
     return;
   }
   if (cli.dryRun) {
-    plannedWrites.push(abs);
-    log("would write", abs);
+    planEntries.push({ action: "write", target: abs });
     return;
   }
   mkdirSync(dirname(abs), { recursive: true });
@@ -175,8 +198,7 @@ function writeCreateOnly(abs, content) {
 
 function writeReplace(abs, content, label = "write") {
   if (cli.dryRun) {
-    plannedWrites.push(abs);
-    log(`would ${label}`, abs);
+    planEntries.push({ action: label, target: abs });
     return;
   }
   mkdirSync(dirname(abs), { recursive: true });
@@ -286,7 +308,7 @@ function assertConfigCanUpdate(cfg) {
   const expected = {
     code_repo: codeRepo,
     pm_folder: pmFolder,
-    access: "authoritative",
+    access,
   };
   for (const [key, value] of Object.entries(expected)) {
     const current = existing[key] ?? null;
@@ -302,6 +324,18 @@ function assertConfigCanUpdate(cfg) {
 
 function writeConfig() {
   const cfg = loadConfig();
+  const existingProjects = Object.entries(cfg.projects ?? {})
+    .filter(([name]) => name !== "<ProjectName>")
+    .map(([name]) => name);
+  if (existingProjects.length > 0 && !cli.dryRun) {
+    const isOwnReRun = cfg.projects?.[project] !== undefined;
+    const otherCount = isOwnReRun ? existingProjects.length - 1 : existingProjects.length;
+    if (otherCount > 0) {
+      log("notice", configPath, `contains ${otherCount} other project entr${otherCount === 1 ? "y" : "ies"}: ${existingProjects.filter((n) => n !== project).join(", ")}. ${isOwnReRun ? "This run updates the existing '" + project + "' entry (idempotent)." : "This run will add '" + project + "' as an additional entry."}`);
+    } else if (existingProjects.length > 0 && existingProjects[0] !== project) {
+      log("notice", configPath, `contains 1 other project entry: ${existingProjects[0]}. This run will add '${project}' as an additional entry.`);
+    }
+  }
   assertConfigCanUpdate(cfg);
   cfg.skill_dir = SKILL_DIR;
   cfg.vault_root = cfg.vault_root || vaultRoot;
@@ -310,7 +344,7 @@ function writeConfig() {
     pm_folder: pmFolder,
     phase: cli.phase,
     notes,
-    access: "authoritative",
+    access,
   };
   writeReplace(configPath, `${JSON.stringify(cfg, null, 2)}\n`, existsSync(configPath) ? "update" : "write");
 }
@@ -328,7 +362,10 @@ function replacePmSection(existing, section) {
 function writeAgents() {
   if (!codeRepo) return;
   const agentsPath = join(codeRepo, "AGENTS.md");
-  const section = substituteTemplate("AGENTS_PM_SECTION_AUTHORITATIVE.md", {
+  const templateName = access === "read-only"
+    ? "AGENTS_PM_SECTION_READONLY.md"
+    : "AGENTS_PM_SECTION_AUTHORITATIVE.md";
+  const section = substituteTemplate(templateName, {
     "<pm_folder>": pmFolder,
     "<skill_dir>": SKILL_DIR,
   });
@@ -520,9 +557,79 @@ writeConfig();
 scaffold();
 writeAgents();
 
+if (cli.dryRun) {
+  const groups = new Map();
+  for (const entry of planEntries) {
+    const key = folderGroup(entry.target) || ".";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
+  }
+  console.log("");
+  console.log("# Bootstrap dry run — grouped plan");
+  const sortedKeys = [...groups.keys()].sort();
+  for (const folder of sortedKeys) {
+    const items = groups.get(folder);
+    const verbs = items.map((i) => i.action);
+    console.log("");
+    console.log(`## ${folder} (${items.length})`);
+    for (const item of items) {
+      const label = item.action === "write" && item.detail ? `${item.action} — ${item.detail}` : item.action;
+      const verb = item.action === "write" || item.action === "update" ? "write" :
+                   item.action === "mkdir" ? "mkdir" :
+                   item.action;
+      const name = rel(item.target).split("/").pop();
+      console.log(`- ${verb}: ${name}`);
+    }
+  }
+  const counts = planEntries.reduce((acc, e) => {
+    acc[e.action] = (acc[e.action] ?? 0) + 1;
+    return acc;
+  }, {});
+  const summaryParts = [];
+  if (counts.mkdir) summaryParts.push(`${counts.mkdir} dir${counts.mkdir === 1 ? "" : "s"} created`);
+  if (counts.write) summaryParts.push(`${counts.write} file${counts.write === 1 ? "" : "s"} written`);
+  if (counts.update) summaryParts.push(`${counts.update} file${counts.update === 1 ? "" : "s"} updated`);
+  console.log("");
+  console.log(`summary: ${summaryParts.length > 0 ? summaryParts.join(", ") : "no changes planned"}.`);
+
+  // Validate the plan is possible: each parent directory must exist or be in the plan.
+  const planDirs = new Set(planEntries.filter((e) => e.action === "mkdir").map((e) => resolve(e.target)));
+  const planWriteDirs = new Set(planEntries.filter((e) => e.action === "write" || e.action === "update").map((e) => resolve(dirname(e.target))));
+  const missingParents = [];
+  for (const dir of planWriteDirs) {
+    if (planDirs.has(dir) || existsSync(dir)) continue;
+    let parent = dirname(dir);
+    let found = false;
+    while (parent !== pmFolder && parent !== dirname(parent)) {
+      if (planDirs.has(parent) || existsSync(parent)) { found = true; break; }
+      parent = dirname(parent);
+    }
+    if (!found) missingParents.push(rel(dir));
+  }
+  if (missingParents.length > 0) {
+    console.error("");
+    console.error("ERROR: dry-run plan references directories that would not exist:");
+    for (const m of missingParents) console.error(`  - ${m}`);
+    console.error("Refusing to print a non-executable plan. Fix the scaffold and re-run.");
+    process.exit(2);
+  }
+
+  console.log("");
+  console.log("# Bootstrap dry run complete");
+  console.log(`Project: ${project}`);
+  console.log(`PM folder: ${pmFolder}`);
+  console.log(`Code repo: ${codeRepo ?? "null"}`);
+  console.log(`Config: ${configPath}`);
+  process.exit(0);
+}
+
 console.log("");
-console.log(cli.dryRun ? "# Bootstrap dry run complete" : "# Bootstrap complete");
+console.log("# Bootstrap complete");
 console.log(`Project: ${project}`);
 console.log(`PM folder: ${pmFolder}`);
 console.log(`Code repo: ${codeRepo ?? "null"}`);
 console.log(`Config: ${configPath}`);
+
+const totalDirs = planEntries.filter((e) => e.action === "mkdir").length;
+const totalWrites = planEntries.filter((e) => e.action === "write" || e.action === "update").length;
+console.log(`summary: ${totalDirs} dir${totalDirs === 1 ? "" : "s"} created, ${totalWrites} file${totalWrites === 1 ? "" : "s"} written.`);
