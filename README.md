@@ -44,22 +44,9 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 
 Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `openclaw`, or `--dest <path>` for a custom directory.
 
-### Path C — Manual install (you want to inspect first, fork, or run without internet)
+### After install: trigger phrases for your coding agent
 
-```bash
-git clone https://github.com/SYU8384/project-management.git ~/.agents/skills/project-management
-```
-
-Manual clones do not create `projects.json` — the bootstrap script (`scripts/bootstrap-pm.mjs`) writes it to `~/.config/project-management/projects.json` (user-specific XDG location, v1.3.0+) on first run. To seed it manually:
-
-```bash
-mkdir -p ~/.config/project-management
-cp ~/.agents/skills/project-management/templates/projects.template.json ~/.config/project-management/projects.json
-```
-
-### After install (Path B / C only): trigger phrases for your coding agent
-
-If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B or C, restart your coding agent and use these:
+If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, restart your coding agent and use these:
 
 | You want to | Say | Result |
 |---|---|---|

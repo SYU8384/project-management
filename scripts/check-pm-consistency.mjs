@@ -166,7 +166,7 @@ function runFor(target) {
     if (fm.pageType !== expected) {
       if (CLI.fix) {
         // --fix: rewrite pageType in the file's frontmatter
-        const abs = join(vaultRoot, rel);
+        const abs = join(target.vault, rel);
         try {
           const original = readFileSync(abs, "utf8");
           let updated;

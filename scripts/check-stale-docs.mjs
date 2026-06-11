@@ -157,13 +157,6 @@ const SKIP_FILES = new Set([
   "PRODUCT.md",
   "OpenManager.md",
   "CURRENT_STATUS.md",
-  "features.md",
-  "planning.md",
-  "roadmap.md",
-  "history.md",
-  "system.md",
-  "docs.md",
-  "archive.md",
 ]);
 
 const findings = {

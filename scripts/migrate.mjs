@@ -58,7 +58,7 @@ const USAGE = `Usage:
   node scripts/migrate.mjs --project <name> [--config <path>] [--yes] [--dry-run]
   node scripts/migrate.mjs --pm-folder <path> [--yes] [--dry-run]
   node scripts/migrate.mjs --list
-  node scripts/migrate.mjs --migration <id> --pm-folder <path> [--yes] [--dry-run]
+  node scripts/migrate.mjs --migration <id> --pm-folder <path> [--force] [--yes] [--dry-run]
 `;
 
 function parseArgs(argv) {

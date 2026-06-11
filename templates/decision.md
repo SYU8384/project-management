@@ -7,21 +7,22 @@ tags:
   - <decision_type>
   - <area>
 created: <YYYY-MM-DD>
-# Convention-only fields (not enforced by validators):
-decision_date: <YYYY-MM-DD>
-supersedes: <D-id>     # omit (or set to null) if this decision does not supersede another
 updated: <YYYY-MM-DD>
 last_reviewed: <YYYY-MM-DD>
 pageType: decision
 decision_type: <ADR | PRD | MKT | VND | POL | NEG | EXP>
 status: proposed
 owner: PM
+decision_date: <YYYY-MM-DD>
+supersedes: <D-id>
 ---
 # D-NNN: <short title>
 
 > **Decision type:** `<decision_type>` (`ADR` / `PRD` / `MKT` / `VND` / `POL` / `NEG` / `EXP`).
 
 ## Status
+
+> **Note:** `decision_date` and `supersedes` are convention-only frontmatter fields not enforced by validators.
 
 **Proposed** | **Accepted** | **Active** (accepted and being rolled out) | **Superseded by D-MMM** (<YYYY-MM-DD>) | **Deprecated** (<YYYY-MM-DD>).
 When this decision supersedes another, set `supersedes: <D-id>` in this file's frontmatter and move the prior decision's `status` to `superseded` with the date recorded here. `active` is allowed but should be temporary — a decision lingering in `active` past the underlying work is a smell; either it's `accepted` or it should be re-evaluated.

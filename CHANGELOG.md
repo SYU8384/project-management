@@ -209,8 +209,8 @@ missed.
     CLI flags (`--list`, `--dry-run`, `--project`, `--pm-folder`,
     `--migration <id>`, `--yes`), and the `.pm/migrations.json` ledger
     location.
-  - The Repository Map did not list `scripts/migrate.mjs`,
-    `scripts/migrations/`, or `docs/releases/`. Added all three.
+  - The Repository Map did not list `scripts/migrate.mjs` or
+    `scripts/migrations/`. Added both.
   - The validator table row for `check-vault-structure.mjs` did not
     mention migration detection. Updated to note that it emits
     `## Unapplied Migrations` for the migration registry.
