@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- README consolidated: the previous `## 🚀 Quick Start`, `## ⚙️ Install Or Update`, `## Local Registry (Advanced)`, and `## 🚀 After Installer: Start With One Prompt` sections are merged into one canonical `## 🚀 Quick Start` section at the top of the README. Three install paths (OpenClaw, interactive installer, manual) are presented with the OpenClaw-vs-coding-agent distinction explicit. Trigger phrases are scoped to "Path B / C only" so OpenClaw users don't see them as required. README is ~30% shorter; net removal of ~120 lines of redundant install content.
+- Top-of-README badge `install-or-update` → `quick-start`. Anchor `<a id="install-or-update">` replaced with `<a id="quick-start">`.
+
 ## [1.4.0] - 2026-06-10
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
