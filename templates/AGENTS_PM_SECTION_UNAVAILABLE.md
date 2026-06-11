@@ -1,5 +1,7 @@
 ## PM folder
 
+> **Deprecated since v1.4.1.** The `access: "unavailable"` mode is no longer registered in `projects.json`. Contributors with no PM folder access are not users of the skill on their side — they submit PRs with PM folder impact notes, and the maintainer's PM agent applies PM updates on merge. The modern equivalent for the rare case where a code repo is checked out before PM access is granted: register the project on the maintainer's side as `read-only` (or `authoritative` once PM access is set up) and use the corresponding `AGENTS_PM_SECTION_READONLY.md` / `AGENTS_PM_SECTION_AUTHORITATIVE.md` template. This file is kept in the repo for historical reference only.
+
 This project uses the project-management skill, but the PM folder is **not available locally** for this checkout yet. You have code repo access only.
 
 Before coding:

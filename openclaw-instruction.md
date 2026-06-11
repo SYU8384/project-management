@@ -80,7 +80,7 @@ Treat the skill as **not set up yet** if any of these are true:
 - `projects.json` is missing.
 - `projects` is empty.
 - The only project key is `<ProjectName>`.
-- Required values are blank placeholders, such as empty `vault_root`, empty `skill_dir`, empty `code_repo`, empty `pm_folder` for an available project, empty `phase`, or `access: "authoritative | read-only | unavailable"`.
+- Required values are blank placeholders, such as empty `vault_root`, empty `skill_dir`, empty `code_repo`, empty `pm_folder` for an available project, empty `phase`, or `access: "authoritative | read-only"`.
 
 If `projects.json` is missing, copy:
 
@@ -108,7 +108,7 @@ Before asking for paths, inspect the current working directory and classify it a
 - The PM folder, even if empty
 - Neither; use another path, or `code_repo: null` if no code exists yet
 
-If confirmed as the code repo, set `code_repo` to the absolute `cwd` path and ask for the PM folder path unless access is unavailable. If confirmed as the PM folder, set `pm_folder` to the absolute `cwd` path and ask for the code repo path or `null`. If it is neither, ask for both paths as needed.
+If confirmed as the code repo, set `code_repo` to the absolute `cwd` path and ask for the PM folder path (only for users with `authoritative` or `read-only` access; contributors with no PM access do not register projects in `projects.json`). If confirmed as the PM folder, set `pm_folder` to the absolute `cwd` path and ask for the code repo path or `null`. If it is neither, ask for both paths as needed.
 
 Ask for:
 
@@ -137,7 +137,7 @@ Ask free-text follow-ups only for missing facts:
 
 - Project name
 - Code repo path, or `null` if the project has no code repo yet, unless current working directory was confirmed as the code repo
-- PM folder path, unless current working directory was confirmed as the PM folder or access is unavailable
+- PM folder path, unless current working directory was confirmed as the PM folder or the user has no PM access at all
 - Vault root
 - One-line project/product description
 - Optional notes
@@ -146,7 +146,8 @@ Map role to `access`:
 
 - Owner / maintainer -> `authoritative`
 - Collaborator with PM access -> `read-only`
-- Collaborator without PM access yet -> `unavailable`
+
+(Contributors with no PM access at all don't register projects in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.)
 
 If the user chose owner + create new PM folder, ask approval and then run `<skill_dir>/scripts/bootstrap-pm.mjs` with the collected project name, `pm_folder`, `code_repo` (or `null`), phase, notes, vault root, and `<projects_json>` config path. The script registers the project, creates the PM scaffold, and wires the authoritative code repo `AGENTS.md` when `code_repo` is not `null`; empty confirmed PM folders and empty confirmed code repos are valid inputs. If the user chose existing or messy PM folder, register it first, then audit/repair with validation. Ask approval before changing files, but do not treat an empty code repo or empty PM folder as a blocker.
 
@@ -167,7 +168,6 @@ For every registered project:
 
 - Check whether `code_repo` exists locally when it is not `null` or empty.
 - Check whether `pm_folder` exists locally when `access` is `authoritative` or `read-only`.
-- If `access` is `unavailable`, confirm that `pm_folder` is empty or unavailable and ask whether access has changed.
 - Report missing paths clearly and ask the user for replacements.
 
 ## 6. Set Up Your OpenClaw PM Role
@@ -193,7 +193,8 @@ Use this skill whenever the user asks to brainstorm, log ideas, triage issues, r
 Respect project access:
 - `authoritative`: edit the PM folder directly.
 - `read-only`: read the PM folder for context and suggest changes instead of editing.
-- `unavailable`: ask for access and do not invent a PM folder.
+
+(Contributors with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.)
 
 Coding agents still update PM folders after code changes. The OpenClaw PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless the user explicitly asks for coding work.
 
@@ -210,7 +211,6 @@ Maintainer PR PM backfill:
 - Infer the PM updates needed across `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, and `history/`.
 - For `access: authoritative`, apply the PM updates directly before merge or immediately after merge.
 - For `access: read-only`, write a maintainer-facing PM update plan instead of editing.
-- For `access: unavailable`, ask for PM access or identify the maintainer-side agent who can apply the updates.
 - Do not block a contributor solely because they lacked PM folder access.
 
 After PM-folder work, state exactly which project files were updated. If no files were updated, say that explicitly and why.
@@ -246,7 +246,6 @@ Check these areas:
    - For each registered project with `access: authoritative` or `access: read-only`, run the validation command in section 9.
    - For `authoritative` projects, ask approval before repairing PM folder files.
    - For `read-only` projects, report suggested fixes instead of editing.
-   - For `unavailable` projects, confirm the PM folder is unavailable and suggest asking the maintainer for access.
 
 Report audit results in three groups:
 
@@ -263,7 +262,6 @@ For each registered project with a real `code_repo` path:
 3. Compare the needed section with the templates in `<skill_dir>/templates/`:
    - `AGENTS_PM_SECTION_AUTHORITATIVE.md` for `access: authoritative`
    - `AGENTS_PM_SECTION_READONLY.md` for `access: read-only`
-   - `AGENTS_PM_SECTION_UNAVAILABLE.md` for `access: unavailable`
 4. Replace placeholders with the actual project `pm_folder` and skill path where applicable.
 5. Ask the user for explicit permission before editing any code repo `AGENTS.md`. Include the exact repo path and whether you will add or update the PM section.
 6. If permission is denied, show the recommended change instead of editing.
@@ -281,7 +279,7 @@ node <skill_dir>/scripts/check-pm.mjs \
 
 If the project is in a non-default `projects.json` location, pass `--config <projects_json>`. v1.3.0+ resolves `projects.json` from `~/.config/project-management/projects.json` by default.
 
-If validation fails and the project has `access: authoritative`, ask whether to repair the PM folder. If access is `read-only` or `unavailable`, report suggested fixes without editing.
+If validation fails and the project has `access: authoritative`, ask whether to repair the PM folder. If access is `read-only`, report suggested fixes without editing.
 
 Finish by reporting:
 

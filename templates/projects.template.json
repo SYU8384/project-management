@@ -8,7 +8,7 @@
       "pm_folder": "",
       "phase": "",
       "notes": "",
-      "access": "authoritative | read-only | unavailable"
+      "access": "authoritative | read-only"
     }
   }
 }

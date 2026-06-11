@@ -51,7 +51,7 @@ If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair,
 | You want to | Say | When to use | What happens |
 |---|---|---|---|
 | Bootstrap a new project's PM folder | `setup this repo` | First time you set up a project. | Creates PM folder + registers project as `access: authoritative`. |
-| Register as a collaborator | `setup as collaborator` | When you have code access but don't own the PM folder. | Registers `access: read-only` or `unavailable` based on your input. |
+| Register as a collaborator | `setup as collaborator` | When you have the PM folder mounted read-only (e.g., OneDrive read-link, Syncthing read-only mirror). | Registers `access: read-only` (you can read the PM folder but cannot edit it). |
 | Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs all four focused validators. No mutation. |
 | Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
@@ -64,12 +64,12 @@ After install + first setup, the project lives at `<pm_folder>` and `projects.js
 The skill behaves differently depending on whether you own the PM folder or are a collaborator on a project whose PM folder is maintained by someone else. Pick your path at setup time; the agent uses the access mode you register to decide which files to write, what `AGENTS.md` section to install, and which trigger phrases to expose.
 
 - **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, or `reconcile this project` to fix an existing one.
-- **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode.
-- **Collaborator without PM access yet** (`access: unavailable`): you have code access but the PM folder doesn't exist locally or you can't read it. The agent asks the maintainer for access, uses code-repo docs only, and writes a "PM folder unavailable locally" note in your PR body. Use `setup as collaborator` to register this mode.
+- **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode. You need the PM folder mounted read-only (e.g., via OneDrive read-link, Syncthing read-only mirror) to use this mode.
+- **Contributor (no PM access)** — the skill is not really for you. You have code access but no PM folder: either the maintainer doesn't share the PM folder with you, or the maintainer doesn't use the skill at all. Don't run `setup as collaborator` — there's nothing to register on your side. When you open a PR, fill in the "PM folder impact" section in the PR body (per `templates/PR_BODY_TEMPLATE.md`) describing what PM updates your change implies. The *maintainer's* agent reads your PR body and applies the PM folder updates on their side. The skill is what the *maintainer* runs; for the contributor side, the convention is the PR body, not the skill.
 
-The access field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this field before every write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident.
+The `access` field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this field before every write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident. Projects with no PM access aren't registered in `projects.json` at all; the maintainer registers them on the maintainer's side, and the contributor workflow is via PR body, not the skill.
 
-The full per-access-mode behavior (what `AGENTS.md` gets written, what trigger phrases fire, what the contributor-vs-maintainer workflow looks like for read-only and unavailable projects) is in `REFERENCE.md` → "Coding Agent Integration."
+The full per-access-mode behavior (what `AGENTS.md` gets written, what trigger phrases fire, what the contributor-vs-maintainer workflow looks like) is in `REFERENCE.md` → "Coding Agent Integration."
 
 ## ✨ What It Does
 

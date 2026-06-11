@@ -61,7 +61,7 @@ Then check the schema and content dimensions:
 10. **Docs guide indexes** — `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md` are folder-note indexes only; durable content lives in independent notes.
 11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with status, symptoms, root cause, solution, verification, and references.
 12. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
-13. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only | unavailable`; no unresolved placeholders remain.
+13. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only`; no unresolved placeholders remain.
 
 ### Phase 2: Plan
 
@@ -581,7 +581,7 @@ The user's project paths live in a separate config file, not in the skill text. 
       "pm_folder": "/path/to/vault/Projects/<ProjectName>",
       "phase": "pre-alpha | alpha | beta | stable | deprecated",
       "notes": "one-line description",
-      "access": "authoritative | read-only | unavailable"
+      "access": "authoritative | read-only"
     }
   }
 }
@@ -593,11 +593,11 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `projects.<name>.pm_folder` — the project's PM folder inside the vault.
 - `projects.<name>.phase` — current phase (pre-alpha, alpha, beta, stable, deprecated). Free-form string; helps the agent calibrate detail.
 - `projects.<name>.notes` — one-line description (optional).
-- `projects.<name>.access` — `"authoritative"` (you own the PM folder; you can edit it directly), `"read-only"` (the PM folder is shared; you can read but not edit), or `"unavailable"` (you have code access but no PM folder access yet). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). `pm_folder` may be empty/null only when `access` is `"unavailable"`.
+- `projects.<name>.access` — `"authoritative"` (you own the PM folder; the agent edits it directly when you change code, run setup, or reconcile) or `"read-only"` (you have the maintainer's PM folder mounted read-only; the agent never edits it and uses the PR body to signal PM changes). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). Projects with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.
 
 **Auto-bootstrap on first use.** v1.3.0+: if `~/.config/project-management/projects.json` is missing when the agent starts work, the bootstrap script (`scripts/bootstrap-pm.mjs`) copies `templates/projects.template.json` to the user location and walks the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
-**Validation requires registration.** If a collaborator runs `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` while `projects.json` is still the empty template, the validators must stop with an actionable setup message. The correct next step is to use the skill and say "setup as collaborator" or "setup this repo" so the agent can register `access`, `code_repo`, and `pm_folder` (unless access is unavailable).
+**Validation requires registration.** If a user runs `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` while `projects.json` is still the empty template, the validators must stop with an actionable setup message. The correct next step is to use the skill and say "setup this repo" (owner/maintainer) or "setup as collaborator" (read-only collaborator) so the agent can register `access`, `code_repo`, and `pm_folder`. Projects with no PM access at all are not registered here; the maintainer registers them on the maintainer's side, and the contributor workflow is via PR body, not the skill.
 
 **Setup always verifies registration first.** Whether setup is started by a coding agent ("setup this repo") or by an OpenClaw PM agent (`openclaw-instruction.md`), the agent must inspect `projects.json` before assuming the skill is configured. Missing, empty, or template-only registries mean setup has not completed. Populated registries should be summarized back to the user for path confirmation and optional new-project registration.
 
@@ -606,9 +606,9 @@ The user's project paths live in a separate config file, not in the skill text. 
 **Adding a new project:** the user says "setup", "add a new project", "register a new project", "initialize the PM folder for <name>", or similar. The agent collects the required fields (in this order) and adds the entry to the `projects` object:
 
 - `code_repo` (path to the project's code repo, or `null` if no code yet) — required
-- `pm_folder` (path to the project's PM folder inside the vault) — required unless `access` is `"unavailable"`
+- `pm_folder` (path to the project's PM folder inside the vault) — required
 - `phase` (pre-alpha | alpha | beta | stable | deprecated) — required
-- `access` (authoritative | read-only | unavailable) — required
+- `access` (authoritative | read-only) — required
 - `notes` (one-line description) — optional
 
 The agent reads the existing `projects.json` (if any), merges the new entry into `projects`, and writes back. **Never silently invent paths — ask the user for each field.** If the user is also bootstrapping the PM folder, this addition is Step 0 of the Bootstrap Workflow (see below).
@@ -617,7 +617,7 @@ The agent reads the existing `projects.json` (if any), merges the new entry into
 
 ## Setup Intake
 
-Use this when the user says "setup", "set up this repo", "setup this project", "setup PM", "setup project management", "setup as collaborator", or any similar broad setup request. The user should not need to know whether they need bootstrap, repair, read-only registration, or unavailable collaborator mode.
+Use this when the user says "setup", "set up this repo", "setup this project", "setup PM", "setup project management", "setup as collaborator", or any similar broad setup request. The user should not need to know whether they need bootstrap, repair, or read-only registration. (Contributors with no PM access don't use this flow; their workflow is via PR body, not the skill.)
 
 ### Inspect before asking
 
@@ -638,7 +638,7 @@ Treat an empty or unrecognized current working directory as a candidate path, no
 
 Then route path follow-ups from that answer:
 
-- If `cwd` is the code repo, set `code_repo` to the absolute `cwd` path and ask for the PM folder path or vault root unless access is `unavailable`.
+- If `cwd` is the code repo, set `code_repo` to the absolute `cwd` path and ask for the PM folder path or vault root (only when the user has authoritative or read-only access; contributors with no PM access do not register projects in `projects.json`).
 - If `cwd` is the PM folder, set `pm_folder` to the absolute `cwd` path and ask for the code repo path or `null` if no code exists yet.
 - If `cwd` is neither, ask for both paths as needed.
 
@@ -650,8 +650,9 @@ When the UI supports selectable answers, use the question tool. Otherwise, prese
 
 1. **Role**
    - Owner / maintainer (recommended when the user controls the PM folder)
-   - Collaborator with PM access
-   - Collaborator without PM access yet
+   - Collaborator with PM access (the PM folder is mounted read-only on the user's machine)
+
+   Contributors with no PM access at all don't use this flow. The maintainer registers the project on the maintainer's side, and the contributor workflow is via PR body, not the skill.
 
 2. **PM folder state**
    - Create new PM folder (recommended for code-repo-only owner setup)
@@ -673,7 +674,7 @@ Ask free-text follow-ups only for values that cannot be selected:
 
 - Project name, if not clear.
 - Code repo path, if current working directory was not confirmed as the repo.
-- PM folder path or vault root, if current working directory was not confirmed as the PM folder and access is not unavailable.
+- PM folder path or vault root, if current working directory was not confirmed as the PM folder and the user has access.
 - One-line project/product description.
 - Optional notes.
 
@@ -681,14 +682,14 @@ Map role + PM state to `access` automatically:
 
 - Owner / maintainer → `authoritative`
 - Collaborator with PM access → `read-only`
-- Collaborator without PM access yet → `unavailable`
+
+(Contributors with no PM access at all are not registered in `projects.json`; their workflow is via PR body, not the skill.)
 
 ### Route after intake
 
 - **Owner + create new PM folder:** register `access: authoritative`, create the standard PM folder, seed initial docs from code repo evidence where possible, create/update authoritative `AGENTS.md` when `code_repo` is not `null`, then validate. Empty confirmed PM folders are valid bootstrap targets, and empty confirmed code repos still get `AGENTS.md`.
 - **Owner + existing/messy PM folder:** register `access: authoritative`, run repair/audit, preserve content, normalize structure, create/update authoritative `AGENTS.md` when `code_repo` is not `null`, then validate.
 - **Collaborator with PM access:** register `access: read-only`, add the read-only `AGENTS.md` section if requested, read the PM folder for context, and never edit it directly.
-- **Collaborator without PM access:** register `access: unavailable`, leave `pm_folder` empty/null, add the unavailable `AGENTS.md` section if requested, ask the maintainer for a PM folder path or read-only mirror, and use PR PM-impact notes until access exists.
 
 Never create a private "canonical" PM folder for a collaborator unless the user explicitly asks for a private local scratch copy. A private scratch copy is not authoritative and must not replace the owner's PM folder.
 
@@ -739,13 +740,14 @@ The `system/` and `features/` folders are **complementary, not redundant**:
 
 When a coding agent works in a project's code repo, the PM folder is the source of truth for current behavior. Without explicit guidance, the agent may make code changes without updating the PM folder, causing drift.
 
-**The convention:** the project's `AGENTS.md` includes a `## PM folder` section. The section's content depends on whether the project is **authoritative** (you own the PM folder), **read-only** (someone else maintains it; you can read but not edit), or **unavailable** (you have code access but no PM folder access yet):
+**The convention:** the project's `AGENTS.md` includes a `## PM folder` section. The section's content depends on whether the project is **authoritative** (you own the PM folder) or **read-only** (someone else maintains it; you have the PM folder mounted read-only):
 
 - **Authoritative projects** — the section tells the agent to read `system/<topic>.md` before coding and to update the PM folder directly after coding. See `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`.
 - **Read-only projects** — the section tells the agent to read the PM folder for context, but to use the PR body template (`templates/PR_BODY_TEMPLATE.md`) to suggest PM folder changes. The maintainer applies the changes after merge. See `templates/AGENTS_PM_SECTION_READONLY.md`.
-- **Unavailable PM projects** — the section tells the agent that no PM folder is available locally. It should ask the maintainer for access, use code repo docs only, and fill the PR body template's PM impact section instead of inventing PM folder edits. See `templates/AGENTS_PM_SECTION_UNAVAILABLE.md`.
 
-The agent checks the project's `access` field in `~/.config/project-management/projects.json` (`authoritative`, `read-only`, or `unavailable`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
+Projects with no PM access at all (either the maintainer doesn't use the skill, or the maintainer uses it but doesn't share the PM folder) don't get an `AGENTS.md` PM section and aren't registered in `projects.json` on the contributor's side. The contributor's role is via PR body: fill in the "PM folder impact" section per the template. The maintainer's agent reads the PR body and applies the PM folder updates on their side. The `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` template is now retired; if you encounter a reference to it, the modern equivalent is the read-only workflow + PR body convention.
+
+The agent checks the project's `access` field in `~/.config/project-management/projects.json` (`authoritative` or `read-only`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
 
 A copyable snippet is provided in each template. Project repos that adopt the project-management skill should add the appropriate section to their `AGENTS.md`. The skill is the canonical reference; the project repo's `AGENTS.md` is a thin pointer to it.
 
@@ -764,11 +766,9 @@ A copyable snippet is provided in each template. Project repos that adopt the pr
 
 **The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
 
-**The pattern after a code change (unavailable):** the agent cannot read or edit the PM folder. It should ask the maintainer for read-only PM access if the code change needs project context, rely on code repo docs only until then, and fill in the PR body's "PM folder impact" section with best-effort suggestions and a note that the PM folder was unavailable locally.
+**The pattern after a code change (no PM access, contributor side):** the contributor fills in the "PM folder impact" section of the PR body (per `templates/PR_BODY_TEMPLATE.md`) describing what PM updates their change implies. The maintainer's agent reads the PR body and applies the PM folder updates on their side after merge.
 
----
 
-## OpenClaw PM Agent Bootstrap
 
 Use this when the user says "setup OpenClaw PM agent", "generate OpenClaw PM prompt", "bootstrap OpenClaw PM", "write OpenClaw AGENTS prompt", or similar.
 
@@ -794,7 +794,7 @@ The public instruction file is `openclaw-instruction.md` at the repository root.
 
 The user copies the prompt into their OpenClaw PM agent. The OpenClaw agent reads the public instruction, installs or updates the skill, verifies `projects.json`, asks guided setup questions when needed, then checks its own workspace `AGENTS.md` for a `## Project Management Skill` section that records the skill path, `projects.json` path, and working rules. If the section is missing or stale, the OpenClaw agent proposes the exact update and asks approval before editing.
 
-The OpenClaw agent also checks each registered project: path correctness in `projects.json`, PM folder validation, and whether the code repo `AGENTS.md` has the correct PM section for the project's `access` value. It reports results as `OK`, `Needs approval`, or `Blocked / missing access`. It asks approval before changing `projects.json`, the OpenClaw workspace `AGENTS.md`, project repo `AGENTS.md`, or any authoritative PM folder files. For read-only or unavailable PM folders, it reports suggested changes instead of editing.
+The OpenClaw agent also checks each registered project: path correctness in `projects.json`, PM folder validation, and whether the code repo `AGENTS.md` has the correct PM section for the project's `access` value. It reports results as `OK`, `Needs approval`, or `Blocked / missing access`. It asks approval before changing `projects.json`, the OpenClaw workspace `AGENTS.md`, project repo `AGENTS.md`, or any authoritative PM folder files. For read-only PM folders, it reports suggested changes instead of editing.
 
 The coding agent that displays this prompt should not directly mutate an OpenClaw workspace `AGENTS.md` unless the user explicitly asks for that and gives the exact file path. The generated-prompt workflow is the default because it lets the OpenClaw agent own its persistent instructions deliberately, then ask approval before changing its own workspace files.
 
@@ -809,7 +809,6 @@ An OpenClaw PM agent using this bootstrap should:
 5. Respect access:
    - `authoritative` — edit PM folder directly.
    - `read-only` — read for context and suggest changes.
-   - `unavailable` — ask for access; do not invent a PM folder.
 6. Keep durable current-state docs, roadmap notes, and folder indexes synchronized before writing history.
 7. Avoid source-code edits unless the user explicitly asks it to code.
 
@@ -893,7 +892,7 @@ When reviewing or merging a PR:
 4. Infer the PM updates needed across `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, and `history/`.
 5. For authoritative projects, apply the PM updates directly before merge or immediately after merge. If the PR must land first, write the PM update plan before merge so the follow-up is explicit.
 6. For read-only projects, produce a maintainer-facing PM update plan instead of editing the PM folder.
-7. For unavailable projects, record that PM access is missing and ask the owner for access or a maintainer-side PM agent to apply the updates.
+7. For PRs from contributors with no PM folder access (PR body says "PM folder unavailable locally"), record that PM access is missing and ask the contributor or a maintainer-side PM agent to apply the updates.
 
 Do not block a contributor solely because they lacked PM folder access. The merge/review agent owns PM backfill for maintainer-side workflows.
 

@@ -113,13 +113,6 @@ function resolveTargets() {
       console.error(configSetupError(CLI.project, configPath, cfg, `project '${CLI.project}' not found`));
       process.exit(2);
     }
-    if (proj.access === "unavailable") {
-      console.log(`# Vault Structure Report — ${CLI.project}\n`);
-      console.log(`**Status:** SKIP`);
-      console.log("");
-      console.log(`PM folder unavailable for this collaborator checkout; no pm_folder scan was run.`);
-      return [];
-    }
     if (!proj.pm_folder) {
       console.error(configSetupError(CLI.project, configPath, cfg, `project '${CLI.project}' has no pm_folder`));
       process.exit(2);
@@ -129,13 +122,6 @@ function resolveTargets() {
   const projects = cfg.projects ?? {};
   const targets = [];
   for (const [name, proj] of Object.entries(projects)) {
-    if (proj.access === "unavailable") {
-      console.log(`\n# Vault Structure Report — ${name}\n`);
-      console.log(`**Status:** SKIP`);
-      console.log("");
-      console.log(`PM folder unavailable for this collaborator checkout; no pm_folder scan was run.`);
-      continue;
-    }
     if (!proj.pm_folder) continue;
     targets.push({ vault: resolve(proj.pm_folder), label: `${name} (${proj.pm_folder})` });
   }

@@ -18,6 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Top-of-README badge `install-or-update` → `quick-start`. Anchor `<a id="install-or-update">` replaced with `<a id="quick-start">`.
 - README: dropped the redundant `## 🧪 Validation And Integration Checks` and `## 🔁 Migrations` sections. The integration is now stated in the Quick Start trigger table (reconcile does validate + repair + migrate in one command); the Migrations subsection, runner CLI, and per-check script reference are in `REFERENCE.md` for the developer who needs them.
 
+### Removed
+- `access: "unavailable"` registration mode. The `access` field is now a strict two-value enum (`authoritative` / `read-only`). Contributors with no PM access at all are not users of the skill on their side — they submit PRs with PM folder impact notes, and the maintainer's PM agent applies PM updates on merge. The `setup as collaborator` trigger now registers read-only access only.
+- `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` retired as a generated template. The file remains in the repo with a deprecation note pointing to the modern read-only + PR body convention. `scripts/check-agents.mjs::templateForAccess()` no longer returns it.
+
+### Changed (doc-only follow-ups to the access-model reframing)
+- README: Access model section reframed from three bullets (`authoritative` / `read-only` / `unavailable`) to two bullets + a "Contributor (no PM access)" case describing the PR body convention.
+- README: Quick Start trigger table — `setup as collaborator` row updated to "When you have the PM folder mounted read-only (e.g., OneDrive read-link, Syncthing read-only mirror)" with `read-only`-only registration.
+- `REFERENCE.md`: `access` field description narrowed to two-value enum. All `unavailable` mappings removed from Setup Intake role list, route-after-intake, and the AGENTS.md template picker. Coding Agent Integration and Contributor Workflow sections reframed to drop the unavailable case and reference the PR body convention instead.
+- `templates/projects.template.json`: `access` enum narrowed to two values.
+- `scripts/check-pm-consistency.mjs`, `scripts/check-vault-structure.mjs`, `scripts/check-stale-docs.mjs`: `unavailable` SKIP branches removed from `resolveTargets()` — read-only and authoritative projects are now both validated; unknown access values are flagged.
+- `scripts/check-agents.mjs::templateForAccess()`: two branches only.
+- `openclaw-instruction.md`: `unavailable` references removed from the blank-placeholder list, intake routing, role list, access mapping, project audit, AGENTS.md template picker, and validation repair rules.
+- `SKILL.md` Quick Start item 2: routing list no longer includes "register unavailable PM access".
+
 ## [1.4.0] - 2026-06-10
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.

@@ -53,13 +53,6 @@ function resolveTargets() {
   const cfg = JSON.parse(readFileSync(configPath, "utf8"));
   if (CLI.project) {
     const proj = cfg.projects?.[CLI.project];
-    if (proj?.access === "unavailable") {
-      console.log(`# PM Consistency Report — ${CLI.project}\n`);
-      console.log(`**Status:** SKIP`);
-      console.log("");
-      console.log(`PM folder unavailable for this collaborator checkout; no consistency scan was run.`);
-      return [];
-    }
     if (!proj?.pm_folder) {
       const reason = proj
         ? `project '${CLI.project}' has no pm_folder`
@@ -70,15 +63,7 @@ function resolveTargets() {
     return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project }];
   }
   return Object.entries(cfg.projects ?? {})
-    .filter(([project, proj]) => {
-      if (proj.access !== "unavailable") return true;
-      console.log(`\n# PM Consistency Report — ${project}\n`);
-      console.log(`**Status:** SKIP`);
-      console.log("");
-      console.log(`PM folder unavailable for this collaborator checkout; no consistency scan was run.`);
-      return false;
-    })
-    .filter(([, proj]) => proj.pm_folder)
+    .filter(([project, proj]) => Boolean(proj.pm_folder))
     .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project }));
 }
 

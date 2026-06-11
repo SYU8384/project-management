@@ -64,7 +64,6 @@ function resolveProjects() {
 function templateForAccess(access) {
   if (access === "authoritative") return "AGENTS_PM_SECTION_AUTHORITATIVE.md";
   if (access === "read-only") return "AGENTS_PM_SECTION_READONLY.md";
-  if (access === "unavailable") return "AGENTS_PM_SECTION_UNAVAILABLE.md";
   return null;
 }
 
@@ -116,6 +115,10 @@ function validateProject(name, project) {
   if ((project.access === "authoritative" || project.access === "read-only") && !project.pm_folder) {
     issues.push(`access '${project.access}' requires pm_folder for AGENTS.md validation`);
   }
+
+  // Contributors with no PM access at all aren't registered in projects.json on
+  // the contributor's side, so we don't expect to see them here. If a project
+  // entry has access missing or unknown, treat it as an invalid value.
 
   const repoPath = resolve(project.code_repo);
   if (!existsSync(repoPath)) {
