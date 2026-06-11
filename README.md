@@ -149,40 +149,6 @@ Example registry:
 
 Most users do not need to edit this manually after setup. The guided setup flow registers projects for you.
 
-<a id="versioning"></a>
-
-## 🏷️ Versioning
-
-This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
-
-- **Default install (v1.0.1+):** pulls `v1` (latest `v1.x.x` release). Use `--ref main` or `--channel main` for the bleeding edge.
-- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
-- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
-- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file. To check the currently installed version without re-running the installer: `cat <skill_dir>/VERSION`.
-
-The version is printed after every install or update:
-
-```text
-==> Installed version: 1.0.0
-```
-
-<a id="releasing"></a>
-
-## 📦 Releasing (Maintainers)
-
-To cut a new release:
-
-1. Bump `VERSION` to the new `MAJOR.MINOR.PATCH`.
-2. Add a new top entry to `CHANGELOG.md` under `## [Unreleased]` (or rename `## [Unreleased]` to the versioned heading) with `Added / Changed / Deprecated / Removed / Fixed / Security` sections.
-3. Commit: `git commit -m "release: vX.Y.Z"`.
-4. Push: `git push origin main`.
-5. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary>"`.
-6. Push the tag: `git push origin vX.Y.Z`.
-
-That's it. `CHANGELOG.md` is the single source of truth for what changed in each version; `VERSION` and the git tag are the versioned snapshot. The skill is small enough that an additional release-notes layer (per-version prose files, GitHub Releases UI paste) doesn't pay for itself.
-
-Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, run the `gstack-ship` skill (if installed) or manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
-
 <a id="start-with-one-prompt"></a>
 
 ## 🚀 After Installer: Start With One Prompt
@@ -387,6 +353,36 @@ The runner is **idempotent**: re-running on a fully-migrated project prints `No 
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
 - **The skill is portable.** `projects.json` lives at `~/.config/project-management/projects.json` (user-specific, gitignored); the repo itself contains only reusable conventions, templates, and scripts.
+
+## 🏷️ Versioning
+
+This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
+
+- **Default install (v1.0.1+):** pulls `v1` (latest `v1.x.x` release). Use `--ref main` or `--channel main` for the bleeding edge.
+- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
+- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
+- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file. To check the currently installed version without re-running the installer: `cat <skill_dir>/VERSION`.
+
+The version is printed after every install or update:
+
+```text
+==> Installed version: 1.0.0
+```
+
+## 📦 Releasing (Maintainers)
+
+To cut a new release:
+
+1. Bump `VERSION` to the new `MAJOR.MINOR.PATCH`.
+2. Add a new top entry to `CHANGELOG.md` under `## [Unreleased]` (or rename `## [Unreleased]` to the versioned heading) with `Added / Changed / Deprecated / Removed / Fixed / Security` sections.
+3. Commit: `git commit -m "release: vX.Y.Z"`.
+4. Push: `git push origin main`.
+5. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary>"`.
+6. Push the tag: `git push origin vX.Y.Z`.
+
+That's it. `CHANGELOG.md` is the single source of truth for what changed in each version; `VERSION` and the git tag are the versioned snapshot. The skill is small enough that an additional release-notes layer (per-version prose files, GitHub Releases UI paste) doesn't pay for itself.
+
+Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, run the `gstack-ship` skill (if installed) or manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
 
 ## 📄 License
 
