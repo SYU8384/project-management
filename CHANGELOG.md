@@ -5,6 +5,21 @@ All notable changes to this skill are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - v1.6.0 starts (I6 --strict flag)
+
+The first v1.6.0 carryover item from the planning note `2026-06-12_v1.6.0-carryover`. `--strict` tightens the `check-stale-docs.mjs` thresholds from 30/90 days to 7/14 days for CI runs.
+
+### Added
+
+- `scripts/check-stale-docs.mjs --strict` flag: tightens the stale-doc threshold from 30 days to 7 days, and the very-stale threshold from 90 days to 14 days. For nightly CI: a doc whose `last_reviewed` is more than a week old fails the run. The flag is opt-in; the default behavior is unchanged. The report's `Thresholds:` line and the section header (`Stale (30-90 days)` vs `Stale (7-14 days)`) reflect the active mode. A `(Strict mode active: stale threshold lowered to 7 days, very-stale to 14 days.)` notice prints at the start of the run.
+- The `STALE_DAYS` / `VERY_STALE_DAYS` env-var overrides still work in non-strict mode. `--strict` is a CLI-only override; the env-var overrides are the per-project customization knob.
+
+### Notes
+
+- `--strict` is honored by `check-stale-docs.mjs` only. The other three validators (vault-structure, pm-consistency, agents) have no soft-warning categories to escalate and ignore the flag.
+- `check-pm.mjs` passes `--strict` through to each spawned validator (no orchestrator change needed).
+- The v1.6.0 plan (`roadmap/plans/2026-06-12_v1.6.0-carryover`) moves from `proposed` to `active` with this work.
+
 ## [1.5.0] - 2026-06-12
 
 A release that closes the day-1 setup gap, makes validator errors pedagogical, brings the orchestration layer into a registry-driven shape, formalizes four OpenManager-derived conventions (`done-pending.md`, `ideas.md`, `known-issues.md`, `mvp-priorities.md`), and ships a translation migration for pre-v1.5.0 `access: "unavailable"` entries. The post-v1.4.1 audit findings (planning note `2026-06-12_v1.5.0-backlog-from-audit`) and a v1.4.1 doc-only data-model refactor are aggregated here.

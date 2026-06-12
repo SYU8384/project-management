@@ -23,6 +23,11 @@
  *   STALE_DAYS    default 30
  *   VERY_STALE_DAYS default 90
  *
+ * `--strict` flag: tightens the stale threshold to 7 days (very-stale
+ * to 14). For CI: a nightly run that hasn't seen a `last_reviewed`
+ * bump in the last week fails. The flag is opt-in; the default
+ * behavior is unchanged.
+ *
  * The `--config` flag expects a path to `projects.json` from the
  * project-management skill (at the skill root, alongside SKILL.md). The script
  * reads `vault_root` and the project's `pm_folder` from the config. When
@@ -46,14 +51,22 @@ import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 const DEFAULT_STALE_DAYS = Number(process.env.STALE_DAYS ?? 30);
 const DEFAULT_VERY_STALE_DAYS = Number(process.env.VERY_STALE_DAYS ?? 90);
 
+// Strict-mode thresholds (used when --strict is passed). CI uses these
+// tighter thresholds so a nightly run flags docs that have not been
+// reviewed in the last week, not the default 30 days.
+const STRICT_STALE_DAYS = 7;
+const STRICT_VERY_STALE_DAYS = 14;
+
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const out = { vault: null, config: null, project: null };
+  const out = { vault: null, config: null, project: null, strict: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--config" || args[i] === "-c") {
       out.config = args[++i];
     } else if (args[i] === "--project" || args[i] === "-p") {
       out.project = args[++i];
+    } else if (args[i] === "--strict") {
+      out.strict = true;
     } else if (!args[i].startsWith("-")) {
       out.vault = args[i];
     }
@@ -131,6 +144,9 @@ const today = new Date().toISOString().slice(0, 10);
 // Per-target state (mutated by walk/scan/emit before each runFor call)
 let vaultRoot = null;
 let skipSet = new Set();
+let effectiveStaleDays = DEFAULT_STALE_DAYS;
+let effectiveVeryStaleDays = DEFAULT_VERY_STALE_DAYS;
+let strictModeActive = false;
 
 const SKIP_DIRS = new Set([
   ".obsidian",
@@ -200,9 +216,9 @@ async function scan(filePath) {
     findings.unparseableLastReviewed.push({ path: rel, top, lastReviewed });
     return;
   }
-  if (age > DEFAULT_VERY_STALE_DAYS) {
+  if (age > effectiveVeryStaleDays) {
     findings.veryStale.push({ path: rel, top, age, lastReviewed });
-  } else if (age > DEFAULT_STALE_DAYS) {
+  } else if (age > effectiveStaleDays) {
     findings.stale.push({ path: rel, top, age, lastReviewed });
   } else {
     findings.ok += 1;
@@ -238,7 +254,8 @@ function emit() {
   lines.push("");
   lines.push(`Generated: ${today}`);
   lines.push(`Vault root: \`${vaultRoot}\``);
-  lines.push(`Thresholds: stale > ${DEFAULT_STALE_DAYS} days, very-stale > ${DEFAULT_VERY_STALE_DAYS} days`);
+  const thresholdNote = strictModeActive ? " (--strict: tightened from 30/90 days)" : "";
+  lines.push(`Thresholds: stale > ${effectiveStaleDays} days, very-stale > ${effectiveVeryStaleDays} days${thresholdNote}`);
   lines.push("");
   const neverTotal = findings.missingFrontmatter.length + findings.missingLastReviewed.length + findings.unparseableLastReviewed.length;
   lines.push(`**Summary:** ${findings.ok} OK, ${findings.stale.length} stale, ${findings.veryStale.length} very-stale, ${neverTotal} with no parseable last_reviewed.`);
@@ -286,9 +303,15 @@ async function runFor(target) {
   resetFindings();
   vaultRoot = target.vault;
   skipSet = loadPmSkip(target.vault);
+  strictModeActive = CLI.strict;
+  effectiveStaleDays = CLI.strict ? STRICT_STALE_DAYS : DEFAULT_STALE_DAYS;
+  effectiveVeryStaleDays = CLI.strict ? STRICT_VERY_STALE_DAYS : DEFAULT_VERY_STALE_DAYS;
   console.log(`\n# Stale Docs Report — ${target.label}\n`);
   if (skipSet.size > 0) {
     console.log(`(Honoring .pm/skip: ${[...skipSet].join(", ")})\n`);
+  }
+  if (CLI.strict) {
+    console.log(`(Strict mode active: stale threshold lowered to ${STRICT_STALE_DAYS} days, very-stale to ${STRICT_VERY_STALE_DAYS} days.)\n`);
   }
   await walk(target.vault);
   emit();
