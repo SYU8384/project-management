@@ -20,6 +20,31 @@ The first v1.6.0 carryover item from the planning note `2026-06-12_v1.6.0-carryo
 - `check-pm.mjs` passes `--strict` through to each spawned validator (no orchestrator change needed).
 - The v1.6.0 plan (`roadmap/plans/2026-06-12_v1.6.0-carryover`) moves from `proposed` to `active` with this work.
 
+## [Unreleased] - v1.6.0 close-out (F7, F2+F3, I8, code_repo)
+
+A batch of v1.6.0 carryover items from the planning note `2026-06-12_v1.6.0-carryover`. Closes the day-1 setup gap, makes validator errors pedagogical, and makes phase/notes edits single-source-of-truth.
+
+### Added
+
+- `scripts/check-agents.mjs`: the validator now FAILs (not SKIPs) for `authoritative` projects without `code_repo`. The pre-v1.4.0 "every project has a code_repo" assumption is now defensible: an authoritative project that lost its code_repo entry is caught at validation time. Read-only projects still SKIP (legitimate "no code repo" case for project-only setups). The FAIL message is: `authoritative project '<name>' has no code_repo; AGENTS.md cannot be validated. Set code_repo to the code repo path, or downgrade to access: read-only if this is a project-only setup.`
+- `scripts/bootstrap-pm.mjs --sync` flag: re-reads `projects.json` and rewrites the `## Current Phase` and `## Summary` lines in `CURRENT_STATUS.md` and `PRODUCT.md` to match the canonical `phase` and `notes` values. Idempotent (re-run is a no-op when already in sync). Useful for projects where phase changes mid-lifecycle and the docs would otherwise drift.
+- `scripts/check-pm-consistency.mjs`: new phase-consistency rule. If `projects.json` has a `phase` for the project, the body of `## Current Phase` in `CURRENT_STATUS.md` and `PRODUCT.md` must match. Drift returns FAIL with `Run \`bootstrap-pm.mjs --project <name> --sync\` to fix.`. The validator was reading `resolveProjectsConfigPath(null)` (XDG default only); fixed to honor `--config` (a latent bug that this rule exposed).
+- `scripts/bootstrap-pm.mjs`: pre-scaffold `notice: target PM folder has N existing markdown files` line (useful for idempotent re-runs), and the final summary line now includes `N files skipped (already exist)`.
+
+### Changed
+
+- `templates/PR_BODY_TEMPLATE.md`: the hidden `<!-- if you have no PM folder access, ... -->` block was moved to a visible blockquote at the top of the `## PM folder impact` section. Contributors skimming the template now see the "if you have no PM access, leave this section empty" instruction instead of having it hidden in an HTML comment. The checkboxes below are unchanged.
+
+### Fixed
+
+- `scripts/check-pm-consistency.mjs`: latent bug where the validator's call to `resolveProjectsConfigPath(null)` ignored the `--config` flag. The validator now passes `CLI.config` through (matching the pattern in `check-stale-docs.mjs`, `check-agents.mjs`, and `check-vault-structure.mjs`).
+- `scripts/check-agents.mjs`: the SKIP path for projects without `code_repo` is now gated on `access: read-only`. The pre-v1.4.0 assumption ("every project has a code_repo") was undocumented; v1.4.0's expansion to project-only setups introduced a SKIP path that conflated "legitimately no code repo" with "missing field". The fix differentiates.
+
+### Notes
+
+- C1-C6 (cosmetic items from the v1.6.0 plan) are deferred per the plan's own recommendation ("touching them invites bikeshedding").
+- The v1.6.0 plan (`roadmap/plans/2026-06-12_v1.6.0-carryover`) is fully shipped; it can be archived by the user on the next planning pass (the file is already a historical record; no v1.6.0 tag is needed for the archive step).
+
 ## [1.5.0] - 2026-06-12
 
 A release that closes the day-1 setup gap, makes validator errors pedagogical, brings the orchestration layer into a registry-driven shape, formalizes four OpenManager-derived conventions (`done-pending.md`, `ideas.md`, `known-issues.md`, `mvp-priorities.md`), and ships a translation migration for pre-v1.5.0 `access: "unavailable"` entries. The post-v1.4.1 audit findings (planning note `2026-06-12_v1.5.0-backlog-from-audit`) and a v1.4.1 doc-only data-model refactor are aggregated here.

@@ -137,6 +137,20 @@ function runFor(target) {
   const project = target.project ?? basename(target.vault);
   const skipSet = loadPmSkip(target.vault);
   const files = walk(target.vault, skipSet);
+  // Load projects.json (if any) to read the canonical phase. Used by
+  // the phase-consistency rule below. Cached here so we read the file
+  // once per run, not once per file.
+  let expectedPhase = null;
+  const configPath = resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
+  if (configPath && existsSync(configPath)) {
+    try {
+      const cfg = JSON.parse(readFileSync(configPath, "utf8"));
+      const proj = cfg.projects?.[project];
+      if (proj?.phase) expectedPhase = String(proj.phase);
+    } catch {
+      // malformed projects.json: skip the rule rather than fail the run
+    }
+  }
   const targets = new Set(files.map((abs) => relative(target.vault, abs).split("\\").join("/").replace(/\.md$/, "")));
   const issues = [];
   const donePendingPath = join(target.vault, "roadmap/done-pending.md");
@@ -214,6 +228,25 @@ function runFor(target) {
     if (rel.includes("sync-conflict")) issues.push(`${rel}: sync-conflict file should be resolved or removed`);
     if (rel.startsWith("archive/") && !isFolderNote(rel, project) && rel !== "archive/archive.md" && !rel.endsWith("-archived.md")) {
       issues.push(`${rel}: visible archive file should use *-archived.md`);
+    }
+    // Phase consistency: if projects.json is loadable and has a
+    // `phase` for this project, the body of `## Current Phase` in
+    // CURRENT_STATUS.md and PRODUCT.md must match. Drift means the
+    // user edited the value in one place but not the other; the fix
+    // is `bootstrap-pm.mjs --sync`.
+    if ((rel === "CURRENT_STATUS.md" || rel === "PRODUCT.md") && expectedPhase) {
+      const m = content.match(/^## Current Phase\s*$/m);
+      if (m) {
+        const start = m.index + m[0].length;
+        const rest = content.slice(start);
+        const nextH2 = rest.match(/\n## /);
+        const body = rest.slice(0, nextH2 ? nextH2.index : rest.length).trim();
+        if (body && body !== expectedPhase) {
+          issues.push(
+            `${rel}: ## Current Phase body is "${body}" but projects.json has phase "${expectedPhase}". Run \`bootstrap-pm.mjs --project <name> --sync\` to fix.`
+          );
+        }
+      }
     }
     if (rel.startsWith("roadmap/plans/") && !isFolderNote(rel, project)) {
       const stem_ = stem(rel);

@@ -12,50 +12,45 @@
 
 ## PM folder impact
 
-<!-- Fill in the checkboxes below if you have PM folder access (read or write).
-     If you have no PM folder access, leave this section empty — the maintainer's
-     agent will read the code diff and apply the PM updates on their side.
+> **If you have PM folder access (read or write):** fill in the checkboxes below.
+> **If you have no PM folder access:** leave this entire section empty — the maintainer's agent will read the code diff and apply the PM updates on their side after this PR is merged.
+>
+> The PM folder is separate from this code repo. The checkboxes below are suggestions; the maintainer (or a maintainer-side agent) will apply the actual PM updates.
+>
+> See the project-management skill's "Contributor Workflow" section for the full convention.
 
-     The PM folder is separate from this code repo. The checkboxes below are
-     suggestions; the maintainer (or a maintainer-side agent) will apply the
-     actual PM updates after this PR is merged.
+System docs affected:
+- [ ] system/<topic>.md — what changed: ...
 
-     See the project-management skill's "Contributor Workflow" section for the
-     full convention.
+User/Admin/Developer docs affected:
+- [ ] docs/User Guide/<slug>.md — user-facing behavior changed: ...
+- [ ] docs/Admin Guide/<slug>.md — admin/operator workflow changed (support, feedback, admin panel, monitoring, statistics, background job run, access, incident response, production verification, data repair): ...
+- [ ] docs/Developer Guide/<slug>.md — coding-engineer workflow/API/schema/test/migration/build/release/job implementation changed: ...
+- [ ] docs/Developer Guide/known-bugs.md — engineering bug symptoms/root cause/solution/verification/recurrence changed: ...
+- [ ] docs/Quick Commands/<slug>.md — useful command added/changed: ...
 
-     System docs affected:
-     - [ ] system/<topic>.md — what changed: ...
+Features affected:
+- [ ] features/<feature>.md — Current Behavior, Known Issues, or Roadmap updated
+- [ ] features/features.md — new feature page added to index (if applicable)
 
-     User/Admin/Developer docs affected:
-     - [ ] docs/User Guide/<slug>.md — user-facing behavior changed: ...
-     - [ ] docs/Admin Guide/<slug>.md — admin/operator workflow changed (support, feedback, admin panel, monitoring, statistics, background job run, access, incident response, production verification, data repair): ...
-     - [ ] docs/Developer Guide/<slug>.md — coding-engineer workflow/API/schema/test/migration/build/release/job implementation changed: ...
-     - [ ] docs/Developer Guide/known-bugs.md — engineering bug symptoms/root cause/solution/verification/recurrence changed: ...
-     - [ ] docs/Quick Commands/<slug>.md — useful command added/changed: ...
+Roadmap affected:
+- [ ] roadmap/known-issues.md — bug/risk/blocker added, fixed, or changed status: ...
+- [ ] roadmap/ideas.md — idea/backlog/declined proposal added or changed status: ...
+- [ ] roadmap/done-pending.md — pending/done status changed: ...
 
-     Features affected:
-     - [ ] features/<feature>.md — Current Behavior, Known Issues, or Roadmap updated
-     - [ ] features/features.md — new feature page added to index (if applicable)
+History entries needed:
+- [ ] history/YYYY-MM/history-YYYY-MM-DD.md — bullet: ...
 
-     Roadmap affected:
-     - [ ] roadmap/known-issues.md — bug/risk/blocker added, fixed, or changed status: ...
-     - [ ] roadmap/ideas.md — idea/backlog/declined proposal added or changed status: ...
-     - [ ] roadmap/done-pending.md — pending/done status changed: ...
+Planning notes affected:
+- [ ] roadmap/plans/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
+- [ ] roadmap/plans/<date>_slug.md → move to archive/ if fully shipped: ...
 
-     History entries needed:
-     - [ ] history/YYYY-MM/history-YYYY-MM-DD.md — bullet: ...
+Decisions affected:
+- [ ] New decision if significant: decisions/D-NNN_<type>_<slug>.md. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment)
+- [ ] Existing decision if assumption changed: decisions/D-NNN_<type>_<slug>.md (write a superseding decision; do not edit the accepted body)
 
-     Planning notes affected:
-     - [ ] roadmap/plans/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
-     - [ ] roadmap/plans/<date>_slug.md → move to archive/ if fully shipped: ...
-
-     Decisions affected:
-     - [ ] New decision if significant: decisions/D-NNN_<type>_<slug>.md. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment)
-     - [ ] Existing decision if assumption changed: decisions/D-NNN_<type>_<slug>.md (write a superseding decision; do not edit the accepted body)
-
-     Folder indexes affected:
-     - [ ] <folder>/<folder>.md — note added, moved, renamed, archived, or deleted: ...
--->
+Folder indexes affected:
+- [ ] <folder>/<folder>.md — note added, moved, renamed, archived, or deleted: ...
 
 ## Risks
 

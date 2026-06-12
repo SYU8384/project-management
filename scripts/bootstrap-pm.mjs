@@ -10,6 +10,7 @@
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
@@ -36,7 +37,13 @@ function usage() {
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
     [--dry-run] \\
-    [--yes]
+    [--yes] \\
+    [--sync]
+
+  --sync: re-read projects.json and rewrite the phase/notes lines in
+  CURRENT_STATUS.md, PRODUCT.md, and <Project>.md to match. Idempotent.
+  Use after editing phase/notes in projects.json so the documents stay
+  in sync. Skips the scaffold (no new files; only edits existing ones).
 `);
 }
 
@@ -53,6 +60,7 @@ function parseArgs(argv) {
     date: localDate(),
     dryRun: false,
     yes: false,
+    sync: false,
   };
 
   for (let i = 2; i < argv.length; i++) {
@@ -63,6 +71,10 @@ function parseArgs(argv) {
     }
     if (arg === "--yes") {
       out.yes = true;
+      continue;
+    }
+    if (arg === "--sync") {
+      out.sync = true;
       continue;
     }
     const value = argv[++i];
@@ -184,6 +196,7 @@ function ensureDir(abs) {
 
 function writeCreateOnly(abs, content) {
   if (existsSync(abs)) {
+    skippedExistingCount += 1;
     log("skip", abs, "exists");
     return;
   }
@@ -194,6 +207,157 @@ function writeCreateOnly(abs, content) {
   mkdirSync(dirname(abs), { recursive: true });
   writeFileSync(abs, content);
   log("write", abs);
+}
+
+// Count of files that would be (or were) skipped because they already
+// exist. Surfaced in the dry-run summary and the real-run final output
+// so the user knows what wasn't written. Tracked separately from
+// planEntries because planEntries only accumulates dry-run writes.
+let skippedExistingCount = 0;
+
+function countExistingFiles(dir) {
+  let count = 0;
+  function walk(abs) {
+    if (!existsSync(abs)) return;
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      const child = join(abs, entry.name);
+      if (entry.isDirectory()) walk(child);
+      else if (entry.isFile() && entry.name.endsWith(".md")) count += 1;
+    }
+  }
+  walk(dir);
+  return count;
+}
+
+function emitExistingFilesNotice() {
+  if (!existsSync(pmFolder)) return;
+  const existing = countExistingFiles(pmFolder);
+  if (existing > 0) {
+    if (cli.dryRun) {
+      console.log(`notice: target PM folder has ${existing} existing markdown file${existing === 1 ? "" : "s"}; bootstrap will skip them (idempotent re-run).`);
+    } else {
+      console.log(`notice: target PM folder has ${existing} existing markdown file${existing === 1 ? "" : "s"}; bootstrap is skipping them. Pass --dry-run to preview.`);
+    }
+    console.log("");
+  }
+}
+
+// --sync: re-read projects.json and rewrite the phase/notes lines in
+// CURRENT_STATUS.md, PRODUCT.md, and <Project>.md so they match the
+// canonical value in projects.json. Idempotent: re-running on an
+// already-synced folder is a no-op (no file is rewritten if the
+// current value matches).
+function syncPhaseAndNotes() {
+  if (!existsSync(configPath)) {
+    console.error(`ERROR: --sync requires an existing ${configPath}.`);
+    process.exit(2);
+  }
+  const cfg = JSON.parse(readFileSync(configPath, "utf8"));
+  const proj = cfg.projects?.[project];
+  if (!proj) {
+    console.error(`ERROR: project '${project}' not found in ${configPath}.`);
+    process.exit(2);
+  }
+  const phase = proj.phase;
+  const notes = proj.notes ?? "";
+  if (!phase) {
+    console.error(`ERROR: project '${project}' has no phase in ${configPath}.`);
+    process.exit(2);
+  }
+
+  const targets = [
+    { rel: "CURRENT_STATUS.md", section: "Current Phase" },
+    { rel: "PRODUCT.md", section: "Current Phase" },
+  ];
+  // Also the project's root file if it exists, e.g. "Project Management.md"
+  // Skip — the root file is an index-style page; the "## Current Phase"
+  // convention doesn't apply there.
+
+  let rewritten = 0;
+  let alreadyInSync = 0;
+  for (const { rel, section } of targets) {
+    const abs = join(pmFolder, rel);
+    if (!existsSync(abs)) {
+      console.log(`skip: ${rel} (not present in PM folder)`);
+      continue;
+    }
+    const original = readFileSync(abs, "utf8");
+    const updated = replaceSectionBody(original, section, phase);
+    if (updated === original) {
+      alreadyInSync += 1;
+      continue;
+    }
+    if (cli.dryRun) {
+      console.log(`would rewrite: ${rel} (## ${section} → "${phase}")`);
+    } else {
+      writeFileSync(abs, updated);
+      console.log(`rewrote: ${rel} (## ${section} → "${phase}")`);
+    }
+    rewritten += 1;
+  }
+
+  // Notes: also rewrite the "Summary" / "## Summary" line in PRODUCT.md
+  // if the user provided notes. The summary is the project's elevator pitch.
+  if (notes) {
+    const productAbs = join(pmFolder, "PRODUCT.md");
+    if (existsSync(productAbs)) {
+      const original = readFileSync(productAbs, "utf8");
+      const updated = replaceSummaryLine(original, notes);
+      if (updated !== original) {
+        if (cli.dryRun) {
+          console.log(`would rewrite: PRODUCT.md (## Summary → "${notes}")`);
+        } else {
+          writeFileSync(productAbs, updated);
+          console.log(`rewrote: PRODUCT.md (## Summary → "${notes}")`);
+        }
+        rewritten += 1;
+      }
+    }
+  }
+
+  if (rewritten === 0) {
+    console.log(`summary: phase/notes already in sync across ${alreadyInSync} file(s).`);
+  } else {
+    console.log(`summary: rewrote ${rewritten} file(s); ${alreadyInSync} already in sync.`);
+  }
+}
+
+// Replace the body of a `## <Section>` heading (the lines between the
+// heading and the next `## ` or end of file) with a single new value
+// line. Used by --sync to update phase/notes lines in CURRENT_STATUS.md
+// and PRODUCT.md to match projects.json.
+function replaceSectionBody(content, section, newValue) {
+  const headingRe = new RegExp(`^## ${section}\\s*$`, "m");
+  const m = content.match(headingRe);
+  if (!m) return content;
+  const start = m.index + m[0].length;
+  const rest = content.slice(start);
+  const nextH2 = rest.match(/\n## /);
+  const end = start + (nextH2 ? nextH2.index : rest.length);
+  const before = content.slice(0, start);
+  const after = content.slice(end);
+  return `${before}\n\n${newValue}\n${after}`.replace(/\n{3,}/g, "\n\n");
+}
+
+// Replace the single body line under `## Summary` in PRODUCT.md.
+// Unlike `## Current Phase` (where the body is a single value), the
+// `## Summary` body is a free-form description. The --sync contract is
+// to overwrite it with the canonical `notes` value. Idempotent: if the
+// current body matches the new value, the file is not rewritten.
+function replaceSummaryLine(content, newValue) {
+  const headingRe = /^## Summary\s*$/m;
+  const m = content.match(headingRe);
+  if (!m) return content;
+  const start = m.index + m[0].length;
+  const rest = content.slice(start);
+  const nextH2 = rest.match(/\n## /);
+  const end = start + (nextH2 ? nextH2.index : rest.length);
+  // Current body trimmed
+  const currentBody = rest.slice(0, nextH2 ? nextH2.index : rest.length).trim();
+  if (currentBody === newValue.trim()) return content;
+  const before = content.slice(0, start);
+  const after = content.slice(end);
+  return `${before}\n\n${newValue}\n${after}`.replace(/\n{3,}/g, "\n\n");
 }
 
 function writeReplace(abs, content, label = "write") {
@@ -553,6 +717,13 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
     "Engineering"));
 }
 
+emitExistingFilesNotice();
+
+if (cli.sync) {
+  syncPhaseAndNotes();
+  process.exit(0);
+}
+
 writeConfig();
 scaffold();
 writeAgents();
@@ -589,6 +760,7 @@ if (cli.dryRun) {
   if (counts.mkdir) summaryParts.push(`${counts.mkdir} dir${counts.mkdir === 1 ? "" : "s"} created`);
   if (counts.write) summaryParts.push(`${counts.write} file${counts.write === 1 ? "" : "s"} written`);
   if (counts.update) summaryParts.push(`${counts.update} file${counts.update === 1 ? "" : "s"} updated`);
+  if (counts.skip) summaryParts.push(`${counts.skip} file${counts.skip === 1 ? "" : "s"} skipped (already exist)`);
   console.log("");
   console.log(`summary: ${summaryParts.length > 0 ? summaryParts.join(", ") : "no changes planned"}.`);
 
@@ -632,4 +804,6 @@ console.log(`Config: ${configPath}`);
 
 const totalDirs = planEntries.filter((e) => e.action === "mkdir").length;
 const totalWrites = planEntries.filter((e) => e.action === "write" || e.action === "update").length;
-console.log(`summary: ${totalDirs} dir${totalDirs === 1 ? "" : "s"} created, ${totalWrites} file${totalWrites === 1 ? "" : "s"} written.`);
+const summaryParts = [`${totalDirs} dir${totalDirs === 1 ? "" : "s"} created`, `${totalWrites} file${totalWrites === 1 ? "" : "s"} written`];
+if (skippedExistingCount > 0) summaryParts.push(`${skippedExistingCount} file${skippedExistingCount === 1 ? "" : "s"} skipped (already exist)`);
+console.log(`summary: ${summaryParts.join(", ")}.`);

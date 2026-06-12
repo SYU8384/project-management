@@ -100,17 +100,35 @@ function normalizeSection(content) {
 function validateProject(name, project) {
   const issues = [];
 
-  if (!project.code_repo) {
-    return { name, status: "SKIP", detail: "code_repo is null; no code repo AGENTS.md to validate.", issues };
-  }
-
+  // Validate access first. An unknown access value is always a FAIL —
+  // we cannot pick a template, and the access enum is a strict 2-value list.
   const templateName = templateForAccess(project.access);
   if (!templateName) {
     issues.push(`invalid access '${project.access ?? ""}' in projects.json`);
     return { name, status: "FAIL", detail: "", issues };
   }
 
-  if ((project.access === "authoritative" || project.access === "read-only") && !project.pm_folder) {
+  // code_repo is required for authoritative projects (the AGENTS.md lives
+  // in the code repo). For read-only projects, code_repo is optional —
+  // a read-only collaborator may have access to the PM folder but not
+  // to a code repo. SKIP is appropriate in that case.
+  if (!project.code_repo) {
+    if (project.access === "authoritative") {
+      issues.push(
+        `authoritative project '${name}' has no code_repo; AGENTS.md cannot be validated. ` +
+        `Set code_repo to the code repo path, or downgrade to access: read-only if this is a project-only setup.`
+      );
+      return { name, status: "FAIL", detail: "", issues };
+    }
+    return {
+      name,
+      status: "SKIP",
+      detail: "code_repo is null; no code repo AGENTS.md to validate (read-only project).",
+      issues,
+    };
+  }
+
+  if (!project.pm_folder) {
     issues.push(`access '${project.access}' requires pm_folder for AGENTS.md validation`);
   }
 
