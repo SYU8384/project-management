@@ -205,7 +205,7 @@ const findings = {
   optional: { missing: [], present: [] },
   unappliedMigrations: [],
   folderNames: { violations: [] },
-  folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [] },
+  folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [], selfLinkViolations: [] },
   docsNames: { violations: [] },
   docsNameWarnings: { warnings: [] },
   historyNames: { violations: [] },
@@ -411,6 +411,9 @@ function checkFolderNotes() {
         findings.folderNotes.parentLinkViolations.push({ parent: parentIndexRel, child: indexRel });
       }
     }
+    if (containsSelfLink(content, indexRel)) {
+      findings.folderNotes.selfLinkViolations.push({ indexRel });
+    }
   }
 }
 
@@ -441,6 +444,19 @@ function listVisibleFolderNotes() {
 }
 
 function containsObsidianLinkTo(content, indexRel) {
+  const target = indexRel.replace(/\.md$/, "");
+  const projectTarget = `Projects/${basename(vaultRoot)}/${target}`;
+  const links = [...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1]);
+  return links.some((link) => link === target || link === projectTarget);
+}
+
+// Defensive validator: a folder-note should not link to itself in its
+// own `## Notes` list. The `## Notes` list is for content notes
+// (children of the folder); the index itself is a different document
+// from the perspective of someone navigating the folder. Catches
+// accidental self-references that would otherwise silently appear in
+// rendered Obsidian navigation panes.
+function containsSelfLink(content, indexRel) {
   const target = indexRel.replace(/\.md$/, "");
   const projectTarget = `Projects/${basename(vaultRoot)}/${target}`;
   const links = [...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1]);
@@ -687,6 +703,17 @@ function emit() {
     lines.push("");
   }
 
+  if (findings.folderNotes.selfLinkViolations.length > 0) {
+    lines.push("## Self-Linked Folder Notes");
+    lines.push("");
+    lines.push("A folder note should not link to itself in its own `## Notes` list. The `## Notes` list is for content notes (children of the folder), not the folder's own index.");
+    lines.push("");
+    for (const v of findings.folderNotes.selfLinkViolations) {
+      lines.push(`- \`${v.indexRel}\`: remove the self-link from the '## Notes' list.`);
+    }
+    lines.push("");
+  }
+
   if (findings.docsNames.violations.length > 0) {
     lines.push("## Docs Filename Violations");
     lines.push("");
@@ -742,6 +769,7 @@ function issueTotal() {
     + findingsRef.folderNotes.missing.length
     + findingsRef.folderNotes.violations.length
     + findingsRef.folderNotes.parentLinkViolations.length
+    + findingsRef.folderNotes.selfLinkViolations.length
     + findingsRef.docsNames.violations.length
     + findingsRef.historyNames.violations.length
     + findingsRef.roadmapShape.violations.length;
@@ -759,7 +787,7 @@ async function runFor(target) {
   findings.optional = { missing: [], present: [] };
   findings.unappliedMigrations = [];
   findings.folderNames = { violations: [] };
-  findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [] };
+  findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [], selfLinkViolations: [] };
   findings.docsNames = { violations: [] };
   findings.docsNameWarnings = { warnings: [] };
   findings.historyNames = { violations: [] };

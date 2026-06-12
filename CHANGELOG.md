@@ -45,6 +45,24 @@ A batch of v1.6.0 carryover items from the planning note `2026-06-12_v1.6.0-carr
 - C1-C6 (cosmetic items from the v1.6.0 plan) are deferred per the plan's own recommendation ("touching them invites bikeshedding").
 - The v1.6.0 plan (`roadmap/plans/2026-06-12_v1.6.0-carryover`) is fully shipped; it can be archived by the user on the next planning pass (the file is already a historical record; no v1.6.0 tag is needed for the archive step).
 
+## [Unreleased] - deferred close-out (archive self-skip + install.sh cygpath)
+
+Two small deferred items from `roadmap/known-issues.md` "## Deferred" that the v1.6.0 plan didn't include. Defensive validator improvement + a real cross-platform concern.
+
+### Added
+
+- `scripts/check-vault-structure.mjs`: the validator now flags folder-notes that link to themselves in their own `## Notes` list. A folder-note's `## Notes` should list content notes (children of the folder), not the folder's own index. The rule is precise: a link matches the file's own relpath (`archive/archive.md`) or the project-prefixed form (`Projects/<Project>/archive/archive.md`). New `findings.folderNotes.selfLinkViolations` array + new `## Self-Linked Folder Notes` report section. The user's `archive/archive.md` is already conformant (no self-link); the rule is a defensive future-proofing. Closes IDEA-005 (Brainstorming → Implemented).
+- `install.sh`: `expand_path()` now detects Windows under Git Bash (`OS=Windows_NT` + `cygpath` on PATH) and routes through `cygpath -w` with backslash-to-slash normalization. POSIX shells (macOS, Linux, WSL, Git Bash default) use `$HOME` as-is. The fallback chain is: `cygpath -w "$HOME" | tr '\\' '/'` (Windows under Git Bash), then `$HOME` (POSIX). Help text documents the Git Bash / WSL recommendation. End-to-end smoke-tested in 4 variants.
+
+### Fixed
+
+- `install.sh`: pre-existing pattern bug in `expand_path()`'s `case` statement. The original `~/"*` pattern was being interpreted as "starts with `~/" then `"` (literal) then `*`", which never matched the common `~/foo` case. The fix escapes the `~` (so it isn't expanded at parse time) and removes the stray quote: `~/*) printf "%s/%s" "$(resolve_home)" "${input#\~/}" ;;`. End-to-end smoke-tested: `expand_path "~"` → `$HOME`; `expand_path "~/foo/bar"` → `$HOME/foo/bar`; absolute and relative paths are unchanged.
+
+### Notes
+
+- This release has no migration; the changes are defensive improvements.
+- The v1.6.0 plan's C1-C6 (cosmetic items) remain deferred per the plan's own recommendation.
+
 ## [1.5.0] - 2026-06-12
 
 A release that closes the day-1 setup gap, makes validator errors pedagogical, brings the orchestration layer into a registry-driven shape, formalizes four OpenManager-derived conventions (`done-pending.md`, `ideas.md`, `known-issues.md`, `mvp-priorities.md`), and ships a translation migration for pre-v1.5.0 `access: "unavailable"` entries. The post-v1.4.1 audit findings (planning note `2026-06-12_v1.5.0-backlog-from-audit`) and a v1.4.1 doc-only data-model refactor are aggregated here.

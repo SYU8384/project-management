@@ -28,6 +28,13 @@ Options:
   --yes              Skip confirmation prompts.
   --help            Show this help.
 
+Notes:
+  For native Windows, run this installer from Git Bash or WSL (not
+  cmd.exe or PowerShell). The installer uses POSIX shell semantics.
+  Path expansion (`~` and `~/foo`) auto-detects Windows under Git
+  Bash and routes through `cygpath` when available; otherwise it
+  falls back to `$HOME`.
+
 Examples:
   curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
   curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target codex --yes
@@ -63,11 +70,37 @@ tty_read() {
   printf "%s" "$value"
 }
 
+# resolve_home: returns the user's home directory in a form that the
+# rest of the installer (and the validators in lib/paths.mjs) can use.
+# Detection chain:
+#   1. If we're on Windows (OS=Windows_NT, which is the case under
+#      Git Bash, MSYS2, and Cygwin) AND `cygpath` is on PATH, use
+#      `cygpath -w "$HOME"` to get the Windows-form path, then
+#      convert backslashes to forward slashes. The skill's
+#      validators use `node:path` which handles both, but
+#      forward slashes are more portable.
+#   2. Otherwise, return $HOME as-is. This works on POSIX shells
+#      (macOS, Linux, WSL, Git Bash's POSIX view).
+#   3. If $HOME is unset and we're not on Windows, fail loudly —
+#      the user has a broken shell environment.
+resolve_home() {
+  if [[ "${OS:-}" == "Windows_NT" ]] && command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$HOME" 2>/dev/null | tr '\\' '/' || {
+      # cygpath failed; fall back to $HOME
+      printf "%s" "$HOME"
+    }
+  elif [[ -n "$HOME" ]]; then
+    printf "%s" "$HOME"
+  else
+    die "HOME is not set and cygpath is unavailable; cannot resolve ~."
+  fi
+}
+
 expand_path() {
   local input="$1"
   case "$input" in
-    "~") printf "%s" "$HOME" ;;
-    "~/"*) printf "%s/%s" "$HOME" "${input#~/}" ;;
+    "~") resolve_home ;;
+    \~/*) printf "%s/%s" "$(resolve_home)" "${input#\~/}" ;;
     *) printf "%s" "$input" ;;
   esac
 }
