@@ -95,6 +95,19 @@ A refinement of the OpenManager `known-issues.md` format (introduced in the prev
 ### Fixed
 - `scripts/check-vault-structure.mjs`: the roadmap-shape-violation check for `roadmap/known-issues.md` no longer requires `## Fixed`. The new convention (per D-009 Lifecycle) drops the `## Fixed` section entirely; fixed items migrate to `known-bugs.md` and whole `### <Domain>` sections archive when fully fixed. The validator now requires only `## Contents` / `## Active` / `## Deferred` / `## Navigation`.
 
+## [Unreleased] - 1.4.1-unavailable-downgrade migration
+
+Closes the migration gap that v1.4.1's enum narrowing left behind. The v1.4.1 doc-only patch retired `access: "unavailable"` without writing a translation migration. Pre-v1.4.1 `projects.json` files with `unavailable` entries now FAIL validation under the strict enum check.
+
+### Added
+- `scripts/migrations/1.4.1-unavailable-downgrade.mjs`: a new migration that detects legacy `access: "unavailable"` entries in `~/.config/project-management/projects.json` and downgrades them to `access: "read-only"`. The conservative default matches the v1.4.1 narrowed enum; users who actually own the PM folder can re-run `bootstrap-pm.mjs --access authoritative --project <name>` to upgrade. The migration's `manualReview` line calls this out.
+- `scripts/migrations/_index.mjs`: registered the new migration in the default-exported array, after the v1.0.x migrations and before any future v1.4.x entries.
+
+### Verification
+- `node scripts/migrate.mjs --list` shows the new id at the bottom of the registered migrations.
+- A test `projects.json` with `access: "unavailable"` is detected by the migration's `detect()`, downgraded by `apply()`, and passes the validator's `templateForAccess()` afterward.
+- Idempotent: re-running on an already-downgraded `projects.json` is a no-op (`detect()` returns false).
+
 ## [Unreleased] - v1.5.0 backlog
 
 Implements the planning note `2026-06-12_v1.5.0-backlog-from-audit`. Eight features and one validator fix; closes the day-1 setup gap, makes validator errors pedagogical, and brings the orchestration layer into a registry-driven shape.

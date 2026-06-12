@@ -404,6 +404,7 @@ async function main() {
     pmFolder,
     dryRun: cli.dryRun,
     isGit: isInGitRepo(pmFolder),
+    configPath: cli.configPath,
     log(action, target, detail = "") {
       const suffix = detail ? ` — ${detail}` : "";
       const prefix = cli.dryRun ? "would " : "";
