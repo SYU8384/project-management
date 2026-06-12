@@ -18,11 +18,16 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
+import { ACCESS_VALUES } from "./lib/convention.mjs";
+import { replaceSectionBody as replaceMarkdownSectionBody } from "./lib/markdown.mjs";
+import { renderTemplateFile } from "./lib/template-renderer.mjs";
+import { summarizeScaffoldCounts } from "./lib/scaffold-plan.mjs";
+
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
 const TEMPLATE_DIR = join(SKILL_DIR, "templates");
 
-const VALID_ACCESS_VALUES = ["authoritative", "read-only"];
+const VALID_ACCESS_VALUES = ACCESS_VALUES;
 
 function usage() {
   console.error(`Usage:
@@ -156,8 +161,10 @@ function folderGroup(abs) {
 }
 
 const planEntries = [];
+const operationCounts = {};
 
 function log(action, target, detail = "") {
+  operationCounts[action] = (operationCounts[action] ?? 0) + 1;
   if (cli.dryRun) {
     planEntries.push({ action, target, detail });
     return;
@@ -327,16 +334,7 @@ function syncPhaseAndNotes() {
 // line. Used by --sync to update phase/notes lines in CURRENT_STATUS.md
 // and PRODUCT.md to match projects.json.
 function replaceSectionBody(content, section, newValue) {
-  const headingRe = new RegExp(`^## ${section}\\s*$`, "m");
-  const m = content.match(headingRe);
-  if (!m) return content;
-  const start = m.index + m[0].length;
-  const rest = content.slice(start);
-  const nextH2 = rest.match(/\n## /);
-  const end = start + (nextH2 ? nextH2.index : rest.length);
-  const before = content.slice(0, start);
-  const after = content.slice(end);
-  return `${before}\n\n${newValue}\n${after}`.replace(/\n{3,}/g, "\n\n");
+  return replaceMarkdownSectionBody(content, section, newValue);
 }
 
 // Replace the single body line under `## Summary` in PRODUCT.md.
@@ -441,11 +439,7 @@ function historyPage(title, body, extra = {}) {
 }
 
 function substituteTemplate(name, replacements) {
-  let content = readFileSync(join(TEMPLATE_DIR, name), "utf8");
-  for (const [from, to] of Object.entries(replacements)) {
-    content = content.split(from).join(to);
-  }
-  return content;
+  return renderTemplateFile(TEMPLATE_DIR, name, replacements);
 }
 
 function loadConfig() {
@@ -668,7 +662,7 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
 - **Archived field:** when a planning file moves to \`archive/\`, set \`archived: <date>\` in the frontmatter (the date of the move). The \`status\` field is **not** changed: a shipped-then-archived plan keeps \`status: shipped\`; a rejected-then-archived plan keeps \`status: rejected\`; a superseded-then-archived plan keeps \`status: superseded\`. \`archived:\` is the file-location marker; \`status:\` is the lifecycle marker. They are orthogonal.
 - **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` — drop the date prefix, preserve the slug, append \`-archived\`. This rename is mandatory.
 - **Owner:** typically \`PM\`. Use \`Platform team\` or \`Operator\` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a \`## YYYY-MM-DD_slug\` section to \`roadmap/done-pending.md\` with the planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
+- **Cross-link:** when a planning note is approved, add a slug-only \`## <slug>\` section to \`roadmap/done-pending.md\` with the date-prefixed planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 `,
     navigation: nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
@@ -756,13 +750,8 @@ if (cli.dryRun) {
     acc[e.action] = (acc[e.action] ?? 0) + 1;
     return acc;
   }, {});
-  const summaryParts = [];
-  if (counts.mkdir) summaryParts.push(`${counts.mkdir} dir${counts.mkdir === 1 ? "" : "s"} created`);
-  if (counts.write) summaryParts.push(`${counts.write} file${counts.write === 1 ? "" : "s"} written`);
-  if (counts.update) summaryParts.push(`${counts.update} file${counts.update === 1 ? "" : "s"} updated`);
-  if (counts.skip) summaryParts.push(`${counts.skip} file${counts.skip === 1 ? "" : "s"} skipped (already exist)`);
   console.log("");
-  console.log(`summary: ${summaryParts.length > 0 ? summaryParts.join(", ") : "no changes planned"}.`);
+  console.log(summarizeScaffoldCounts(counts, skippedExistingCount));
 
   // Validate the plan is possible: each parent directory must exist or be in the plan.
   const planDirs = new Set(planEntries.filter((e) => e.action === "mkdir").map((e) => resolve(e.target)));
@@ -802,8 +791,4 @@ console.log(`PM folder: ${pmFolder}`);
 console.log(`Code repo: ${codeRepo ?? "null"}`);
 console.log(`Config: ${configPath}`);
 
-const totalDirs = planEntries.filter((e) => e.action === "mkdir").length;
-const totalWrites = planEntries.filter((e) => e.action === "write" || e.action === "update").length;
-const summaryParts = [`${totalDirs} dir${totalDirs === 1 ? "" : "s"} created`, `${totalWrites} file${totalWrites === 1 ? "" : "s"} written`];
-if (skippedExistingCount > 0) summaryParts.push(`${skippedExistingCount} file${skippedExistingCount === 1 ? "" : "s"} skipped (already exist)`);
-console.log(`summary: ${summaryParts.join(", ")}.`);
+console.log(summarizeScaffoldCounts(operationCounts, skippedExistingCount));

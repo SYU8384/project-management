@@ -25,16 +25,15 @@
  *   node scripts/check-vault-structure.mjs --config <path>                # read projects from config; iterates
  *   node scripts/check-vault-structure.mjs --project <name> --config <p> # scan a single project from config
  *
- * The `--config` flag expects a path to `projects.json` from the
- * project-management skill (at the skill root, alongside SKILL.md). The script
+ * The `--config` flag expects a path to the user-specific `projects.json`
+ * registry (v1.3.0+ defaults to ~/.config/project-management/projects.json). The script
  * reads `vault_root` and the project's `pm_folder` from the config. When
  * `--config` is set without `--project`, the script iterates over all
  * projects in the config and prints one report per project.
  *
  * If a <vault> path is provided, that folder is scanned directly. If no
- * <vault> path or `--config` is given, the script walks up from its own
- * location looking for a sibling SKILL.md; the projects.json next to that
- * SKILL.md is used as the default config. Explicit `--config` always wins.
+ * <vault> path or `--config` is given, the script uses the XDG default
+ * registry path. Explicit `--config` always wins.
  *
  * Exit codes:
  *   0 = all required present
@@ -50,6 +49,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
+import {
+  REQUIRED_DIRS,
+  OPTIONAL_DIRS,
+  REQUIRED_ROOT_FILES,
+  REQUIRED_ROADMAP_FILES,
+  REQUIRED_INDEX_FILES,
+  ROADMAP_REQUIRED_SECTIONS,
+  docsGuideDirMap,
+  isCanonicalTopLevelLane,
+} from "./lib/convention.mjs";
+import { countH2Sections, hasH2, stripFrontmatter } from "./lib/markdown.mjs";
 
 const SKILL_DIR = findSkillDir();
 
@@ -136,52 +146,7 @@ function resolveTargets() {
 let vaultRoot = null;
 let skipSet = new Set();
 
-const REQUIRED_DIRS = [
-  "roadmap",
-  "system",
-  "history",
-  "archive",
-  "docs",
-  "features",
-];
-
-const CANONICAL_TOP_LEVEL_DIRS = new Set(REQUIRED_DIRS);
-const CANONICAL_DOCS_GUIDE_DIRS = new Map([
-  ["admin guide", "Admin Guide"],
-  ["developer guide", "Developer Guide"],
-  ["quick commands", "Quick Commands"],
-  ["user guide", "User Guide"],
-]);
-
-const REQUIRED_ROOT_FILES = [
-  "README.md",
-  "PRODUCT.md",
-  "CURRENT_STATUS.md",
-  // <Project>.md is checked separately: any single additional .md at root
-];
-
-const REQUIRED_ROADMAP_FILES = [
-  "roadmap/mvp-priorities.md",
-  "roadmap/known-issues.md",
-  "roadmap/done-pending.md",
-  "roadmap/ideas.md",
-];
-
-const REQUIRED_INDEX_FILES = [
-  "system/system.md",
-  "archive/archive.md",
-  "history/history.md",
-  "docs/docs.md",
-  "docs/Admin Guide/Admin Guide.md",
-  "docs/Developer Guide/Developer Guide.md",
-  "docs/Developer Guide/known-bugs.md",
-  "docs/Quick Commands/Quick Commands.md",
-  "docs/User Guide/User Guide.md",
-];
-
-const OPTIONAL_DIRS = [
-  "decisions",
-];
+const CANONICAL_DOCS_GUIDE_DIRS = docsGuideDirMap();
 
 // Migration-debt warnings are sourced from the registry at
 // `scripts/migrations/_index.mjs` so they stay in sync as new migrations
@@ -356,7 +321,7 @@ function listVisibleDirectoriesUnder(relDir) {
 function checkFolderNames() {
   for (const name of listVisibleDirectoriesUnder("")) {
     const lower = name.toLowerCase();
-    if (CANONICAL_TOP_LEVEL_DIRS.has(lower) && name !== lower) {
+    if (isCanonicalTopLevelLane(lower) && name !== lower) {
       findings.folderNames.violations.push({
         path: `${name}/`,
         expected: `${lower}/`,
@@ -377,20 +342,6 @@ function checkFolderNames() {
   }
 }
 
-function countBodySections(content) {
-  // Drop frontmatter (between the first pair of `---` lines)
-  const fmEnd = content.indexOf("\n---", content.indexOf("---") + 3);
-  const body = fmEnd === -1 ? content : content.slice(fmEnd + 4);
-  // Count `## ` headings at line start; `## ` only (not `# ` or `### `)
-  const matches = body.match(/^## .+$/gm);
-  return matches ? matches.length : 0;
-}
-
-function stripFrontmatter(content) {
-  const fmEnd = content.indexOf("\n---", content.indexOf("---") + 3);
-  return fmEnd === -1 ? content : content.slice(fmEnd + 4);
-}
-
 function checkFolderNotes() {
   for (const { indexRel, parentIndexRel } of listVisibleFolderNotes()) {
     if (!isFile(indexRel)) {
@@ -398,7 +349,7 @@ function checkFolderNotes() {
       continue;
     }
     const content = readFileSync(join(vaultRoot, indexRel), "utf8");
-    const sections = countBodySections(content);
+    const sections = countH2Sections(content);
     const entry = { path: indexRel, sections };
     if (sections > FOLDER_NOTE_MAX_SECTIONS) {
       findings.folderNotes.violations.push(entry);
@@ -507,53 +458,15 @@ function checkHistoryNames() {
 }
 
 function checkRoadmapShape() {
-  const requiredSectionsByFile = new Map([
-    ["roadmap/ideas.md", [
-      "Contents",
-      "Status Key",
-      "Idea Register",
-      "Brainstorming",
-      "Scoping",
-      "Approved",
-      "Implemented",
-      "Declined",
-      "Idea Details",
-      "Navigation",
-    ]],
-    ["roadmap/known-issues.md", [
-      "Contents",
-      "Active",
-      "Deferred",
-      "Navigation",
-    ]],
-    ["roadmap/mvp-priorities.md", [
-      "Contents",
-      "Alpha Goal",
-      "MVP Priorities",
-      "Not Yet MVP",
-      "Navigation",
-    ]],
-    ["roadmap/done-pending.md", [
-      "Contents",
-      "General Done/Pending Without Dedicated Planning Note",
-      "Navigation",
-    ]],
-  ]);
-
-  for (const [rel, requiredSections] of requiredSectionsByFile.entries()) {
+  for (const [rel, requiredSections] of Object.entries(ROADMAP_REQUIRED_SECTIONS)) {
     if (!isFile(rel)) continue;
     const body = stripFrontmatter(readFileSync(join(vaultRoot, rel), "utf8"));
     for (const section of requiredSections) {
-      if (!hasHeading(body, section)) {
+      if (!hasH2(body, section)) {
         findings.roadmapShape.violations.push({ path: rel, reason: `missing ## ${section}` });
       }
     }
   }
-}
-
-function hasHeading(body, heading) {
-  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`^## ${escaped}$`, "m").test(body);
 }
 
 function emit() {

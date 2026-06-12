@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
+import { expectedPageTypeForPath, isFolderNotePath } from "./lib/convention.mjs";
+import { parseFrontmatter, markdownStem, wikiLinks } from "./lib/markdown.mjs";
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -86,39 +88,16 @@ function walk(root, skipSet) {
   return out;
 }
 
-function parseFrontmatter(content) {
-  const m = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!m) return null;
-  const out = {};
-  for (const line of m[1].split("\n")) {
-    const kv = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/);
-    if (kv) out[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, "");
-  }
-  return out;
-}
-
 function stem(rel) {
-  return basename(rel, ".md");
+  return markdownStem(rel);
 }
 
 function isFolderNote(rel, project) {
-  const parts = rel.split("/");
-  const parent = parts.length === 1 ? project : parts[parts.length - 2];
-  return stem(rel) === parent;
+  return isFolderNotePath(rel, project);
 }
 
 function expectedPageType(rel, project, existing) {
-  if (isFolderNote(rel, project)) return "index";
-  if (["README.md", "PRODUCT.md", "CURRENT_STATUS.md"].includes(rel)) return "index";
-  if (rel.startsWith("history/")) return "history";
-  if (rel.startsWith("decisions/D-")) return "decision";
-  if (rel.startsWith("roadmap/plans/")) return "planning";
-  if (rel.startsWith("roadmap/")) return rel === "roadmap/roadmap.md" ? "index" : "roadmap";
-  if (rel.startsWith("features/")) return rel === "features/features.md" ? "index" : "feature";
-  if (rel.startsWith("system/")) return rel === "system/system.md" ? "index" : "system";
-  if (rel.startsWith("docs/")) return isFolderNote(rel, project) ? "index" : "note";
-  if (rel.startsWith("archive/")) return existing || "note";
-  return existing || "note";
+  return expectedPageTypeForPath(rel, project, existing);
 }
 
 function resolveLinkTarget(target, project) {
@@ -266,9 +245,9 @@ function runFor(target) {
       });
       if (!ok) issues.push(`${rel}: missing roadmap/done-pending mirror section`);
     }
-    for (const match of content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)) {
-      const normalized = resolveLinkTarget(match[1], project);
-      if (!checkTarget(targets, normalized)) issues.push(`${rel}: unresolved link [[${match[1]}]]`);
+    for (const link of wikiLinks(content)) {
+      const normalized = resolveLinkTarget(link, project);
+      if (!checkTarget(targets, normalized)) issues.push(`${rel}: unresolved link [[${link}]]`);
     }
   }
 

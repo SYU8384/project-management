@@ -1,8 +1,8 @@
 # Project Management — Reference
 
-This is the deep doc for the project-management skill. SKILL.md has the entry point (intents, triggers, quick start, routing map, final response); this file has everything else — repair workflows, schemas, contributor conventions, bootstrap workflow, permission policy, pitfalls.
+This is the deep doc for the project-management skill. SKILL.md has the concise trigger router and highest-risk PM rules; this file has everything else — repair workflows, schemas, contributor conventions, bootstrap workflow, permission policy, pitfalls.
 
-The split mirrors the "Writing Skills" framework: SKILL.md is lean (~150 lines) and loadable for any matching trigger; REFERENCE.md is the deep doc an agent reads when it needs the details.
+The split mirrors the "Writing Skills" framework: SKILL.md is the concise entry point loaded for matching triggers; REFERENCE.md is the deep doc an agent reads when it needs the details.
 
 ---
 
@@ -47,13 +47,22 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-pm-consistency.mjs` — verifies visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and archive/sync-conflict naming
 - `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
 
+For changes to the skill repository itself, also run:
+
+```bash
+node <skill_dir>/scripts/check-skill.mjs
+node --test
+```
+
+`check-skill.mjs` checks public-doc stale phrases, template placeholders, retired templates, and coverage of the canonical convention model in `scripts/lib/convention.mjs`.
+
 Then check the schema and content dimensions:
 
 1. **Schema compliance** — every note has the right `pageType:`, `status:` (per pageType vocabulary), `archived:` (only on archive files), `kind:` (only on history files), and other recommended fields. The `status: archived` value is **invalid** — `archived` is a separate date field, not a status value.
 2. **H1 vs filename** — each note's H1 matches its filename stem (no leftover numbered prefixes, no date prefix in the H1).
 3. **Cross-link integrity** — all `[[wiki-link]]` targets resolve to existing files.
 4. **CURRENT_STATUS freshness** — the weekly snapshot exists and is not stale.
-5. **Planning ↔ roadmap mirror** — each `roadmap/plans/*.md` has a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md`.
+5. **Planning ↔ roadmap mirror** — each active or proposed `roadmap/plans/*.md` note has a matching mirror section in `roadmap/done-pending.md`. The canonical H2 is slug-only; validators also accept date-prefixed legacy H2s.
 6. **History `kind:`** — every `history/YYYY-MM/history-YYYY-MM-DD.md` has a `kind: changelog | worklog | mixed` field.
 7. **Archive `archived:` field** — every moved archive file named `archive/*-archived.md` has both a meaningful `status:` (lifecycle) and an `archived: <date>` field. Folder indexes such as `archive/archive.md` must not carry `archived:`.
 8. **Folder structure** — all required folders and root files exist; feature/ADR/roadmap index pages exist where needed.
@@ -78,7 +87,7 @@ Apply the fixes in this order:
 2. **Verify, then migrate** existing files — each file read first to determine its original lifecycle / kind.
 3. **Update history** with brief bullets recording what was fixed.
 4. **Validate** with `node <skill_dir>/scripts/check-pm.mjs`.
-  5. **Re-run the audit** to confirm a clean state.
+5. **Re-run the audit** to confirm a clean state.
 
 ---
 
@@ -368,7 +377,7 @@ When adding or moving a docs note, update the nearest guide index and `docs/docs
 The four standard roadmap notes are active working notes, not folder notes, but they still need a predictable scan shape:
 
 - `roadmap/ideas.md` follows `templates/ideas.md`: `## Contents`, `## Status Key`, `## Idea Register`, status buckets (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`), `## Idea Details`, and `## Navigation`. Use stable IDs (`IDEA-001`, `IDEA-002`) so links survive reordering.
-- `roadmap/known-issues.md` follows `templates/known-issues.md`: `## Contents`, `## Active`, `## Fixed`, `## Deferred`, and `## Navigation`. Domain-specific grouping belongs under those sections as labels or `###` subsections.
+- `roadmap/known-issues.md` follows `templates/known-issues.md`: `## Contents`, `## Active`, `## Deferred`, and `## Navigation`. Active and deferred items are grouped under `### <Domain>` subsections. Fixed items move to `docs/Developer Guide/known-bugs.md` and are removed from `known-issues.md`.
 - `roadmap/mvp-priorities.md` follows `templates/mvp-priorities.md`: `## Contents`, `## Alpha Goal`, `## MVP Priorities`, `## Not Yet MVP`, and `## Navigation`.
 - `roadmap/done-pending.md` follows `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`.
 - Keep rough ideas in `ideas.md`, concrete approved work in `roadmap/plans/` plus `done-pending.md`, active bugs/risks in `known-issues.md`, and engineering bug knowledge in `docs/Developer Guide/known-bugs.md`.
@@ -379,10 +388,10 @@ The four standard roadmap notes are active working notes, not folder notes, but 
 
 Concrete plans in `roadmap/plans/` must be reflected in `roadmap/done-pending.md`.
 
-`roadmap/done-pending.md` should mirror planning note filenames first:
+`roadmap/done-pending.md` should mirror active or proposed planning notes first:
 
-- Create one `## <planning-file-stem>` section for each concrete `roadmap/plans/*.md` note except `plans.md`.
-- Start each mirrored section with `Planning note: [[...|<planning-file-stem>]]`.
+- Create one `## <slug>` section for each active or proposed concrete `roadmap/plans/YYYY-MM-DD_<slug>.md` note except `plans.md`.
+- Start each mirrored section with `Planning note: [[...|YYYY-MM-DD_<slug>]]`.
 - Summarize the plan's current done/pending checklist under that section.
 - Keep `## General Done/Pending Without Dedicated Planning Note` for lightweight done/pending work that does not deserve a concrete planning note.
 - Do not hide concrete plans only in the general section.
@@ -886,7 +895,7 @@ If a feature, fix, or change has **multi-step work, multi-session work, or many 
    - A clear title and status (`proposed` initially)
    - Context, options considered, decision
    - A step-by-step implementation checklist
-2. **Mirror in done-pending:** add a `## YYYY-MM-DD_slug` section to `roadmap/done-pending.md` with the plan's checklist items.
+2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the plan's checklist items and a link to the date-prefixed planning note.
 3. **Update plan status** from `proposed` → `active` when implementation begins.
 4. **Implement step by step.** For each step completed, mark the done-pending checkbox AND add a history bullet. Update the planning file's checklist as you go.
 5. **Distill + archive** when shipped (per existing rules): move the plan to `archive/<slug>-archived.md`, distill the durable behavior into `system/`, and add the closing history bullets.
@@ -960,7 +969,7 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/decision.md` — `decisions/D-NNN_<type>_<slug>.md` (typed decision record; ADRs are a `decision_type: ADR` instance)
 - `templates/feature.md` — `features/<feature>.md`
 - `templates/ideas.md` — roadmap idea register
-- `templates/known-issues.md` — roadmap active/fixed/deferred issue tracker
+- `templates/known-issues.md` — roadmap active/deferred issue tracker; fixed engineering knowledge lives in `docs/Developer Guide/known-bugs.md`
 - `templates/mvp-priorities.md` — MVP priority tracker
 - `templates/done-pending.md` — planning mirror and general done/pending tracker
 - `templates/known-bugs.md` — `docs/Developer Guide/known-bugs.md`
@@ -968,6 +977,15 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
+
+Shared internals live under `scripts/lib/`:
+
+- `convention.mjs` — canonical PM vocabulary and structure model used by validators and skill checks.
+- `markdown.mjs` — frontmatter, headings, section replacement, and wiki-link helpers.
+- `template-renderer.mjs` — placeholder substitution and unresolved-placeholder detection.
+- `findings.mjs` — shared finding shape and report rendering.
+- `scaffold-plan.mjs` — bootstrap plan summary helpers.
+- `paths.mjs` and `skip.mjs` — path resolution and `.pm/skip` support.
 - `scripts/bootstrap-pm.mjs` — deterministic owner setup script for registering a project, scaffolding an authoritative PM folder, and wiring code repo `AGENTS.md`
 - `scripts/check-agents.mjs` — focused validator for registered code repo `AGENTS.md` PM folder sections
 

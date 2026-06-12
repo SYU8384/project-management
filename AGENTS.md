@@ -1,6 +1,6 @@
 ## PM folder
 
-This project has a PM folder at `/mnt/c/Users/zhuqi/OneDrive/ドキュメント/Obsidian-Vaults/Syu's Vault/Projects/Project Management` (replace with the actual path; see `~/.config/project-management/projects.json` for the canonical mapping — `projects.json` lives at the user-specific XDG location from v1.3.0+, not at the skill root).
+This project has a PM folder at `/mnt/c/Users/zhuqi/OneDrive/ドキュメント/Obsidian-Vaults/Syu's Vault/Projects/Project Management` (see `~/.config/project-management/projects.json` for the canonical mapping; `projects.json` lives at the user-specific XDG location from v1.3.0+, not at the skill root).
 
 Before coding:
 - Read the project's PM folder `README.md` to know the routing map.

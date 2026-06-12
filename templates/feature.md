@@ -44,8 +44,8 @@ Full current-behavior documentation: `[[Projects/<Project>/system/<topic>|system
 
 ## Roadmap
 
-- **<Roadmap item 1>** — PENDING in `[[Projects/<Project>/roadmap/done-pending|done-pending]]` `## YYYY-MM-DD_slug`.
-- **<Roadmap item 2>** — PENDING in `[[Projects/<Project>/roadmap/done-pending|done-pending]]` `## YYYY-MM-DD_slug`.
+- **<Roadmap item 1>** — PENDING in `[[Projects/<Project>/roadmap/done-pending|done-pending]]` `## <slug>`.
+- **<Roadmap item 2>** — PENDING in `[[Projects/<Project>/roadmap/done-pending|done-pending]]` `## <slug>`.
 
 ## Relevant Decisions
 

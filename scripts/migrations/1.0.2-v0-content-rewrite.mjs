@@ -343,7 +343,7 @@ function plan({ pmFolder }) {
   if (existsSync(donePendingMd)) {
     const c = readFile(donePendingMd);
     if (c && /^## \d{4}-\d{2}-\d{2}_[a-z0-9-]+\s*$/m.test(c)) {
-      lines.push("roadmap/done-pending.md: no-op (validator + docs require ## YYYY-MM-DD_slug; the v1.0.2-era prefix-stripping rewrite was reverted in v1.0.4 because it contradicted the convention)");
+      lines.push("roadmap/done-pending.md: no-op (current docs prefer slug-only H2s, but validators accept date-prefixed legacy H2s; this migration avoids rewriting headings automatically)");
     }
   }
 
@@ -508,7 +508,7 @@ function processPlansFolderNote(file, ctx) {
 - **Archived field:** when a planning file moves to \`archive/\`, set \`archived: <date>\` in the frontmatter (the date of the move). The \`status\` field is **not** changed: a shipped-then-archived plan keeps \`status: shipped\`; a rejected-then-archived plan keeps \`status: rejected\`; a superseded-then-archived plan keeps \`status: superseded\`. \`archived:\` is the file-location marker; \`status:\` is the lifecycle marker. They are orthogonal.
 - **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` — drop the date prefix, preserve the slug, append \`-archived\`. This rename is mandatory.
 - **Owner:** typically \`PM\`. Use \`Platform team\` or \`Operator\` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a \`## YYYY-MM-DD_slug\` section to \`roadmap/done-pending.md\` with the planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
+- **Cross-link:** when a planning note is approved, add a slug-only \`## <slug>\` section to \`roadmap/done-pending.md\` with the date-prefixed planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
 ## Related
@@ -554,12 +554,9 @@ function processArchiveFolderNote(file, ctx) {
 
 function processDonePending(file, ctx) {
   // No-op: v1.0.2 originally stripped the date prefix from ## YYYY-MM-DD_slug
-  // headings in done-pending.md, but the canonical convention (README,
-  // templates/planning.md, REFERENCE.md, and check-pm-consistency.mjs) all
-  // require the date prefix in the mirror section heading. Stripping it
-  // created a validator-vs-migration contradiction. This pass is preserved
-  // for backward-compatibility with the v1.0.2 migration's documented
-  // detect()/plan() entry but does not modify file content.
+  // headings in done-pending.md. Current docs prefer slug-only headings, and
+  // validators accept both slug-only and date-prefixed legacy headings, so
+  // this migration preserves historical headings instead of rewriting them.
   return false;
 }
 
@@ -715,7 +712,7 @@ export default {
   from: "<1.2.0",
   to: "1.2.0",
   describe:
-    "Rewrite body text and frontmatter fields that the v1.0.0 migration missed. Originally targeted v0.x content; as of v1.2.0, also targets v1.0.0/v1.0.1/v1.0.2/v1.0.3-era text so existing projects can be brought up to v1.0.4-cleaned text by re-running the migration. Covers: decisions/decisions.md intro, plans.md H1 and conventions (added if missing, cleaned if it contains SKILL.md forward refs), archive/archive.md phrasing, ## Relevant ADRs → ## Relevant Decisions, > No ADRs yet. → > No decisions yet., templates/ADR.md → templates/decision.md, frontmatter current_behavior_source/source_of_truth/related paths (planning/ → roadmap/plans/), v0.x tags (wip, deprecated), status: in-progress → active, decision body shape (## Implementation Notes → ## Realization Notes, ## Alternatives considered → ## Options Considered), decision title/H1 (ADR-NNN: → D-NNN:), plan H1 → slug-only, and broken wikilinks. The done-pending.md date-prefix rewrite is a no-op (validator + docs all require ## YYYY-MM-DD_slug; stripping was a contradiction). Surfaces manual-review items: plan status/body mismatches, decision content authoring, known-issues theoretical-risk wording.",
+    "Rewrite body text and frontmatter fields that the v1.0.0 migration missed. Originally targeted v0.x content; as of v1.2.0, also targets v1.0.0/v1.0.1/v1.0.2/v1.0.3-era text so existing projects can be brought up to v1.0.4-cleaned text by re-running the migration. Covers: decisions/decisions.md intro, plans.md H1 and conventions (added if missing, cleaned if it contains SKILL.md forward refs), archive/archive.md phrasing, ## Relevant ADRs → ## Relevant Decisions, > No ADRs yet. → > No decisions yet., templates/ADR.md → templates/decision.md, frontmatter current_behavior_source/source_of_truth/related paths (planning/ → roadmap/plans/), v0.x tags (wip, deprecated), status: in-progress → active, decision body shape (## Implementation Notes → ## Realization Notes, ## Alternatives considered → ## Options Considered), decision title/H1 (ADR-NNN: → D-NNN:), plan H1 → slug-only, and broken wikilinks. The done-pending.md heading rewrite is a no-op; current docs prefer slug-only H2s, and validators accept date-prefixed legacy H2s. Surfaces manual-review items: plan status/body mismatches, decision content authoring, known-issues theoretical-risk wording.",
   detect,
   plan,
   apply,

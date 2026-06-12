@@ -28,16 +28,15 @@
  * bump in the last week fails. The flag is opt-in; the default
  * behavior is unchanged.
  *
- * The `--config` flag expects a path to `projects.json` from the
- * project-management skill (at the skill root, alongside SKILL.md). The script
+ * The `--config` flag expects a path to the user-specific `projects.json`
+ * registry (v1.3.0+ defaults to ~/.config/project-management/projects.json). The script
  * reads `vault_root` and the project's `pm_folder` from the config. When
  * `--config` is set without `--project`, the script iterates over all
  * projects in the config and prints one report per project.
  *
  * If a <vault> path is provided, that folder is scanned directly. If no
- * <vault> path or `--config` is given, the script walks up from its own
- * location looking for a sibling SKILL.md; the projects.json next to that
- * SKILL.md is used as the default config. Explicit `--config` always wins.
+ * <vault> path or `--config` is given, the script uses the XDG default
+ * registry path. Explicit `--config` always wins.
  */
 
 import { existsSync } from "node:fs";

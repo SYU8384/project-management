@@ -12,7 +12,7 @@ It works especially well with an Obsidian vault, but the convention is plain Mar
 
 ## 🚀 Quick Start
 
-Pick the path that matches your situation. Both end at a working PM folder.
+Pick the path that matches your situation. OpenClaw can handle setup end to end; coding-agent installs need one project setup step after installation.
 
 ### Path A — You have an OpenClaw PM agent (recommended for PM-domain work)
 
@@ -58,7 +58,7 @@ The order below follows a new user's natural flow: **register your project first
 | Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
-| Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, and the roadmap's `Active`/`In Flight` sections; produces a 1-paragraph summary pointing to the right files. |
+| Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, active roadmap state, known issues, and recent history; produces a 1-paragraph summary pointing to the right files. |
 
 If you have code access but no PM folder at all, none of these apply — see **Access model** below.
 
@@ -81,7 +81,7 @@ The full per-access-mode behavior (what `AGENTS.md` gets written, what trigger p
 | Capability | What the agent does |
 |---|---|
 | 🧭 Guided setup | Lets users say `setup this repo` instead of knowing the bootstrap workflow. |
-| 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and validation scripts. |
+| 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
 | 🧹 Repair existing folders | Finds missing indexes, stale schemas, broken conventions, roadmap drift, and folder-note problems. |
 | 📝 Log completed work | Updates current-state docs first, then writes a Conventional Commits-style history entry. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
@@ -145,7 +145,7 @@ History is written last because it records what changed after the durable docs h
 
 | Path | Purpose |
 |---|---|
-| [`SKILL.md`](./SKILL.md) | Agent entry point: intents, triggers, quick start, and routing map. |
+| [`SKILL.md`](./SKILL.md) | Agent entry point: concise trigger router and highest-risk PM rules. |
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
 | [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
@@ -157,9 +157,18 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Unapplied Migrations` for the migration registry. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
+| [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
-| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations (`1.0.0-lane-restructure.mjs`, `1.0.2-v0-content-rewrite.mjs`) and the registry index (`_index.mjs`). |
+| [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
+| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations (`1.0.0-lane-restructure.mjs`, `1.0.2-v0-content-rewrite.mjs`, `1.4.1-unavailable-downgrade.mjs`) and the registry index (`_index.mjs`). |
+| [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
+| [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
+| [`scripts/lib/findings.mjs`](./scripts/lib/findings.mjs) | Shared finding shape and report renderer for newer checks. |
+| [`scripts/lib/template-renderer.mjs`](./scripts/lib/template-renderer.mjs) | Template substitution and unresolved-placeholder detection. |
+| [`scripts/lib/scaffold-plan.mjs`](./scripts/lib/scaffold-plan.mjs) | Shared scaffold-plan summary helpers. |
 | [`scripts/lib/paths.mjs`](./scripts/lib/paths.mjs) | Shared path-resolution helpers: `findSkillDir()`, `resolveProjectsConfigPath()` (the XDG user-specific `projects.json` lookup all validators use). |
+| [`scripts/lib/skip.mjs`](./scripts/lib/skip.mjs) | Shared `.pm/skip` parser used by validators to ignore project-specific files. |
+| [`test/`](./test/) | Node built-in test suite for the shared convention, markdown, template, and finding helpers. |
 | [`LICENSE`](./LICENSE) | MIT license. |
 
 ## 📐 Design Principles
@@ -171,6 +180,8 @@ History is written last because it records what changed after the durable docs h
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
+- **Conventions have one model.** Reusable PM vocabulary lives in `scripts/lib/convention.mjs`; scripts and checks import it instead of copying lists.
+- **Quality gates are local.** The repo stays dependency-free; `node --test` and `scripts/check-skill.mjs` cover the internal model and public-doc drift.
 - **The skill is portable.** `projects.json` lives at `~/.config/project-management/projects.json` (user-specific, gitignored); the repo itself contains only reusable conventions, templates, and scripts.
 
 ## 🏷️ Versioning
@@ -191,7 +202,7 @@ cat <skill_dir>/VERSION
 The version is printed after every install or update:
 
 ```text
-==> Installed version: 1.4.0
+==> Installed version: <version>
 ```
 
 ## 📦 Releasing (Maintainers)
@@ -207,7 +218,7 @@ To cut a new release:
 
 That's it. `CHANGELOG.md` is the single source of truth for what changed in each version; `VERSION` and the git tag are the versioned snapshot. The skill is small enough that an additional release-notes layer (per-version prose files, GitHub Releases UI paste) doesn't pay for itself.
 
-Before tagging, sanity-check with `bash -n install.sh` and `node --check scripts/*.mjs`. For a full end-to-end check, manually invoke `node scripts/check-pm.mjs` against a fresh scaffold.
+Before tagging, sanity-check with `bash -n install.sh`, `node --check scripts/*.mjs scripts/lib/*.mjs scripts/migrations/*.mjs scripts/validators/*.mjs`, `node --test`, and `node scripts/check-skill.mjs`. For a full end-to-end check, invoke `node scripts/check-pm.mjs` against a fresh scaffold or the self-hosted Project Management PM folder.
 
 ## 📄 License
 

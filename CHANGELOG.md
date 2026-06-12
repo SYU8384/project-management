@@ -5,27 +5,42 @@ All notable changes to this skill are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - v1.6.0 starts (I6 --strict flag)
+## [Unreleased]
 
-The first v1.6.0 carryover item from the planning note `2026-06-12_v1.6.0-carryover`. `--strict` tightens the `check-stale-docs.mjs` thresholds from 30/90 days to 7/14 days for CI runs.
+### Added
+
+- `scripts/lib/convention.mjs`: canonical PM convention model for access values, lanes, required files, roadmap section shapes, page-type inference, and README route rows.
+- Shared internal helpers: `scripts/lib/markdown.mjs`, `findings.mjs`, `template-renderer.mjs`, `targets.mjs`, and `scaffold-plan.mjs`.
+- `scripts/check-skill.mjs`: skill-repo quality gate for stale public-doc phrases, template placeholders, retired templates, and convention coverage.
+- `test/`: Node built-in test suite for the shared convention, markdown, template-renderer, and finding helpers.
+- `install.sh`: `expand_path()` now detects Windows under Git Bash (`OS=Windows_NT` + `cygpath` on PATH) and routes through `cygpath -w` with backslash-to-slash normalization.
+
+### Changed
+
+- `SKILL.md`: redesigned as a concise trigger router with high-risk PM rules; detailed workflow content stays in `REFERENCE.md`.
+- `scripts/check-vault-structure.mjs`, `scripts/check-pm-consistency.mjs`, `scripts/check-agents.mjs`, and `scripts/bootstrap-pm.mjs`: now use shared convention, markdown, template-renderer, or scaffold-summary helpers while preserving public CLI behavior.
+- `README.md` and `REFERENCE.md`: updated repository map, validation workflow, and design notes for the convention-model architecture and local quality gate.
+
+### Fixed
+
+- `README.md`, `SKILL.md`, `REFERENCE.md`, generated AGENTS.md text, and templates: removed stale phrases and aligned the documented conventions for summarization, known-issues lifecycle, and slug-only `done-pending.md` mirror headings.
+- `VERSION`: bumped the working version to `1.7.0` for the convention-model and quality-gate release candidate.
+- Script header comments and migration prose: updated stale references to skill-root `projects.json` and date-prefixed done-pending mirror headings without changing runtime behavior.
+- `install.sh`: pre-existing pattern bug in `expand_path()`'s `case` statement. The original `~/"*` pattern never matched the common `~/foo` case. The fix escapes the `~` and removes the stray quote.
+
+### Notes
+
+- This unreleased batch has no PM-folder migration; the changes are compatible internal architecture, local quality gates, and documentation cleanup.
+- The v1.6.0 plan's C1-C6 cosmetic items remain deferred per the plan's own recommendation.
+
+## [1.6.0] - 2026-06-12
+
+A release that closes the worth-doing items from the v1.6.0 carryover plan: strict stale-doc mode, PR template visibility, full bootstrap validation, phase/notes sync, and the authoritative `code_repo` validator gap.
 
 ### Added
 
 - `scripts/check-stale-docs.mjs --strict` flag: tightens the stale-doc threshold from 30 days to 7 days, and the very-stale threshold from 90 days to 14 days. For nightly CI: a doc whose `last_reviewed` is more than a week old fails the run. The flag is opt-in; the default behavior is unchanged. The report's `Thresholds:` line and the section header (`Stale (30-90 days)` vs `Stale (7-14 days)`) reflect the active mode. A `(Strict mode active: stale threshold lowered to 7 days, very-stale to 14 days.)` notice prints at the start of the run.
 - The `STALE_DAYS` / `VERY_STALE_DAYS` env-var overrides still work in non-strict mode. `--strict` is a CLI-only override; the env-var overrides are the per-project customization knob.
-
-### Notes
-
-- `--strict` is honored by `check-stale-docs.mjs` only. The other three validators (vault-structure, pm-consistency, agents) have no soft-warning categories to escalate and ignore the flag.
-- `check-pm.mjs` passes `--strict` through to each spawned validator (no orchestrator change needed).
-- The v1.6.0 plan (`roadmap/plans/2026-06-12_v1.6.0-carryover`) moves from `proposed` to `active` with this work.
-
-## [Unreleased] - v1.6.0 close-out (F7, F2+F3, I8, code_repo)
-
-A batch of v1.6.0 carryover items from the planning note `2026-06-12_v1.6.0-carryover`. Closes the day-1 setup gap, makes validator errors pedagogical, and makes phase/notes edits single-source-of-truth.
-
-### Added
-
 - `scripts/check-agents.mjs`: the validator now FAILs (not SKIPs) for `authoritative` projects without `code_repo`. The pre-v1.4.0 "every project has a code_repo" assumption is now defensible: an authoritative project that lost its code_repo entry is caught at validation time. Read-only projects still SKIP (legitimate "no code repo" case for project-only setups). The FAIL message is: `authoritative project '<name>' has no code_repo; AGENTS.md cannot be validated. Set code_repo to the code repo path, or downgrade to access: read-only if this is a project-only setup.`
 - `scripts/bootstrap-pm.mjs --sync` flag: re-reads `projects.json` and rewrites the `## Current Phase` and `## Summary` lines in `CURRENT_STATUS.md` and `PRODUCT.md` to match the canonical `phase` and `notes` values. Idempotent (re-run is a no-op when already in sync). Useful for projects where phase changes mid-lifecycle and the docs would otherwise drift.
 - `scripts/check-pm-consistency.mjs`: new phase-consistency rule. If `projects.json` has a `phase` for the project, the body of `## Current Phase` in `CURRENT_STATUS.md` and `PRODUCT.md` must match. Drift returns FAIL with `Run \`bootstrap-pm.mjs --project <name> --sync\` to fix.`. The validator was reading `resolveProjectsConfigPath(null)` (XDG default only); fixed to honor `--config` (a latent bug that this rule exposed).
@@ -42,26 +57,10 @@ A batch of v1.6.0 carryover items from the planning note `2026-06-12_v1.6.0-carr
 
 ### Notes
 
+- `--strict` is honored by `check-stale-docs.mjs` only. The other three validators (vault-structure, pm-consistency, agents) have no soft-warning categories to escalate and ignore the flag.
+- `check-pm.mjs` passes `--strict` through to each spawned validator (no orchestrator change needed).
 - C1-C6 (cosmetic items from the v1.6.0 plan) are deferred per the plan's own recommendation ("touching them invites bikeshedding").
 - The v1.6.0 plan (`roadmap/plans/2026-06-12_v1.6.0-carryover`) is fully shipped; it can be archived by the user on the next planning pass (the file is already a historical record; no v1.6.0 tag is needed for the archive step).
-
-## [Unreleased] - deferred close-out (archive self-skip + install.sh cygpath)
-
-Two small deferred items from `roadmap/known-issues.md` "## Deferred" that the v1.6.0 plan didn't include. Defensive validator improvement + a real cross-platform concern.
-
-### Added
-
-- `scripts/check-vault-structure.mjs`: the validator now flags folder-notes that link to themselves in their own `## Notes` list. A folder-note's `## Notes` should list content notes (children of the folder), not the folder's own index. The rule is precise: a link matches the file's own relpath (`archive/archive.md`) or the project-prefixed form (`Projects/<Project>/archive/archive.md`). New `findings.folderNotes.selfLinkViolations` array + new `## Self-Linked Folder Notes` report section. The user's `archive/archive.md` is already conformant (no self-link); the rule is a defensive future-proofing. Closes IDEA-005 (Brainstorming → Implemented).
-- `install.sh`: `expand_path()` now detects Windows under Git Bash (`OS=Windows_NT` + `cygpath` on PATH) and routes through `cygpath -w` with backslash-to-slash normalization. POSIX shells (macOS, Linux, WSL, Git Bash default) use `$HOME` as-is. The fallback chain is: `cygpath -w "$HOME" | tr '\\' '/'` (Windows under Git Bash), then `$HOME` (POSIX). Help text documents the Git Bash / WSL recommendation. End-to-end smoke-tested in 4 variants.
-
-### Fixed
-
-- `install.sh`: pre-existing pattern bug in `expand_path()`'s `case` statement. The original `~/"*` pattern was being interpreted as "starts with `~/" then `"` (literal) then `*`", which never matched the common `~/foo` case. The fix escapes the `~` (so it isn't expanded at parse time) and removes the stray quote: `~/*) printf "%s/%s" "$(resolve_home)" "${input#\~/}" ;;`. End-to-end smoke-tested: `expand_path "~"` → `$HOME`; `expand_path "~/foo/bar"` → `$HOME/foo/bar`; absolute and relative paths are unchanged.
-
-### Notes
-
-- This release has no migration; the changes are defensive improvements.
-- The v1.6.0 plan's C1-C6 (cosmetic items) remain deferred per the plan's own recommendation.
 
 ## [1.5.0] - 2026-06-12
 

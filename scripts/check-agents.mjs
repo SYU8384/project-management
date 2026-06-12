@@ -11,6 +11,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
+import { isValidAccess } from "./lib/convention.mjs";
+import { normalizeMarkdownSection } from "./lib/markdown.mjs";
+import { renderTemplateFile } from "./lib/template-renderer.mjs";
 
 const SKILL_DIR = findSkillDir();
 const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
@@ -60,21 +63,17 @@ function resolveProjects() {
 }
 
 function templateForAccess(access) {
+  if (!isValidAccess(access)) return null;
   if (access === "authoritative") return "AGENTS_PM_SECTION_AUTHORITATIVE.md";
   if (access === "read-only") return "AGENTS_PM_SECTION_READONLY.md";
   return null;
 }
 
 function substituteTemplate(filename, project) {
-  let content = readFileSync(join(TEMPLATE_DIR, filename), "utf8");
-  const replacements = {
+  return renderTemplateFile(TEMPLATE_DIR, filename, {
     "<pm_folder>": project.pm_folder ?? "",
     "<skill_dir>": SKILL_DIR ?? "",
-  };
-  for (const [from, to] of Object.entries(replacements)) {
-    content = content.split(from).join(to);
-  }
-  return content;
+  });
 }
 
 function extractPmSection(content) {
@@ -86,15 +85,6 @@ function extractPmSection(content) {
   const nextMatch = rest.match(/\n## /);
   const end = nextMatch ? afterHeading + nextMatch.index : content.length;
   return content.slice(start, end);
-}
-
-function normalizeSection(content) {
-  return content
-    .replace(/\r\n/g, "\n")
-    .split("\n")
-    .map((line) => line.replace(/[ \t]+$/g, ""))
-    .join("\n")
-    .trim();
 }
 
 function validateProject(name, project) {
@@ -158,7 +148,7 @@ function validateProject(name, project) {
   }
 
   const expected = substituteTemplate(templateName, project);
-  if (normalizeSection(section) !== normalizeSection(expected)) {
+  if (normalizeMarkdownSection(section) !== normalizeMarkdownSection(expected)) {
     issues.push(`## PM folder section does not match ${templateName} for access '${project.access}'`);
   }
 

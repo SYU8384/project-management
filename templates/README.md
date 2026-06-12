@@ -99,7 +99,7 @@ owner: PM
 | Admin/operator workflow changed (support, feedback, admin panel, monitoring, statistics, background job run, access, incident response, data repair) | Relevant `docs/Admin Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | Coding-engineer workflow changed (local setup, code structure, API, schema, prompt, test, migration, build, release, job implementation) | Relevant `docs/Developer Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | Engineering bug found, fixed, recurring, or debugged | `roadmap/known-issues.md` for active tracking, `docs/Developer Guide/known-bugs.md` for root cause/solution/verification, then `history/` when fixed |
-| New concrete plan or decision not fully implemented | `roadmap/plans/YYYY-MM-DD_slug.md`, then add/update a matching `## YYYY-MM-DD_slug` section in `roadmap/done-pending.md` |
+| New concrete plan or decision not fully implemented | `roadmap/plans/YYYY-MM-DD_slug.md`, then add/update a matching slug-only section in `roadmap/done-pending.md` |
 | Significant decision made (architecture, product, market, vendor, policy, rejection, experiment) | New `D-NNN_<type>_<slug>.md` in `decisions/` (see `templates/decision.md`) |
 | New feature enters design phase (coherent user-facing capability) | Create `features/<feature>.md` (from `templates/feature.md`); link to relevant `system/`, `roadmap/plans/`, and `decisions/` docs |
 | Feature's scope, availability, or known issues changed | Update the matching `features/<feature>.md` (not just the system/ doc it points to) |
@@ -224,7 +224,7 @@ The section headers (`## Brainstorming` / `## Scoping` / etc.) and the per-idea 
 - **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
 - **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). This rename is mandatory. Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2 (F8 fix).
+- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2s for compatibility.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
 ### Feature pages (`features/<feature>.md`)
