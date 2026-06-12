@@ -5,133 +5,63 @@ All notable changes to this skill are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0] - 2026-06-12
+
+A release that closes the day-1 setup gap, makes validator errors pedagogical, brings the orchestration layer into a registry-driven shape, formalizes four OpenManager-derived conventions (`done-pending.md`, `ideas.md`, `known-issues.md`, `mvp-priorities.md`), and ships a translation migration for pre-v1.5.0 `access: "unavailable"` entries. The post-v1.4.1 audit findings (planning note `2026-06-12_v1.5.0-backlog-from-audit`) and a v1.4.1 doc-only data-model refactor are aggregated here.
 
 ### Added
 
-- New `## 🛡️ Access model` section in the README, between Quick Start and What It Does. Explains the two registered access modes (`authoritative` / `read-only`) and the contributor case (no PM access at all; the contributor workflow is via PR body, not the skill). Points to `REFERENCE.md` for the full per-mode behavior.
+- **`scripts/bootstrap-pm.mjs --access authoritative|read-only`**: registers the project with the chosen access mode (default `authoritative` for backward compatibility). Validates against the 2-value enum and exits 2 on invalid input. `assertConfigCanUpdate()`, `writeConfig()`, and `writeAgents()` write/read the chosen value; `writeAgents()` picks the `AGENTS_PM_SECTION_*` template by `access` (read-only → `AGENTS_PM_SECTION_READONLY.md`, authoritative → `AGENTS_PM_SECTION_AUTHORITATIVE.md`). The agent's Setup Intake routes to `--access read-only` when the user picks "Collaborator with PM access", closing the day-1 setup gap.
+- **`scripts/validators/_index.mjs`**: validator registry. Mirrors the migration registry design. Default-exports an array of `{ file, label }` entries in invocation order. Adding a new validator is one new file under `scripts/` plus one entry here. `check-pm.mjs` reads the registry at startup via dynamic import; if the registry is malformed (missing `file` or `label`), the orchestrator exits 2.
+- **`scripts/lib/skip.mjs`**: shared `.pm/skip` parser. The `.pm/skip` file in a project's PM folder lists filenames (one per line, `#` for comments) that the validators should ignore. Entries match against either the relative path or the basename. Wired into `check-vault-structure.mjs`, `check-stale-docs.mjs`, and `check-pm-consistency.mjs`. The orchestrator prints `(Honoring .pm/skip: <filename>)` when the file is present.
+- **`scripts/migrations/1.4.1-unavailable-downgrade.mjs`**: detects legacy `access: "unavailable"` entries in `~/.config/project-management/projects.json` and downgrades them to `access: "read-only"` (conservative default; users who actually own the PM folder can re-run `bootstrap-pm.mjs --access authoritative --project <name>` to upgrade). Idempotent. Registered in `scripts/migrations/_index.mjs`.
+- **`scripts/migrate.mjs` now passes `configPath` in `ctx`**: migrations read from the `--config` flag if set, else fall back to the XDG default. Future migrations can be `--config`-aware.
+- **`summarize this project` trigger phrase**: README trigger table, `SKILL.md` Triggers table, and a new `REFERENCE.md` "Summarize This Project" section. Reads 6 files (`README`, `CURRENT_STATUS`, `PRODUCT`, `done-pending`, `known-issues`, current-month `history`); skips 5 folders (`decisions`, `features`, `archive`, `system`, `.pm`); output is one 4-8 sentence paragraph + 2-3 wikilinks.
+- **Bootstrap ergonomics** in `scripts/bootstrap-pm.mjs`:
+  - **Grouped dry-run output** (I3): `mkdir`/`write` log lines are deferred into a `planEntries` array; the dry-run output is grouped by folder, sorted alphabetically, with one `## <folder> (N)` heading per directory.
+  - **`--yes` flag** (I4): quiet flag for non-interactive invocation.
+  - **Existing-entries notice** (I4): `writeConfig()` prints `notice: <config> contains N other project entries: <names>.` when other projects exist.
+  - **Summary line** (I12): final line is `summary: 13 dirs created, 25 files written.` (or with config/AGENTS.md updates).
+  - **Dry-run exit code** (I13): the dry-run path validates that every parent directory in the plan either already exists or is in the plan; if not, prints an error and exits 2.
+- **Four OpenManager-derived conventions** formalized as typed decisions:
+  - `decisions/D-007_POL_done-pending-format.md`: `done-pending.md` holds two lanes (planning-note mirrors + general done/pending), slug-only H2, `Planning note:` line, DONE/PENDING checklist, `Relevant decisions:` / `Relevant features:` bullets.
+  - `decisions/D-008_POL_ideas-status-colors.md`: `ideas.md` uses colored round emojis (🟣 Brainstorming, 🟡 Scoping, 🔵 Approved, 🟢 Implemented, 🔴 Declined) in the Status Key, the Idea Register, and the Idea Details `**Status:**` line.
+  - `decisions/D-009_POL_known-issues-format.md`: `known-issues.md` uses the OpenManager domain-grouped format. `## Active` and `## Deferred` sections; each grouped by `### <Domain>` H3 subsections. Lead paragraphs document the convention inline.
+  - `decisions/D-010_POL_mvp-priorities-format.md`: `mvp-priorities.md` uses the OpenManager lane-grouped format. `## Alpha Goal`, `## MVP Priorities` grouped by `### <Lane>` H3 subsections, `## Not Yet MVP` uses bare bullets.
+- **Known-issues lifecycle rule (D-009 `## Lifecycle`)**: fixed items migrate to `docs/Developer Guide/known-bugs.md` and are removed from `known-issues.md`; whole `### <Domain>` sections archive to `archive/known-issues-<domain>-archived.md` when fully fixed; `## Deferred` items stay.
 
 ### Changed
 
-- README Quick Start trigger table: reordered to **setup → setup-as-collab → verify → reconcile → migrate → log** (new-user natural flow: register the project first, then maintain). Added a "When to use" column so the relationship between the six phrases is explicit. Renamed "Result" → "What happens" for clarity. The introductory sentence now frames setup as the entry point.
-- README consolidated: the previous `## 🚀 Quick Start`, `## ⚙️ Install Or Update`, `## Local Registry (Advanced)`, and `## 🚀 After Installer: Start With One Prompt` sections are merged into one canonical `## 🚀 Quick Start` section at the top of the README. Three install paths (OpenClaw, interactive installer, manual) are presented with the OpenClaw-vs-coding-agent distinction explicit. Trigger phrases are scoped to "Path B / C only" so OpenClaw users don't see them as required. README is ~30% shorter; net removal of ~120 lines of redundant install content.
-- Top-of-README badge `install-or-update` → `quick-start`. Anchor `<a id="install-or-update">` replaced with `<a id="quick-start">`.
-- README: dropped the redundant `## 🧪 Validation And Integration Checks` and `## 🔁 Migrations` sections. The integration is now stated in the Quick Start trigger table (reconcile does validate + repair + migrate in one command); the Migrations subsection, runner CLI, and per-check script reference are in `REFERENCE.md` for the developer who needs them.
+- **`scripts/check-stale-docs.mjs`**: split the `findings.neverReviewed` array into three distinct arrays — `findings.missingFrontmatter`, `findings.missingLastReviewed`, `findings.unparseableLastReviewed` — and print one report section per category with a category-specific message (e.g., `last_reviewed value \`X\` is not a YYYY-MM-DD date; fix the frontmatter.` for unparseable).
+- **`scripts/check-pm-consistency.mjs`**: when a file is missing `pageType`, the validator now suggests "did you mean `pageType: <X>`?" based on the file's path prefix. Six heuristics: `decisions/D-*` (decision), `roadmap/plans/` (planning), `features/<slug>.md` (feature), `system/<topic>.md` (system), `history/YYYY-MM/...` (history), `docs/<Guide>/<topic>.md` (note), `roadmap/<lane>.md` (roadmap).
+- **Bootstrap and template content**: `done-pending.md`, `ideas.md`, `mvp-priorities.md`, `known-issues.md` scaffolds updated to the new formats with worked examples. `templates/README.md` "Conventions by Page Type → Roadmap notes" expanded to document all four new formats.
+- **README structural refactor**: `## 🎯 Triggers (coding-agent users)` promoted to H2; Quick Start trigger table reordered for new-user natural flow; Workflow section replaced with a 3-column table covering all three access modes; Versioning section split; redundant sections dropped (~120 lines removed).
+- **Contributor workflow tightened**: a contributor with no PM folder access now leaves the PR body's `PM folder impact` section empty instead of writing a "PM folder unavailable locally" signal line. The maintainer reads the code diff directly. The `AGENTS_PM_SECTION_READONLY.md` (read-only) workflow is unchanged.
+- **`scripts/check-agents.mjs`**: removed the dead positional-`<vault>` argument code path; the script now always goes through `projects.json`.
+- **`scripts/check-vault-structure.mjs`**: the `## Unapplied Migrations` check stays; the `## Fixed` requirement for `roadmap/known-issues.md` is removed (per D-009 Lifecycle).
+
+### Deprecated
+
+None.
 
 ### Removed
-- `access: "unavailable"` registration mode. The `access` field is now a strict two-value enum (`authoritative` / `read-only`). Contributors with no PM access at all are not users of the skill on their side — they submit PRs with PM folder impact notes, and the maintainer's PM agent applies PM updates on merge. The `setup as collaborator` trigger now registers read-only access only.
-- `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` retired as a generated template. The file has since been deleted from the repo (the modern read-only + PR body convention covers the no-PM-access case). `scripts/check-agents.mjs::templateForAccess()` no longer returns it.
 
-### Changed (doc-only follow-ups to the access-model reframing)
-- README: Access model section reframed from three bullets (`authoritative` / `read-only` / `unavailable`) to two bullets + a "Contributor (no PM access)" case describing the PR body convention.
-- README: Quick Start trigger table — `setup as collaborator` row updated to "When you have the PM folder mounted read-only (e.g., OneDrive read-link, Syncthing read-only mirror)" with `read-only`-only registration.
-- `REFERENCE.md`: `access` field description narrowed to two-value enum. All `unavailable` mappings removed from Setup Intake role list, route-after-intake, and the AGENTS.md template picker. Coding Agent Integration and Contributor Workflow sections reframed to drop the unavailable case and reference the PR body convention instead.
-- `templates/projects.template.json`: `access` enum narrowed to two values.
-- `scripts/check-pm-consistency.mjs`, `scripts/check-vault-structure.mjs`, `scripts/check-stale-docs.mjs`: `unavailable` SKIP branches removed from `resolveTargets()` — read-only and authoritative projects are now both validated; unknown access values are flagged.
-- `scripts/check-agents.mjs::templateForAccess()`: two branches only.
-- `openclaw-instruction.md`: `unavailable` references removed from the blank-placeholder list, intake routing, role list, access mapping, project audit, AGENTS.md template picker, and validation repair rules.
-- `SKILL.md` Quick Start item 2: routing list no longer includes "register unavailable PM access".
+- **`access: "unavailable"` registration mode**: the `access` field is now a strict two-value enum (`authoritative` / `read-only`). Contributors with no PM access at all are not users of the skill on their side — they submit PRs with PM folder impact notes, and the maintainer's PM agent applies PM updates on merge. The `setup as collaborator` trigger now registers read-only access only.
+- **`templates/AGENTS_PM_SECTION_UNAVAILABLE.md`**: retired as a generated template and deleted from the repo. The modern read-only + PR body convention covers the no-PM-access case. `scripts/check-agents.mjs::templateForAccess()` no longer returns it.
+- **Pre-v1.4.1 dead code paths** in the validators (positional `<vault>` args, hardcoded `OpenManager.md` in `SKIP_FILES`, etc.).
 
 ### Fixed
-- Audit pass: removed residual contradictions and dead code that the doc-only patches above left behind.
-- `SKILL.md` Quick Start item 5: removed the `AGENTS_PM_SECTION_UNAVAILABLE.md` template mention (the template no longer exists; the agent's two-template picker in `check-agents.mjs::templateForAccess()` was already reduced to `authoritative | read-only`).
-- `openclaw-instruction.md` Setup Intake role list: dropped the third option "Collaborator without PM access yet" that the previous turn missed when rewording the access mapping.
-- `openclaw-instruction.md` audit-result group `Blocked / missing access`: rephrased "unavailable PM folders" to "PM folders that aren't reachable from this machine" to avoid collision with the retired enum value.
-- `REFERENCE.md` Coding Agent Integration: collapsed the "if you encounter a reference to it" warning (the only remaining live reference to the deleted template) into the surrounding sentence.
-- `REFERENCE.md` Templates list: dropped the bullet for `templates/AGENTS_PM_SECTION_UNAVAILABLE.md` (the file is gone).
-- `README.md` Versioning example: `==> Installed version: 1.0.0` → `1.4.0` to match the current `VERSION` file.
-- `README.md` Repository Map: added a row for `scripts/lib/paths.mjs` (the XDG `projects.json` resolver all validators use).
-- `scripts/check-agents.mjs`: removed the dead positional-`<vault>` argument code path (it was parsed but never used; a positional arg silently degraded to a no-op exit-0). The script now always goes through `projects.json`.
-- `scripts/check-agents.mjs`: removed a dead comment about "contributors with no PM access aren't registered" that the previous turn's edit left orphaned below the access-FAIL check.
-- `scripts/check-stale-docs.mjs`: removed `"OpenManager.md"` from the hardcoded `SKIP_FILES` set (project-specific artifact, not part of the PM-folder convention).
-- `CHANGELOG.md [Unreleased] ### Added` (this file, the entry above): the line still said "three access modes" after the enum was narrowed — rewritten to match the final two-modes-plus-contributor-case state.
 
-## [Unreleased] - structural refactor
+- **F8 from the v1.5.0 audit (validator's done-pending mirror check)**: `scripts/check-pm-consistency.mjs:195` now accepts both `## YYYY-MM-DD_slug` (date-prefixed) and `## <slug>`-only H2 (per the new convention), with a token-overlap fallback for human-readable expansions.
+- **Audit pass on residual contradictions**: removed stale references in `SKILL.md`, `openclaw-instruction.md`, `REFERENCE.md`, and the validators to the retired `unavailable` mode and the deleted `AGENTS_PM_SECTION_UNAVAILABLE.md` template.
+- **CHANGELOG self-contradiction**: the `[Unreleased] ### Added` entry that still said "three access modes" was rewritten to match the final two-modes-plus-contributor-case state.
+- **`check-agents.mjs` dead code**: removed the dead positional-`<vault>` argument and an orphaned comment below the access-FAIL check.
+- **`check-stale-docs.mjs` OpenManager.md residue**: removed the hardcoded entry from the `SKIP_FILES` set; users with per-project skip needs use `.pm/skip` (new in this release).
+- **`check-vault-structure.mjs` `## Fixed` requirement**: no longer requires `## Fixed` for `known-issues.md` (per D-009 Lifecycle).
 
-### Changed
-- `README.md` structural refactor (no factual change): promoted the trigger-phrases H3 to its own H2 `## 🎯 Triggers (coding-agent users)` between Quick Start and Access model; folded the post-install line into the new H2's lead; split the third Access model bullet into a short lead + a follow-up paragraph (see "Contributor workflow tightened" below); added a single cross-reference at the bottom of the trigger table pointing to the Access model section; replaced the single-path Workflow ASCII diagram with a 3-column table covering all three access modes; split the Versioning section to separate install options from the version-check command; dropped the `gstack-ship` parenthetical reference in the Releasing section.
-- Contributor workflow tightened across `README.md`, `templates/PR_BODY_TEMPLATE.md`, `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`, `REFERENCE.md`, and `openclaw-instruction.md`: a contributor with no PM folder access now leaves the PR body's `PM folder impact` section empty instead of writing a "PM folder unavailable locally" signal line. The maintainer reads the code diff directly. The `AGENTS_PM_SECTION_READONLY.md` (read-only) workflow is unchanged — read-only collaborators still fill in the per-lane checkboxes.
+### Security
 
-## [Unreleased] - done-pending format + ideas status colors
-
-Adopted two new conventions surfaced during the post-v1.4.1 audit of the project-management skill's own PM folder. The user's project (the project-management skill itself) was the first to use the new formats; this release formalizes them for future projects.
-
-### Added
-- `decisions/D-007_POL_done-pending-format.md` — `done-pending.md` holds two lanes: planning-note mirrors (slug-only H2, `Planning note:` line, DONE/PENDING checklist, `Relevant decisions:` / `Relevant features:` bullets) and general done/pending items without a dedicated planning note, organized by date.
-- `decisions/D-008_POL_ideas-status-colors.md` — `ideas.md` uses colored round emojis (🟣 Brainstorming, 🟡 Scoping, 🔵 Approved, 🟢 Implemented, 🔴 Declined) in the Status Key, the Idea Register's Status column, and the Idea Details `**Status:**` line.
-
-### Changed
-- `scripts/bootstrap-pm.mjs`: `roadmap/done-pending.md` and `roadmap/ideas.md` are now scaffolded in the new format. The `done-pending.md` scaffold includes a worked example planning-note-mirror section; the `ideas.md` scaffold includes a worked IDEA-001 example with the color scheme.
-- `templates/done-pending.md`: updated to the two-lane format with the worked example.
-- `templates/ideas.md`: updated with the color-scheme lead note, emoji-prefixed Status Key, and emoji'd Idea Register.
-- `templates/README.md`: "Conventions by Page Type → Roadmap notes" section updated to document the new `done-pending.md` two-lane structure, the slug-only H2, and the `ideas.md` status color scheme. A new "Status color scheme" sub-section lists the 5 status-to-color mappings.
-
-### Fixed
-- `scripts/check-pm-consistency.mjs:195`: the validator's `done-pending.md` mirror check now accepts both `## YYYY-MM-DD_slug` (date-prefixed) and `## <slug>`-only H2 (per the new convention). F8 from the v1.5.0 audit resolved.
-
-## [Unreleased] - known-issues + mvp-priorities formats
-
-Two more conventions from the OpenManager project formalized for the skill. Pairs with the previous `[Unreleased] - done-pending format + ideas status colors` block.
-
-### Added
-- `decisions/D-009_POL_known-issues-format.md` — `known-issues.md` uses the OpenManager domain-grouped format. Three top-level sections (`## Active` / `## Fixed` / `## Deferred`), each grouped by `### <Domain>` H3 subsections. Item format: `- [x] **FIXED (YYYY-MM-DD, in commit \`<hash>\`):** ...` / `- [ ] **PENDING (YYYY-MM-DD):** ...` / `- [ ] **DEFERRED:** ...`. Lead paragraphs document the convention inline.
-- `decisions/D-010_POL_mvp-priorities-format.md` — `mvp-priorities.md` uses the OpenManager lane-grouped format. `## Alpha Goal` (one-line summary); `## MVP Priorities` grouped by `### <Lane>` H3 subsections; `## Not Yet MVP` uses bare `- [ ]` bullets. Item format: `- [x] **DONE:**` / `- [x] **DONE (YYYY-MM-DD):**` / `- [ ] **PENDING:**`.
-
-### Changed
-- `scripts/bootstrap-pm.mjs`: `mvp-priorities.md` and `known-issues.md` are now scaffolded in the OpenManager format. The `mvp-priorities.md` scaffold has worked examples in 7 lane subsections (Bootstrap / Validations / Migrations / AGENTS.md integration / CLI surface / Documentation / OpenClaw PM-agent integration). The `known-issues.md` scaffold has worked examples in 5 domain subsections (Migrations / Validators / AGENTS.md integration / CLI surface / Documentation) plus lead paragraphs in `## Active` and `## Fixed`.
-- `templates/mvp-priorities.md` and `templates/known-issues.md`: reference templates updated to the new format with worked examples.
-- `templates/README.md`: "Conventions by Page Type → Roadmap notes" — `Known issues` and `MVP priorities` bullets expanded to document the new formats (domain-grouped `###` subsections, OpenManager item format, lead paragraphs, mirror relationship to `known-bugs.md`).
-
-## [Unreleased] - known-issues lifecycle refinement
-
-A refinement of the OpenManager `known-issues.md` format (introduced in the previous `[Unreleased] - known-issues + mvp-priorities formats` block). The lifecycle rule: fixed items migrate to `known-bugs.md`, and whole `### <Domain>` sections archive when fully fixed. The pre-v1.4.1 `## Fixed` section is removed from `known-issues.md`.
-
-### Changed
-- `scripts/bootstrap-pm.mjs`: `known-issues.md` no longer writes a `## Fixed` section. The lead paragraph in `## Active` now documents the migration rule: fixed items migrate to `docs/Developer Guide/known-bugs.md`; whole `### <Domain>` sections archive when fully fixed; `## Deferred` items stay.
-- `templates/known-issues.md`: reference template updated to match. The `## Fixed` section is removed from the scaffold; the lead paragraph in `## Active` documents the migration rule.
-- `templates/README.md`: "Conventions by Page Type → Roadmap notes → Known issues" updated to document the lifecycle rule. The bullet now describes only `## Active` and `## Deferred` (no `## Fixed` section). The OpenManager item format list is reduced to PENDING / PENDING (date) / DEFERRED; FIXED variants are removed from the canonical list.
-- `decisions/D-009_POL_known-issues-format.md`: a new `## Lifecycle` sub-section documents the migration rule. The previous "Positive" bullet about the lead paragraphs in `## Active` and `## Fixed` is removed (no more `## Fixed` lead paragraph). `## Realization Notes` updated to mention the lifecycle rule.
-
-### Fixed
-- `scripts/check-vault-structure.mjs`: the roadmap-shape-violation check for `roadmap/known-issues.md` no longer requires `## Fixed`. The new convention (per D-009 Lifecycle) drops the `## Fixed` section entirely; fixed items migrate to `known-bugs.md` and whole `### <Domain>` sections archive when fully fixed. The validator now requires only `## Contents` / `## Active` / `## Deferred` / `## Navigation`.
-
-## [Unreleased] - 1.4.1-unavailable-downgrade migration
-
-Closes the migration gap that v1.4.1's enum narrowing left behind. The v1.4.1 doc-only patch retired `access: "unavailable"` without writing a translation migration. Pre-v1.4.1 `projects.json` files with `unavailable` entries now FAIL validation under the strict enum check.
-
-### Added
-- `scripts/migrations/1.4.1-unavailable-downgrade.mjs`: a new migration that detects legacy `access: "unavailable"` entries in `~/.config/project-management/projects.json` and downgrades them to `access: "read-only"`. The conservative default matches the v1.4.1 narrowed enum; users who actually own the PM folder can re-run `bootstrap-pm.mjs --access authoritative --project <name>` to upgrade. The migration's `manualReview` line calls this out.
-- `scripts/migrations/_index.mjs`: registered the new migration in the default-exported array, after the v1.0.x migrations and before any future v1.4.x entries.
-
-### Verification
-- `node scripts/migrate.mjs --list` shows the new id at the bottom of the registered migrations.
-- A test `projects.json` with `access: "unavailable"` is detected by the migration's `detect()`, downgraded by `apply()`, and passes the validator's `templateForAccess()` afterward.
-- Idempotent: re-running on an already-downgraded `projects.json` is a no-op (`detect()` returns false).
-
-## [Unreleased] - v1.5.0 backlog
-
-Implements the planning note `2026-06-12_v1.5.0-backlog-from-audit`. Eight features and one validator fix; closes the day-1 setup gap, makes validator errors pedagogical, and brings the orchestration layer into a registry-driven shape.
-
-### Added
-- `scripts/bootstrap-pm.mjs --access authoritative|read-only`: registers the project with the chosen access mode. Default `authoritative` for backward compatibility. The flag validates against the 2-value enum and exits 2 on invalid input. `assertConfigCanUpdate()` and `writeConfig()` now write/read the chosen value; `writeAgents()` picks the AGENTS_PM_SECTION template by `access` (read-only → `AGENTS_PM_SECTION_READONLY.md`, authoritative → `AGENTS_PM_SECTION_AUTHORITATIVE.md`). The agent's Setup Intake routes to `--access read-only` when the user picks "Collaborator with PM access", closing the F1+I1+I2 day-1 gap.
-- `scripts/validators/_index.mjs`: validator registry. Mirrors the migration registry design. Default-exports an array of `{ file, label }` entries in invocation order. Adding a new validator is one new file under `scripts/` plus one entry here. `check-pm.mjs` reads the registry at startup via dynamic import; if the registry is malformed (missing `file` or `label`), the orchestrator exits 2 (I5).
-- `scripts/lib/skip.mjs`: shared `.pm/skip` parser. The `.pm/skip` file in a project's PM folder lists filenames (one per line, `#` for comments) that the validators should ignore. Entries match against either the relative path or the basename. Wired into `check-vault-structure.mjs` (via `listMarkdownFilesUnder`), `check-stale-docs.mjs` (via `walk`), and `check-pm-consistency.mjs` (via `walk`). `check-agents.mjs` doesn't walk files, so it doesn't need the hook. The orchestrator prints `(Honoring .pm/skip: <filename>)` when the file is present (I11).
-- README trigger table: new row for `summarize this project` ("Get a one-paragraph overview of a project"). The trigger is for opening a PM folder you don't recognize — yours, a friend's, or your own after a long break. Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, `roadmap/done-pending.md`, `roadmap/known-issues.md` "Active", and the current month's `history/`. Skips `decisions/`, `features/`, `archive/`, `system/`, and the validator/ledger artifacts. Output is one 4-8 sentence paragraph (I7).
-- SKILL.md `## Triggers` table: matching `summarize this project` row.
-- `REFERENCE.md` new `## Summarize This Project` section: documents the 6 files to read, the 5 folders to skip, the output shape (one paragraph + 2-3 wikilinks), and three anti-patterns (don't read everything, don't propose changes, don't list every feature page).
-- `scripts/bootstrap-pm.mjs` bootstrap ergonomics (I3 + I4 + I12 + I13):
-  - **Grouped dry-run output** (I3): `mkdir`/`write` log lines are deferred into a `planEntries` array; the dry-run output is grouped by folder, sorted alphabetically, with one `## <folder> (N)` heading per directory. A 13-mkdir + 25-write plan is now scannable in 20 lines.
-  - **`--yes` flag** (I4): the bootstrap now accepts `--yes` to suppress interactive prompts (the bootstrap doesn't currently prompt, but the flag is reserved for future use and matches the convention used by `migrate.mjs`).
-  - **Existing-entries notice** (I4): `writeConfig()` prints `notice: <config> contains N other project entries: <names>.` when other projects exist. Lets the user see at a glance whether the new project is the first, an additional entry, or an idempotent re-run.
-  - **Summary line** (I12): the final line is `summary: 13 dirs created, 25 files written.` (or, in the new "no `--access` specified" form, `summary: 13 dirs created, 25 files written, 1 config updated, 1 AGENTS.md written.`).
-  - **Dry-run exit code** (I13): the dry-run path validates that every parent directory in the plan either already exists or is in the plan; if not, it prints an error and exits 2. Real dry-run runs exit 0 cleanly.
-
-### Changed
-- `scripts/check-stale-docs.mjs`: the `findings.neverReviewed` array was used for both "missing frontmatter" and "unparseable `last_reviewed`" cases. Split into three distinct arrays: `findings.missingFrontmatter`, `findings.missingLastReviewed`, `findings.unparseableLastReviewed`. The report now prints one section per category with a category-specific message. The "Unparseable last_reviewed" section reads `last_reviewed value \`X\` is not a YYYY-MM-DD date; fix the frontmatter.` instead of the previous "never reviewed or unparseable last_reviewed" lump (F4).
-- `scripts/check-pm-consistency.mjs`: when a file is missing `pageType`, the validator now suggests "did you mean \`pageType: <X>\`?" based on the file's path prefix. The six heuristics cover `decisions/D-*` (decision), `roadmap/plans/` (planning), `features/<slug>.md` (feature), `system/<topic>.md` (system), `history/YYYY-MM/...` (history), `docs/<Guide>/<topic>.md` (note), and `roadmap/<lane>.md` (roadmap). The `decisions/D-*` case is the original audit finding; the rest are belt-and-suspenders (F5).
-
-### Migration note
-No new migrations. The F1+I1+I2 fix moved the contributor workflow from "register `access: unavailable`" to "leave the PR body's `PM folder impact` section empty" (per D-005). The `1.4.1-unavailable-downgrade.mjs` migration for legacy entries is *not* in this release; the F6+I10 fix only mirrored the active items into `known-bugs.md`. The migration is tracked separately in `roadmap/known-issues.md` "Active → Migrations" and the `known-bugs.md` Active Bugs entry.
+None.
 
 A focused release that adds the **Reconcile** workflow (validate + repair + migrate) as a single user-triggered action, and improves the new-user install experience.
 
