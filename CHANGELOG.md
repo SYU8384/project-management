@@ -10,16 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `scripts/lib/convention.mjs`: canonical PM convention model for access values, lanes, required files, roadmap section shapes, page-type inference, and README route rows.
-- Shared internal helpers: `scripts/lib/markdown.mjs`, `findings.mjs`, `template-renderer.mjs`, `targets.mjs`, and `scaffold-plan.mjs`.
+- Shared internal helpers: `scripts/lib/markdown.mjs`, `findings.mjs`, `template-renderer.mjs`, `targets.mjs`, `scaffold-plan.mjs`, and `roadmap-fixers.mjs`.
 - `scripts/check-skill.mjs`: skill-repo quality gate for stale public-doc phrases, template placeholders, retired templates, and convention coverage.
-- `test/`: Node built-in test suite for the shared convention, markdown, template-renderer, and finding helpers.
+- `scripts/check-roadmap-conventions.mjs`: content-level validator for the four roadmap conventions (D-007 `done-pending.md` slug-only H2, D-008 `ideas.md` status-color emojis, D-009 `known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-010 `mvp-priorities.md` `### <Lane>` H3 in `## MVP Priorities`). Supports `--fix` for the deterministic fixes (D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 H2 rename); lane/domain names are project-specific and surface as `MANUAL REVIEW` findings.
+- `scripts/migrations/1.7.0-roadmap-content-conventions.mjs`: brings existing PM folders up to the four content-level conventions. Auto-applies the deterministic fixes via the shared `roadmap-fixers.mjs` lib; manual-review items (D-009 domain grouping, D-010 lane grouping) are surfaced for human triage. Idempotent. Registered in `scripts/migrations/_index.mjs`.
+- `scripts/lib/roadmap-fixers.mjs`: shared pure-function fixers used by both `check-roadmap-conventions.mjs` and the `1.7.0-roadmap-content-conventions.mjs` migration. Exports `insertStatusEmojisInIdeas`, `insertIdeasStatusColorsLeadNote`, `dropEmptyFixedSection`, `checkDomainGroupingInActive`, `checkLaneGroupingInMvpPriorities`, `renameDatePrefixedH2s`. All idempotent.
+- `test/`: Node built-in test suite for the shared convention, markdown, template-renderer, finding, and roadmap-fixer helpers.
 - `install.sh`: `expand_path()` now detects Windows under Git Bash (`OS=Windows_NT` + `cygpath` on PATH) and routes through `cygpath -w` with backslash-to-slash normalization.
 
 ### Changed
 
-- `SKILL.md`: redesigned as a concise trigger router with high-risk PM rules; detailed workflow content stays in `REFERENCE.md`.
+- `templates/AGENTS_PM_SECTION.md`: replaced the separate authoritative/read-only AGENTS PM-section templates with one portable, path-agnostic section. Committed `AGENTS.md` files now resolve local PM identity from `~/.config/project-management/projects.json` at runtime; missing config or no matching project entry means no PM access and a silent no-op during normal coding.
+- `scripts/bootstrap-pm.mjs`, `scripts/check-agents.mjs`, and `scripts/sync-agents-section.mjs`: now render and validate the single portable AGENTS template while preserving the two-value local access model (`authoritative` and `read-only`).
+- `scripts/check-agents.mjs --fix`: now repairs registered code repo AGENTS integration by creating missing `AGENTS.md`, appending missing `## PM folder`, or replacing stale PM sections with the portable template. `check-pm.mjs --fix` treats Phase 1 as a report-only baseline so repaired baseline findings do not force a nonzero final exit.
+- `scripts/check-skill.mjs` and tests: added guards that the portable AGENTS template does not contain local path placeholders or absolute local paths.
+- `SKILL.md`: redesigned as a concise trigger router with high-risk PM rules; detailed workflow content stays in `REFERENCE.md`. Added the new `check-roadmap-conventions.mjs` validator to the Commands section.
 - `scripts/check-vault-structure.mjs`, `scripts/check-pm-consistency.mjs`, `scripts/check-agents.mjs`, and `scripts/bootstrap-pm.mjs`: now use shared convention, markdown, template-renderer, or scaffold-summary helpers while preserving public CLI behavior.
-- `README.md` and `REFERENCE.md`: updated repository map, validation workflow, and design notes for the convention-model architecture and local quality gate.
+- `scripts/validators/_index.mjs`: registered the new `check-roadmap-conventions.mjs` validator between `check-pm-consistency.mjs` and `check-agents.mjs`. The orchestrator now invokes it as part of every `check-pm.mjs` run.
+- `README.md` and `REFERENCE.md`: updated repository map, validation workflow, and design notes for the convention-model architecture, local quality gate, and the new content-level convention validator.
 
 ### Fixed
 
@@ -27,11 +35,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `VERSION`: bumped the working version to `1.7.0` for the convention-model and quality-gate release candidate.
 - Script header comments and migration prose: updated stale references to skill-root `projects.json` and date-prefixed done-pending mirror headings without changing runtime behavior.
 - `install.sh`: pre-existing pattern bug in `expand_path()`'s `case` statement. The original `~/"*` pattern never matched the common `~/foo` case. The fix escapes the `~` and removes the stray quote.
+- **Validator gap (closed by this release):** the four content-level roadmap conventions documented in the `Project Management` PM folder's `decisions/D-007_POL_done-pending-format.md`, `D-008_POL_ideas-status-colors.md`, `D-009_POL_known-issues-format.md`, and `D-010_POL_mvp-priorities-format.md` are now enforceable. Previously the validators only checked H2 section existence; they did not check the content inside the sections. The new `check-roadmap-conventions.mjs` closes that gap for the auto-fixable parts (D-008 emojis, D-009 empty `## Fixed`, D-007 H2 rename). The non-deterministic parts (D-009 `### <Domain>` H3 grouping, D-010 `### <Lane>` H3 grouping) surface as `MANUAL REVIEW` findings since the lane/domain names are project-specific.
 
 ### Notes
 
-- This unreleased batch has no PM-folder migration; the changes are compatible internal architecture, local quality gates, and documentation cleanup.
+- This unreleased batch includes the first PM-folder migration with a content-fix scope (`1.7.0-roadmap-content-conventions.mjs`). Previous migrations moved files or rewrote `projects.json`; this one rewrites body text inside the four `roadmap/*.md` files. The migration is idempotent and the auto-fixer is conservative (re-runs on a conformant folder are no-ops).
+- The new content-level checks are non-blocking on `--strict` mode. The `STALE_DAYS` / `VERY_STALE_DAYS` env-var overrides still affect only the stale-doc check; the new convention checks always run at full strength.
+- The `Project Management` PM folder's `roadmap/ideas.md` gained four new entries (IDEA-008 through IDEA-011) that record this gap-closing work. The entries are flagged `🟣 Brainstorming` until the validator is exercised against a representative project and the maintainer is satisfied with the output.
 - The v1.6.0 plan's C1-C6 cosmetic items remain deferred per the plan's own recommendation.
+
+## [1.9.0] - 2026-06-13
+
+A release that closes the known-bugs shape drift gap. Adds a validator and migration that enforce the per-section field template from `templates/known-bugs.md`.
+
+### Added
+
+- `scripts/check-known-bugs-shape.mjs`: known-bugs shape validator (D-011). Checks that `docs/Developer Guide/known-bugs.md` entries follow the per-section field template, that the `## Contents` TOC only links to top-level sections, and that status values match the section. Missing required fields are FAIL; `\u003cto be filled in by maintainer\u003e` placeholders are normalized to `TBD` and surfaced as MANUAL REVIEW. Supports `--fix`. Registered in `scripts/validators/_index.mjs`.
+- `scripts/lib/known-bugs-fixers.mjs`: shared pure-function fixers (`removeH3LinksFromContents`, `normalizePlaceholders`, `ensureRequiredFields`, `checkKnownBugsShape`). Used by both the validator and the migration.
+- `scripts/migrations/1.9.0-known-bugs-shape.mjs`: brings existing PM folders up to the D-011 known-bugs shape convention. Idempotent. Registered in `scripts/migrations/_index.mjs`.
+- `decisions/D-011_POL_known-bugs-shape.md`: records the known-bugs shape convention.
+
+### Changed
+
+- `templates/known-bugs.md`: added the "Shape rules" lead note documenting the validator behavior.
+- `SKILL.md`, `REFERENCE.md`, `templates/README.md`: documented the D-011 known-bugs shape convention and its validator.
+- `decisions/decisions.md` (Project Management PM folder): added D-011 to the decisions index.
+
+## [1.8.0] - 2026-06-12
+
+A release that closes the v1.7.0 follow-up (the `## Related` migration quirk) and expands auto-fix coverage to the four content-semantic checks (A/B/C/D). Brings "the skill can fix all drift it detects" substantially closer to reality; the residual `MANUAL REVIEW` items are documented below.
+
+### Added
+
+- `scripts/check-content-semantics.mjs`: content-semantic validator (4 checks: A. `### <Domain>` / `### <Lane>` grouping placeholders; B. dead-wikilink strip; C. plan `status:` body-marker sync; D. theoretical-risk wording markers). Supports `--fix` and `--fix-strict`. Registered in `scripts/validators/_index.mjs` between `check-roadmap-conventions.mjs` and `check-agents.mjs`. The orchestrator now invokes it as part of every `check-pm.mjs` run.
+- `scripts/lib/content-semantic-fixers.mjs`: shared pure-function fixers (`introduceActivePlaceholder`, `introduceMvpPrioritiesPlaceholder`, `stripDeadWikiLinks`, `syncPlanStatusFromBodyMarker`, `flagTheoreticalRiskWording`, `ensureParentLinksToChild`). All idempotent. Used by both the new validator and the new migrations.
+- `scripts/migrations/1.8.0-content-semantic-fixes.mjs`: brings existing PM folders up to spec on the four content-semantic checks. Idempotent. Registered in `scripts/migrations/_index.mjs`.
+- `scripts/migrations/1.8.0-plans-related-h3-repair.mjs`: one-shot repair migration that demotes any existing `## Related` H2 in a folder note to `### Related` H3. Closes the v1.7.0 folder-note shape violation (the `1.0.2-v0-content-rewrite.mjs` migration emitted `## Conventions` + `## Related` as a single H2 block, pushing folder notes over the 4-section limit). Idempotent. Registered in `scripts/migrations/_index.mjs`.
+- `scripts/migrations/1.8.0-parent-subfolder-links.mjs`: one-shot repair migration that ensures each folder note's parent folder note has a wikilink to it. Closes the `check-vault-structure.mjs` "Folder Note Parent Link Violations" finding. The fixer (in `scripts/lib/content-semantic-fixers.mjs`) recognizes plain-text `- <basename>` lines and replaces them with proper `[[<rel>|<basename>]]` wikilinks; otherwise it appends a new wikilink. Idempotent. Registered in `scripts/migrations/_index.mjs`.
+
+### Changed
+
+- `scripts/migrations/1.0.2-v0-content-rewrite.mjs`: patched. The `cleanedConventions` literal now emits `### Related` H3 (nested under `## Conventions`) instead of `## Related` H2. The `conventions-added` detect check still works (it checks for `## Conventions` presence, which is at H2 in both old and new shapes). Future applications of this migration produce the corrected shape.
+
+### Fixed
+
+- **v1.7.0 follow-up:** the `1.0.2-v0-content-rewrite.mjs` migration's `cleanedConventions` block emitted `## Conventions` + `## Related` as a single H2 pair, pushing folder notes like `roadmap/plans/plans.md` to 5 H2 sections — one over the 4-section folder-note limit. The patched literal (1.8.0) emits `### Related` H3 inside the `## Conventions` block, so the count stays at 4. The companion `1.8.0-plans-related-h3-repair.mjs` migration brings existing files into the corrected shape.
+- **Validator gap (further closed):** the four content-semantic checks now have auto-fix coverage:
+  - **A. `### <Domain>` / `### <Lane>` grouping:** auto-fixer introduces a `### Pending Triage` (or `### All Priorities`) H3 placeholder when the section has items but no grouping. The user renames the placeholder to the project-specific domain/lane name. The previous v1.7.0 release only detected this as `MANUAL REVIEW`; v1.8.0 closes the structural half.
+  - **B. Dead wikilinks:** auto-fixer strips the `[[X]]` (or `[[X|Display]]`) brackets, preserving the display text. The user can re-add the wikilink syntax when the target file exists. `--fix-strict` is a no-op; the validator surfaces `MANUAL REVIEW` instead. The previous v1.7.0 release only detected dead wikilinks; v1.8.0 closes the deterministic half.
+  - **C. Plan `status:` body-marker sync:** auto-fixer scans the first 200 words of each planning note for marker phrases (`SUPERSEDED by …`, `ARCHIVED as …`, `POSTPONED to …`, `DEFERRED to …`, `WON'T DO`). When a strong marker matches a status other than the implied one, the frontmatter `status:` is rewritten. Weak markers (`NOT YET APPROVED` without a target reference) stay as `MANUAL REVIEW`. The previous v1.7.0 release surfaced this as a finding in the manual review; v1.8.0 closes the strong-marker half.
+  - **D. `known-issues.md` theoretical-risk wording:** auto-fixer adds a `**possibly theoretical risk — review for migration to ideas.md**` note after items that match risk markers (`possible`, `could`, `if X happens`, `potential`, `risk of`). The item is not moved; the user confirms and moves manually. The previous v1.7.0 release only detected the wording; v1.8.0 adds the marker.
+- **VERSION:** bumped the working version to `1.8.0` for the content-semantic auto-fix release candidate.
+
+### Notes
+
+- The four content-semantic fixers are conservative by design. The auto-fixer is opt-in via `--fix`; the validator reports drift without mutating files in the default mode. The `--fix-strict` flag on `check-content-semantics.mjs` lets the user opt out of the wikilink-strip auto-fix specifically.
+- The remaining `MANUAL REVIEW` surface (post-v1.8.0): lane/domain rename (the placeholder stays until the user picks names), weak status markers (e.g. `NOT YET APPROVED` without a target reference), and content-semantic moves (e.g. theoretical-risk item from `known-issues.md` to `ideas.md`). All three require a real human decision.
+- Doc filename warnings (e.g. `haoyou_` prefix, locale tags) remain out of auto-fix scope. The validator still surfaces them as `Docs Filename Warnings`; the user picks the new name.
+- The deeper architectural issue (the orchestrator's `migrate.mjs --migration <id> --yes` call bypasses the `.pm/migrations.json` ledger, causing already-applied migrations to re-run on every reconcile) is a known follow-up for v1.9.0. The v1.8.0 migrations are idempotent so the re-run is safe, but the architectural fix is on the list.
 
 ## [1.6.0] - 2026-06-12
 

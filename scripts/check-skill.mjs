@@ -30,8 +30,7 @@ const PUBLIC_DOCS = [
   "SKILL.md",
   "REFERENCE.md",
   "openclaw-instruction.md",
-  "templates/AGENTS_PM_SECTION_AUTHORITATIVE.md",
-  "templates/AGENTS_PM_SECTION_READONLY.md",
+  "templates/AGENTS_PM_SECTION.md",
   "templates/README.md",
   "templates/CURRENT_STATUS.md",
   "templates/done-pending.md",
@@ -55,6 +54,7 @@ const ALLOWED_PLACEHOLDERS = new Set([
   "<path>",
   "<pm_folder>",
   "<skill_dir>",
+  "<ACCESS>",
   "<user-facing impact>",
   "<admin/operator impact>",
   "<developer impact>",
@@ -242,14 +242,52 @@ function walkScripts(dir, out = []) {
 }
 
 function checkNoRetiredTemplate(findings) {
-  const retired = join(SKILL_DIR, "templates", "AGENTS_PM_SECTION_UNAVAILABLE.md");
-  if (existsSync(retired)) {
+  const retiredTemplates = [
+    ["templates/AGENTS_PM_SECTION_UNAVAILABLE.md", "retired no-PM-access AGENTS template still exists"],
+    ["templates/AGENTS_PM_SECTION_AUTHORITATIVE.md", "retired authoritative AGENTS template still exists"],
+    ["templates/AGENTS_PM_SECTION_READONLY.md", "retired read-only AGENTS template still exists"],
+  ];
+  for (const [rel, message] of retiredTemplates) {
+    const retired = join(SKILL_DIR, rel);
+    if (existsSync(retired)) {
+      findings.push(finding({
+        code: "template.retired-agents-present",
+        path: relative(SKILL_DIR, retired),
+        message,
+        remedy: "Delete it; committed AGENTS.md now uses templates/AGENTS_PM_SECTION.md and resolves access from local projects.json.",
+      }));
+    }
+  }
+}
+
+function checkPortableAgentsTemplate(findings) {
+  const rel = "templates/AGENTS_PM_SECTION.md";
+  const abs = join(SKILL_DIR, rel);
+  if (!existsSync(abs)) {
     findings.push(finding({
-      code: "template.retired-unavailable-present",
-      path: relative(SKILL_DIR, retired),
-      message: "retired no-PM-access AGENTS template still exists",
-      remedy: "Delete it; no-PM-access contributors use PR body PM impact notes instead.",
+      code: "template.portable-agents-missing",
+      path: rel,
+      message: "portable AGENTS PM section template is missing",
     }));
+    return;
+  }
+  const content = read(rel);
+  const forbidden = [
+    ["<pm_folder>", "local PM folder placeholder"],
+    ["<skill_dir>", "local skill directory placeholder"],
+    ["/home/", "Unix home path"],
+    ["/mnt/", "WSL mount path"],
+    ["C:\\", "Windows absolute path"],
+  ];
+  for (const [needle, label] of forbidden) {
+    if (content.includes(needle)) {
+      findings.push(finding({
+        code: "template.portable-agents-local-path",
+        path: rel,
+        message: `portable AGENTS template contains ${label}`,
+        remedy: "Keep committed AGENTS instructions path-agnostic; resolve local identity from projects.json at runtime.",
+      }));
+    }
   }
 }
 
@@ -259,6 +297,7 @@ checkPlaceholders(findings);
 checkConventionCoverage(findings);
 checkReadmeRouteRows(findings);
 checkNoRetiredTemplate(findings);
+checkPortableAgentsTemplate(findings);
 
 console.log(renderFindings("Skill Quality Report", findings, {
   okMessage: `Checked ${existingPublicDocs().length} public docs and ${walkScripts(join(SKILL_DIR, "scripts")).length} scripts.`,

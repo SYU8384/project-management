@@ -54,8 +54,8 @@ The order below follows a new user's natural flow: **register your project first
 |---|---|---|---|
 | Bootstrap a new project's PM folder | `setup this repo` | First time you set up a project. | Creates PM folder + registers project as `access: authoritative`. |
 | Register as a collaborator | `setup as collaborator` | When you have the PM folder mounted read-only (e.g., OneDrive read-link, Syncthing read-only mirror). | Registers `access: read-only` (you can read the PM folder but cannot edit it). |
-| Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs all four focused validators. No mutation. |
-| Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, applies pending migrations, re-validates. Idempotent. |
+| Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs the registered validators. No mutation. |
+| Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, repairs registered repo `AGENTS.md` PM sections, applies pending migrations, re-validates. Idempotent. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
 | Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, active roadmap state, known issues, and recent history; produces a 1-paragraph summary pointing to the right files. |
@@ -64,7 +64,7 @@ If you have code access but no PM folder at all, none of these apply — see **A
 
 ## 🛡️ Access model
 
-The skill behaves differently depending on whether you own the PM folder or are a collaborator on a project whose PM folder is maintained by someone else. Pick your path at setup time; the agent uses the access mode you register to decide which files to write, what `AGENTS.md` section to install, and which trigger phrases to expose.
+The skill behaves differently depending on whether you own the PM folder or are a collaborator on a project whose PM folder is maintained by someone else. Pick your path at setup time; the agent uses the access mode you register to decide which files to write and which trigger phrases to expose. Code repos get one portable `AGENTS.md` PM section; local `projects.json` decides what that section means on each machine.
 
 - **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, or `reconcile this project` to fix an existing one.
 - **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode. You need the PM folder mounted read-only (e.g., via OneDrive read-link, Syncthing read-only mirror) to use this mode.
@@ -72,9 +72,9 @@ The skill behaves differently depending on whether you own the PM folder or are 
 
 If you have code access but no PM folder, leave the "PM folder impact" section of your PR body empty. The maintainer's agent reads the code diff and applies PM updates on their side. (A read-only collaborator with PM folder read access should fill in the per-lane checkboxes in the same section — they can see the PM folder, so they can be specific.)
 
-The `access` field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this field before every write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident. Projects with no PM access aren't registered in `projects.json` at all; the maintainer registers them on the maintainer's side, and the contributor workflow is via PR body, not the skill.
+The `access` field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this local field before every PM write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident. Projects with no PM access aren't registered in `projects.json` at all; if a cloned repo has a committed `AGENTS.md` PM section but no matching local config entry, the agent treats it as no PM access and ignores the PM section during normal coding.
 
-The full per-access-mode behavior (what `AGENTS.md` gets written, what trigger phrases fire, what the contributor-vs-maintainer workflow looks like) is in `REFERENCE.md` → "Coding Agent Integration."
+The full per-access-mode behavior (how the portable `AGENTS.md` section resolves local access, what trigger phrases fire, and what the contributor-vs-maintainer workflow looks like) is in `REFERENCE.md` → "Coding Agent Integration."
 
 ## ✨ What It Does
 
@@ -82,12 +82,12 @@ The full per-access-mode behavior (what `AGENTS.md` gets written, what trigger p
 |---|---|
 | 🧭 Guided setup | Lets users say `setup this repo` instead of knowing the bootstrap workflow. |
 | 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
-| 🧹 Repair existing folders | Finds missing indexes, stale schemas, broken conventions, roadmap drift, and folder-note problems. |
+| 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
 | 📝 Log completed work | Updates current-state docs first, then writes a Conventional Commits-style history entry. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
 | 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, and records typed decisions under `decisions/`. |
 | 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
-| 🤝 Integrate code repos | Adds an `AGENTS.md` PM section so coding agents know what to read and update. |
+| 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json`. |
 | 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
 
 ## 🧠 Why This Exists
@@ -152,9 +152,10 @@ History is written last because it records what changed after the durable docs h
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, decisions, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter for `projects.json`; the bootstrap script copies it to `~/.config/project-management/projects.json` on first run. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
-| [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation entry point that runs all PM checks. |
-| [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator. |
-| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Unapplied Migrations` for the migration registry. |
+| [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation/reconcile entry point that runs all PM checks and coordinates `--fix`. |
+| [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator and `--fix` repair path for missing/stale PM sections. |
+| [`scripts/sync-agents-section.mjs`](./scripts/sync-agents-section.mjs) | Targeted AGENTS PM-section sync utility for re-rendering registered repos from the latest portable template. |
+| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Migration Debt` for registry migrations that still apply and are not in the project ledger. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |

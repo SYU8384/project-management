@@ -30,7 +30,8 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 | "verify/check/audit setup" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` when registered. |
 | "repair/reconcile/fix everything" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path> --fix`, then re-check residual findings. |
 | "migrate/upgrade PM/clear migration debt" | Use `scripts/migrate.mjs`; name the migration and concrete effects before applying. |
-| "add/fix AGENTS.md PM folder section" | Read `projects.json` access and apply the matching AGENTS template. |
+| "add/fix AGENTS.md PM folder section" | Apply the portable AGENTS template; local `projects.json` access controls runtime behavior. |
+| "sync AGENTS.md / PM section is stale" | Run `node <skill_dir>/scripts/sync-agents-section.mjs --project <name>` (or omit `--project` for all). Re-renders the `## PM folder` span in each code repo's `AGENTS.md` from the latest template; preserves all other AGENTS.md content. |
 | "summarize this project" | Read README, CURRENT_STATUS, PRODUCT, done-pending, known-issues, and recent history; return one paragraph. |
 | "PR PM impact", "opened/merged/reviewed a PR" | Use Contributor Workflow in `REFERENCE.md`; maintainer agents backfill PM docs when needed. |
 | "big task", "multi-session", or broad architecture/doc redesign | Write or update a planning note before implementation and mirror it in `roadmap/done-pending.md`. |
@@ -43,12 +44,15 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 - Decisions live in root `decisions/` as `D-NNN_<type>_<slug>.md`, with type `ADR / PRD / MKT / VND / POL / NEG / EXP`.
 - Planning notes live in `roadmap/plans/YYYY-MM-DD_slug.md` and are mirrored into `roadmap/done-pending.md` while active or proposed.
 - `archived: <date>` belongs only on moved `archive/*-archived.md` files. Do not use `status: archived`.
-- Active bug tracking belongs in `roadmap/known-issues.md`; engineering root cause, fix, verification, and recurrence knowledge belongs in `docs/Developer Guide/known-bugs.md`.
+- Active bug tracking belongs in `roadmap/known-issues.md`; engineering root cause, fix, verification, and recurrence knowledge belongs in `docs/Developer Guide/known-bugs.md`. Entries follow the D-011 shape convention (per-section required fields, no H3 links in Contents, placeholders surfaced as MANUAL REVIEW).
 
 ## Commands
 
 - Validate PM setup: `node <skill_dir>/scripts/check-pm.mjs --project <name> --config ~/.config/project-management/projects.json`
 - Reconcile PM setup: `node <skill_dir>/scripts/check-pm.mjs --project <name> --config ~/.config/project-management/projects.json --fix`
+- Sync the AGENTS.md `## PM folder` section with the latest template: `node <skill_dir>/scripts/sync-agents-section.mjs --project <name> --config ~/.config/project-management/projects.json` (use `--dry-run --no-history` to preview; `--no-history` to skip the auto history bullet)
+- Validate roadmap content conventions (D-007/008/009/010): `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path>`
+- Auto-fix roadmap content conventions: `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path> --fix` (covers D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 slug-only H2 rename; D-009 `### <Domain>` and D-010 `### <Lane>` grouping surface as `MANUAL REVIEW` since names are project-specific)
 - Run migrations: `node <skill_dir>/scripts/migrate.mjs --project <name> --config ~/.config/project-management/projects.json`
 - Check the skill repo itself: `node <skill_dir>/scripts/check-skill.mjs`
 

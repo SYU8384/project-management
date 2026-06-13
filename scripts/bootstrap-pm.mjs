@@ -520,13 +520,7 @@ function replacePmSection(existing, section) {
 function writeAgents() {
   if (!codeRepo) return;
   const agentsPath = join(codeRepo, "AGENTS.md");
-  const templateName = access === "read-only"
-    ? "AGENTS_PM_SECTION_READONLY.md"
-    : "AGENTS_PM_SECTION_AUTHORITATIVE.md";
-  const section = substituteTemplate(templateName, {
-    "<pm_folder>": pmFolder,
-    "<skill_dir>": SKILL_DIR,
-  });
+  const section = substituteTemplate("AGENTS_PM_SECTION.md", {});
   const existing = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : "";
   const next = replacePmSection(existing, section);
   if (existing === next) {

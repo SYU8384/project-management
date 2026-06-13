@@ -3,10 +3,10 @@
  * check-agents.mjs
  *
  * Validates registered code repo AGENTS.md PM folder sections against the
- * project-management templates and projects.json access settings.
+ * portable project-management template and local projects.json access settings.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,10 +20,11 @@ const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const out = { config: null, project: null };
+  const out = { config: null, project: null, fix: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--config" || args[i] === "-c") out.config = args[++i];
     else if (args[i] === "--project" || args[i] === "-p") out.project = args[++i];
+    else if (args[i] === "--fix") out.fix = true;
   }
   return out;
 }
@@ -64,16 +65,11 @@ function resolveProjects() {
 
 function templateForAccess(access) {
   if (!isValidAccess(access)) return null;
-  if (access === "authoritative") return "AGENTS_PM_SECTION_AUTHORITATIVE.md";
-  if (access === "read-only") return "AGENTS_PM_SECTION_READONLY.md";
-  return null;
+  return "AGENTS_PM_SECTION.md";
 }
 
 function substituteTemplate(filename, project) {
-  return renderTemplateFile(TEMPLATE_DIR, filename, {
-    "<pm_folder>": project.pm_folder ?? "",
-    "<skill_dir>": SKILL_DIR ?? "",
-  });
+  return renderTemplateFile(TEMPLATE_DIR, filename, {});
 }
 
 function extractPmSection(content) {
@@ -84,7 +80,17 @@ function extractPmSection(content) {
   const rest = content.slice(afterHeading);
   const nextMatch = rest.match(/\n## /);
   const end = nextMatch ? afterHeading + nextMatch.index : content.length;
-  return content.slice(start, end);
+  return { start, end, text: content.slice(start, end) };
+}
+
+function upsertPmSection(existing, section) {
+  const normalized = section.trimEnd();
+  const current = extractPmSection(existing);
+  if (current) {
+    return `${existing.slice(0, current.start)}${normalized}${existing.slice(current.end)}`.trimEnd() + "\n";
+  }
+  const trimmed = existing.trimEnd();
+  return `${trimmed}${trimmed ? "\n\n" : ""}${normalized}\n`;
 }
 
 function validateProject(name, project) {
@@ -120,6 +126,7 @@ function validateProject(name, project) {
 
   if (!project.pm_folder) {
     issues.push(`access '${project.access}' requires pm_folder for AGENTS.md validation`);
+    return { name, status: "FAIL", detail: "", issues };
   }
 
   const repoPath = resolve(project.code_repo);
@@ -129,33 +136,62 @@ function validateProject(name, project) {
   }
 
   const agentsPath = join(repoPath, "AGENTS.md");
-  if (!existsSync(agentsPath)) {
-    issues.push(`missing AGENTS.md at ${agentsPath}`);
-    return { name, status: "FAIL", detail: "", issues };
+  const expected = substituteTemplate(templateName, project);
+  let fixed = false;
+  let content = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : null;
+
+  if (content === null) {
+    if (!CLI.fix) {
+      issues.push(`missing AGENTS.md at ${agentsPath}`);
+      return { name, status: "FAIL", detail: "", issues };
+    }
+    writeFileSync(agentsPath, expected.trimEnd() + "\n");
+    fixed = true;
+    content = readFileSync(agentsPath, "utf8");
   }
 
-  const content = readFileSync(agentsPath, "utf8");
-  const section = extractPmSection(content);
+  let section = extractPmSection(content);
   if (!section) {
-    issues.push(`missing ## PM folder section in ${agentsPath}`);
-    return { name, status: "FAIL", detail: "", issues };
+    if (!CLI.fix) {
+      issues.push(`missing ## PM folder section in ${agentsPath}`);
+      return { name, status: "FAIL", detail: "", issues };
+    }
+    writeFileSync(agentsPath, upsertPmSection(content, expected));
+    fixed = true;
+    content = readFileSync(agentsPath, "utf8");
+    section = extractPmSection(content);
   }
 
   for (const placeholder of ["<pm_folder>", "<skill_dir>"]) {
-    if (section.includes(placeholder)) {
+    if (section.text.includes(placeholder)) {
       issues.push(`${agentsPath} contains unresolved ${placeholder} placeholder`);
     }
   }
 
-  const expected = substituteTemplate(templateName, project);
-  if (normalizeMarkdownSection(section) !== normalizeMarkdownSection(expected)) {
-    issues.push(`## PM folder section does not match ${templateName} for access '${project.access}'`);
+  if (normalizeMarkdownSection(section.text) !== normalizeMarkdownSection(expected)) {
+    if (CLI.fix) {
+      writeFileSync(agentsPath, upsertPmSection(content, expected));
+      fixed = true;
+      content = readFileSync(agentsPath, "utf8");
+      section = extractPmSection(content);
+      issues.length = 0;
+      for (const placeholder of ["<pm_folder>", "<skill_dir>"]) {
+        if (section.text.includes(placeholder)) {
+          issues.push(`${agentsPath} contains unresolved ${placeholder} placeholder`);
+        }
+      }
+      if (normalizeMarkdownSection(section.text) !== normalizeMarkdownSection(expected)) {
+        issues.push(`## PM folder section does not match ${templateName}`);
+      }
+    } else {
+      issues.push(`## PM folder section does not match ${templateName}`);
+    }
   }
 
   return {
     name,
     status: issues.length > 0 ? "FAIL" : "PASS",
-    detail: agentsPath,
+    detail: fixed ? `fixed: ${agentsPath}` : agentsPath,
     issues,
   };
 }

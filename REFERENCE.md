@@ -45,6 +45,7 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
 - `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale docs
 - `node <skill_dir>/scripts/check-pm-consistency.mjs` — verifies visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and archive/sync-conflict naming
+- `node <skill_dir>/scripts/check-roadmap-conventions.mjs` — verifies the four content-level roadmap conventions (D-007 `roadmap/done-pending.md` slug-only H2, D-008 `roadmap/ideas.md` status-color emojis, D-009 `roadmap/known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-010 `roadmap/mvp-priorities.md` `### <Lane>` H3 in `## MVP Priorities`). Supports `--fix` for the deterministic parts; D-009 `### <Domain>` and D-010 `### <Lane>` surface as `MANUAL REVIEW` since the names are project-specific.
 - `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
 
 For changes to the skill repository itself, also run:
@@ -68,7 +69,7 @@ Then check the schema and content dimensions:
 8. **Folder structure** — all required folders and root files exist; feature/ADR/roadmap index pages exist where needed.
 9. **Feature pages** — coherent features have pages; technical components stay in `system/`.
 10. **Docs guide indexes** — `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md` are folder-note indexes only; durable content lives in independent notes.
-11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with status, symptoms, root cause, solution, verification, and references.
+11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with the D-011 per-section field shape (status, symptoms, root cause, solution/verification, references). Missing fields are FAIL; TBD/placeholder fields are MANUAL REVIEW.
 12. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
 13. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only`; no unresolved placeholders remain.
 
@@ -88,6 +89,49 @@ Apply the fixes in this order:
 3. **Update history** with brief bullets recording what was fixed.
 4. **Validate** with `node <skill_dir>/scripts/check-pm.mjs`.
 5. **Re-run the audit** to confirm a clean state.
+
+---
+
+## AGENTS.md PM Section Sync
+
+The `check-agents.mjs` validator does a strict normalized-string match of each registered code repo's `AGENTS.md` `## PM folder` section against the portable template. Any change to the template requires every registered project's AGENTS.md to be re-synced. To make that mechanical, the skill ships `scripts/sync-agents-section.mjs`.
+
+### When to use
+
+- After any change to `templates/AGENTS_PM_SECTION.md`.
+- During reconcile work, if `check-pm.mjs` reports `## PM folder section does not match AGENTS_PM_SECTION.md` for any project.
+
+### CLI
+
+```bash
+node <skill_dir>/scripts/sync-agents-section.mjs --project <name>   # sync one project
+node <skill_dir>/scripts/sync-agents-section.mjs                    # sync all registered projects
+node <skill_dir>/scripts/sync-agents-section.mjs --dry-run          # preview only; do not write
+node <skill_dir>/scripts/sync-agents-section.mjs --no-history       # skip the auto history bullet
+node <skill_dir>/scripts/sync-agents-section.mjs --config <path>    # explicit projects.json (default: XDG)
+```
+
+### Behavior
+
+- Reads `projects.json`, validates that the registered project has `access: authoritative` or `access: read-only`, then renders `templates/AGENTS_PM_SECTION.md`.
+- The template is path-agnostic; it does not substitute local PM folder or skill paths into committed `AGENTS.md` files.
+- With `--fix`, creates missing `AGENTS.md` files, appends missing `## PM folder` sections, and replaces stale PM sections while preserving all other AGENTS.md content.
+- Extracts the existing `## PM folder` section from `<code_repo>/AGENTS.md` (anchored to `^## PM folder$` and the next `\n## ` heading).
+- If the extracted section equals the rendered template (after `normalizeMarkdownSection`), the project is in sync; the script reports `## PM folder is already in sync` and moves on.
+- Otherwise, replaces the section in place. All other AGENTS.md content (project-specific commands, architecture notes, conventions) is preserved untouched.
+- If the PM folder has a `history/YYYY-MM/history-YYYY-MM-DD.md` file for today, appends a `chore(pm):` bullet. If the file does not exist, the bullet is skipped (the script does not create new history files).
+
+### Exit codes
+
+- `0` all targets in sync (no changes, or changes applied)
+- `1` one or more targets failed (e.g. AGENTS.md missing, code_repo path missing)
+- `2` invalid arguments or missing config
+
+### What this script does NOT do
+
+- It does not run validators or migrations. After syncing, run `node <skill_dir>/scripts/check-pm.mjs --project <name>` to confirm the project's overall state is clean.
+- It does not touch the PM folder's content notes, history, or folder indexes. Only the AGENTS.md `## PM folder` span in the code repo changes.
+- It does not migrate. The `## PM folder` section is a render of the current template; migrations that change other parts of AGENTS.md (e.g. bullet wording, link targets) are separate concerns.
 
 ---
 
@@ -168,7 +212,7 @@ Ledger shape:
 
 ### Agent behavior on detection
 
-The validator (`check-vault-structure.mjs`) reads the same registry and emits a `## Unapplied Migrations` section when a registered migration's `detect()` returns true. When the agent (the LLM running the skill) sees this section in its validator output, it should:
+The validator (`check-vault-structure.mjs`) reads the same registry and emits a `## Migration Debt` section when a registered migration's `detect()` returns true **and the migration is not in the project's applied-migrations ledger** (`.pm/migrations.json`). The ledger-aware check prevents already-applied migrations from being reported as debt when their conservative `detect()` patterns still match content on disk. When the agent (the LLM running the skill) sees this section in its validator output, it should:
 
 1. **Scope the ask to the project the user is currently working on.** Do not surface migration debt on unrelated projects during unrelated work.
 2. **Name the specific migration id.** Not "want to migrate?" — "Migration `1.0.0-lane-restructure` is unapplied for project *X*. It would: move `planning/` to `roadmap/plans/`, …" with the concrete list of effects.
@@ -368,7 +412,7 @@ Active docs-guide content notes use neutral lowercase kebab-case filenames with 
 
 Casing is semantic, not uniform. Top-level PM lanes stay lowercase (`archive/`, `docs/`, `history/`, `system/`). The four standard docs guide folders use Title Case (`Admin Guide/`, `Developer Guide/`, `Quick Commands/`, `User Guide/`) because they are user-facing category labels. Folder notes exactly match their folder names, content notes use lowercase slugs, and uppercase filenames are reserved for root artifacts (`README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`) plus the `D-NNN_` decision-id prefix.
 
-`docs/Developer Guide/known-bugs.md` is required for every PM folder. It is the engineering bug knowledge base: active bugs, fixed bugs, recurring root-cause patterns, solutions, verification, and references to `roadmap/known-issues.md` or `history/`. `roadmap/known-issues.md` remains the active roadmap tracker for bugs, risks, and blockers.
+`docs/Developer Guide/known-bugs.md` is required for every PM folder. It is the engineering bug knowledge base: active bugs, fixed bugs, recurring root-cause patterns, solutions, verification, and references to `roadmap/known-issues.md` or `history/`. `roadmap/known-issues.md` remains the active roadmap tracker for bugs, risks, and blockers. Entry shape is enforced by `scripts/check-known-bugs-shape.mjs` per `decisions/D-011_POL_known-bugs-shape.md`.
 
 When adding or moving a docs note, update the nearest guide index and `docs/docs.md` if a guide folder changes.
 
@@ -787,16 +831,15 @@ The `system/` and `features/` folders are **complementary, not redundant**:
 
 When a coding agent works in a project's code repo, the PM folder is the source of truth for current behavior. Without explicit guidance, the agent may make code changes without updating the PM folder, causing drift.
 
-**The convention:** the project's `AGENTS.md` includes a `## PM folder` section. The section's content depends on whether the project is **authoritative** (you own the PM folder) or **read-only** (someone else maintains it; you have the PM folder mounted read-only):
+**The convention:** the project's committed `AGENTS.md` includes one portable `## PM folder` section from `templates/AGENTS_PM_SECTION.md`. The section does not contain local PM folder paths or skill paths. Instead, it tells the agent to resolve the current repo against local `~/.config/project-management/projects.json` before doing PM work.
 
-- **Authoritative projects** — the section tells the agent to read `system/<topic>.md` before coding and to update the PM folder directly after coding. See `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md`.
-- **Read-only projects** — the section tells the agent to read the PM folder for context, but to use the PR body template (`templates/PR_BODY_TEMPLATE.md`) to suggest PM folder changes. The maintainer applies the changes after merge. See `templates/AGENTS_PM_SECTION_READONLY.md`.
+- **Authoritative projects** — a matching local config entry with `access: authoritative` tells the agent to read `system/<topic>.md` before coding and update the PM folder directly after coding.
+- **Read-only projects** — a matching local config entry with `access: read-only` tells the agent to read the PM folder for context but use the PR body template (`templates/PR_BODY_TEMPLATE.md`) to suggest PM folder changes.
+- **No PM access** — missing config, no matching project entry, inaccessible `pm_folder`, or an invalid access value means the agent ignores the PM section during normal coding. It should not ask PM setup questions unless the user explicitly asks to set up, register, repair, reconcile, migrate, or log PM work.
 
-Projects with no PM access at all (either the maintainer doesn't use the skill, or the maintainer uses it but doesn't share the PM folder) don't get an `AGENTS.md` PM section and aren't registered in `projects.json` on the contributor's side. The contributor's role is via PR body: fill in the "PM folder impact" section per the template. The maintainer's agent reads the PR body and applies the PM folder updates on their side.
+No PM access is not a third `access` value. It is represented by absence from the local `projects.json` on that contributor's machine. Maintainer-side agents with authoritative access backfill PM updates from PR bodies and code diffs.
 
-The agent checks the project's `access` field in `~/.config/project-management/projects.json` (`authoritative` or `read-only`) to determine which section to use. The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via the trigger phrases "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
-
-A copyable snippet is provided in each template. Project repos that adopt the project-management skill should add the appropriate section to their `AGENTS.md`. The skill is the canonical reference; the project repo's `AGENTS.md` is a thin pointer to it.
+The `access` field is set during Setup Intake or when the project is added to the config, and confirmed when AGENTS.md is written/fixed (via trigger phrases such as "setup", "add to AGENTS.md", "fix AGENTS.md", "set up AGENTS.md", or "update AGENTS.md for <project>").
 
 **The pattern after a code change (authoritative):**
 
@@ -813,7 +856,7 @@ A copyable snippet is provided in each template. Project repos that adopt the pr
 
 **The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
 
-**The pattern after a code change (no PM access, contributor side):** the contributor fills in the "PM folder impact" section of the PR body (per `templates/PR_BODY_TEMPLATE.md`) describing what PM updates their change implies. The maintainer's agent reads the PR body and applies the PM folder updates on their side after merge.
+**The pattern after a code change (no PM access, contributor side):** the contributor leaves the "PM folder impact" section empty. The maintainer's agent reads the code diff and applies the PM folder updates on their side after merge.
 
 
 
@@ -973,8 +1016,7 @@ Reusable templates are provided in the `templates/` directory relative to this s
 - `templates/mvp-priorities.md` — MVP priority tracker
 - `templates/done-pending.md` — planning mirror and general done/pending tracker
 - `templates/known-bugs.md` — `docs/Developer Guide/known-bugs.md`
-- `templates/AGENTS_PM_SECTION_AUTHORITATIVE.md` — the `## PM folder` section for `AGENTS.md` when the project is authoritative (you own the PM folder; update it directly)
-- `templates/AGENTS_PM_SECTION_READONLY.md` — the `## PM folder` section for `AGENTS.md` when the project is read-only (someone else maintains the PM folder; suggest changes via the PR body template)
+- `templates/AGENTS_PM_SECTION.md` — the portable `## PM folder` section for committed `AGENTS.md`; local `projects.json` resolves authoritative, read-only, or no-PM-access behavior at runtime
 - `templates/PR_BODY_TEMPLATE.md` — copy to `.github/PULL_REQUEST_TEMPLATE.md` for the contributor's "PM folder impact" section
 - `templates/projects.template.json` — blank starter for `projects.json` (not a Markdown file template but a JSON starter)
 
@@ -1064,6 +1106,7 @@ Management folders are live. Agents may create notes inside the right folder whe
 | Create a new content note inside `archive/` | No | Don't. `archive/` is for moved files only. The only in-place note is the folder index `archive/archive.md`, and it must not have `archived:`. Move retired content there with the rename convention `<slug>-archived.md` and add an `archived: <date>` field |
 | Create a new root note | Yes | Root should almost always stay limited to `<Project>.md`, `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md` |
 | Create a new top-level folder | Yes | Explain why existing lanes do not fit |
+| Create a new top-level folder outside the canonical PM lane set | **Yes (and the validator FAILs)** | Unexpected top-level folders surface in `check-pm.mjs` `## Unexpected Top-Level Folders`. The canonical set is `archive/`, `decisions/`, `docs/`, `features/`, `history/`, `roadmap/`, `system/`, plus the optional `meetings/` lane. To add a new lane, update `scripts/lib/convention.mjs` and `templates/folder-note.md` first |
 | Create a new docs guide category | Yes | Prefer Admin, Developer, Quick Commands, or User Guide |
 | Restructure/archive large sections | Yes | Explain what becomes canonical after the move |
 
@@ -1111,3 +1154,5 @@ The split keeps the skill portable while letting each project own its specifics.
 - Treating generic template rules as stronger than a project's root `README.md`.
 - Forgetting to update folder indexes after creating, moving, archiving, or deleting notes.
 - Renaming a planning file to `archive/` without applying the `<slug>-archived.md` rename rule and adding `archived: <date>`.
+- Stuffing content into a folder note (`system/system.md`, `roadmap/roadmap.md`, `docs/<Guide>/<Guide>.md`, etc.) instead of creating a new content note. Folder notes are indexes; the `check-vault-structure.mjs` body-bloat guard FAILs on body-length drift. The 4-section heading cap (`FOLDER_NOTE_MAX_SECTIONS = 4`) does not catch this; the body-bloat guard does.
+- Creating a new top-level folder (e.g. `notes/`, `scratch/`, `journal/`) instead of using an existing canonical lane. The unexpected-folder guard in `check-vault-structure.mjs` FAILs on any top-level folder outside `archive/`, `decisions/`, `docs/`, `features/`, `history/`, `roadmap/`, `system/`, `meetings/`.

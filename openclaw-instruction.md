@@ -260,10 +260,8 @@ For each registered project with a real `code_repo` path:
 
 1. Check whether `<code_repo>/AGENTS.md` exists.
 2. Check whether it has a `## PM folder` section.
-3. Compare the needed section with the templates in `<skill_dir>/templates/`:
-   - `AGENTS_PM_SECTION_AUTHORITATIVE.md` for `access: authoritative`
-   - `AGENTS_PM_SECTION_READONLY.md` for `access: read-only`
-4. Replace placeholders with the actual project `pm_folder` and skill path where applicable.
+3. Compare the needed section with `<skill_dir>/templates/AGENTS_PM_SECTION.md`.
+4. Do not substitute local PM folder or skill paths into committed `AGENTS.md`; the portable section resolves local access from `projects.json` at runtime.
 5. Ask the user for explicit permission before editing any code repo `AGENTS.md`. Include the exact repo path and whether you will add or update the PM section.
 6. If permission is denied, show the recommended change instead of editing.
 
