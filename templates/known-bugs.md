@@ -16,6 +16,8 @@ owner: Engineering
 
 Engineering bug knowledge base for <Project>. Use this note for active bugs, fixed bugs, recurring root-cause patterns, solutions, verification, and links to `roadmap/known-issues.md` or `history/`.
 
+Shape rules: every entry must include the fields listed for its section; the validator treats missing fields as FAIL and `TBD`/placeholder fields as MANUAL REVIEW.
+
 ## Contents
 
 - [[#Recurring Root-Cause Patterns]]

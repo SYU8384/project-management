@@ -13,7 +13,7 @@
  * once; see CHANGELOG.md [1.3.0] for details.
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -77,4 +77,37 @@ export function resolveProjectsConfigPath(explicitConfigPath) {
     if (existsSync(c)) return c;
   }
   return null;
+}
+
+/**
+ * Discover the Obsidian vault root for a PM folder.
+ *
+ * Priority:
+ *   1. If `configPath` is provided and resolves, read `vault_root` from
+ *      `projects.json`. Return it if the directory exists.
+ *   2. Walk up from `pmFolder` looking for a `.obsidian` directory.
+ *      The directory containing `.obsidian` is the vault root.
+ *   3. Fall back to `pmFolder` itself.
+ */
+export function findVaultRoot(pmFolder, configPath = null) {
+  if (configPath) {
+    try {
+      const cfg = JSON.parse(readFileSync(configPath, "utf8"));
+      if (cfg.vault_root && existsSync(cfg.vault_root)) {
+        return cfg.vault_root;
+      }
+    } catch {
+      // ignore malformed config
+    }
+  }
+  let current = pmFolder;
+  for (let i = 0; i < 20; i++) {
+    if (existsSync(join(current, ".obsidian"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return pmFolder;
 }

@@ -511,7 +511,7 @@ function processPlansFolderNote(file, ctx) {
 - **Cross-link:** when a planning note is approved, add a slug-only \`## <slug>\` section to \`roadmap/done-pending.md\` with the date-prefixed planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
-## Related
+### Related
 
 <!-- Add related decisions, system docs, and feature pages here, one per line:
 - [[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan

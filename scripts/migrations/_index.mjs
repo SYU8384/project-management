@@ -16,4 +16,9 @@ export default [
   "1.0.0-lane-restructure.mjs",
   "1.0.2-v0-content-rewrite.mjs",
   "1.4.1-unavailable-downgrade.mjs",
+  "1.7.0-roadmap-content-conventions.mjs",
+  "1.8.0-content-semantic-fixes.mjs",
+  "1.8.0-plans-related-h3-repair.mjs",
+  "1.8.0-parent-subfolder-links.mjs",
+  "1.9.0-known-bugs-shape.mjs",
 ];
