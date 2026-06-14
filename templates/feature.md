@@ -11,17 +11,19 @@ last_reviewed: <YYYY-MM-DD>
 pageType: feature
 status: alpha
 owner: PM
-roadmap_source: roadmap/done-pending.md
-source_of_truth: system/<topic>.md
+roadmap_source: "[[roadmap/done-pending|done-pending]]"
+source_of_truth: "[[system/<topic>|system/<topic>]]"
 related:
-  - roadmap/plans/YYYY-MM-DD_slug
-  - decisions/D-NNN_<type>_slug
+  - "[[roadmap/plans/YYYY-MM-DD_slug|YYYY-MM-DD_slug]]"
+  - "[[decisions/D-NNN_<type>_slug|D-NNN <title>]]"
 ---
 # <Feature Name>
 
 > **Tell me everything about <feature>.** This is a curated index. Current behavior lives in `[[Projects/<Project>/system/<topic>|system/<topic>]]`. Decisions are in `[[Projects/<Project>/decisions|decisions]]`. Pending work is in the Roadmap section below.
 
 > **When to revisit this page:** a feature's current behavior changed (mirror from `system/`), its scope changed (capability added/removed/deprecated), its known issues shifted, or its roadmap status changed. The page is *not* a source of truth for behavior — `system/` is. The page is a curated "tell me about X" entry point. See the README "Quick Rules" for the full trigger list.
+
+<!-- Replace every source_of_truth, roadmap_source, related, and body reference with a link to an existing note. Do not leave stale paths or retired lane names. -->
 
 ## Status
 

@@ -28,6 +28,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 | "setup", "setup this repo", "setup PM", "setup as collaborator" | Run setup intake from `REFERENCE.md`; route to bootstrap, repair, or read-only registration. |
 | "initialize/bootstrap/create PM folder" | Run `scripts/bootstrap-pm.mjs` with project, PM folder, code repo/null, phase, notes, access, and config path. |
 | "verify/check/audit setup" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` when registered. |
+| "audit/check PM folder quality", "checkup PM folder" | Use the PM Folder Quality Audit workflow in `REFERENCE.md`: validate, scan live routing/link drift, refresh status, compress roadmap lanes, check for secrets, then write history last. |
 | "repair/reconcile/fix everything" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path> --fix`, then re-check residual findings. |
 | "migrate/upgrade PM/clear migration debt" | Use `scripts/migrate.mjs`; name the migration and concrete effects before applying. |
 | "add/fix AGENTS.md PM folder section" | Apply the portable AGENTS template; local `projects.json` access controls runtime behavior. |
@@ -39,20 +40,25 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 ## High-Risk Routing Rules
 
 - `roadmap/known-issues.md` is for observed bugs, risks, and blockers only. Theoretical risks stay in the plan's risk/error map until they happen.
-- `roadmap/ideas.md` entries need a real description in `## Idea Details`; do not leave one-line backlog dumps.
+- History bullets start with a bold human-readable outcome sentence, then keep a concise conventional type/scope token (`feat:`, `fix:`, `docs:`, etc.) in the detail text. Do not write history as raw commit-comment bullets.
+- `roadmap/done-pending.md` Contents links point only to actual H2 headings inside the same note. Put planning-note, decision, feature, system, and docs links inside each section, not in the TOC.
+- `roadmap/ideas.md` entries need a real `**Summary:**` paragraph in `## Idea Details`; do not leave one-line backlog dumps.
 - Deferred items have one home: ideas if never scoped, the plan's `NOT in scope` section if scoped then deferred, or a `NEG` decision if explicitly rejected.
 - Decisions live in root `decisions/` as `D-NNN_<type>_<slug>.md`, with type `ADR / PRD / MKT / VND / POL / NEG / EXP`.
 - Planning notes live in `roadmap/plans/YYYY-MM-DD_slug.md` and are mirrored into `roadmap/done-pending.md` while active or proposed.
+- Live PM notes outside `history/` and `archive/` must not teach retired lanes. Use `roadmap/plans/`, root `decisions/`, and `Relevant decisions:`; link bare `ADR-NNN` / `D-NNN` references only when the target is unique.
 - `archived: <date>` belongs only on moved `archive/*-archived.md` files. Do not use `status: archived`.
 - Active bug tracking belongs in `roadmap/known-issues.md`; engineering root cause, fix, verification, and recurrence knowledge belongs in `docs/Developer Guide/known-bugs.md`. Entries follow the D-011 shape convention (per-section required fields, no H3 links in Contents, placeholders surfaced as MANUAL REVIEW).
+- PM notes must not store plaintext credentials, tokens, API keys, private URLs with secrets, or recovery codes. Document purpose, status, and where credentials live outside the PM folder.
 
 ## Commands
 
 - Validate PM setup: `node <skill_dir>/scripts/check-pm.mjs --project <name> --config ~/.config/project-management/projects.json`
 - Reconcile PM setup: `node <skill_dir>/scripts/check-pm.mjs --project <name> --config ~/.config/project-management/projects.json --fix`
 - Sync the AGENTS.md `## PM folder` section with the latest template: `node <skill_dir>/scripts/sync-agents-section.mjs --project <name> --config ~/.config/project-management/projects.json` (use `--dry-run --no-history` to preview; `--no-history` to skip the auto history bullet)
-- Validate roadmap content conventions (D-007/008/009/010): `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path>`
-- Auto-fix roadmap content conventions: `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path> --fix` (covers D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 slug-only H2 rename; D-009 `### <Domain>` and D-010 `### <Lane>` grouping surface as `MANUAL REVIEW` since names are project-specific)
+- Validate roadmap content conventions (D-007/008/009/010/012): `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path>`
+- Auto-fix roadmap content conventions: `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path> --fix` (covers D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 slug-only H2 rename, D-012 done-pending TOC/link repair, and missing idea Summary insertion as `TBD`; D-009 `### <Domain>`, D-010 `### <Lane>`, ambiguous links, and `TBD` summaries surface as `MANUAL REVIEW`)
+- Validate live routing hygiene (D-013): `node <skill_dir>/scripts/check-live-routing.mjs --project <name> --config <path>`; add `--fix` to repair deterministic retired lane paths and unique decision links.
 - Run migrations: `node <skill_dir>/scripts/migrate.mjs --project <name> --config ~/.config/project-management/projects.json`
 - Check the skill repo itself: `node <skill_dir>/scripts/check-skill.mjs`
 

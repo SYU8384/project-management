@@ -233,7 +233,7 @@ function apply({ pmFolder, ctx }) {
 
   return {
     suggestedHistory: [
-      "- chore(pm): migrate planning/ → roadmap/plans/, generalize planning/decisions/ → decisions/ as a typed first-class PM lane at root (migration 1.0.0-lane-restructure).",
+      "- **Planning notes and decisions now live in their modern PM lanes.** chore(pm): migrate planning/ to roadmap/plans/ and generalize planning/decisions/ to decisions/ as a typed first-class PM lane at root (migration 1.0.0-lane-restructure).",
     ],
   };
 }

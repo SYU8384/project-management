@@ -145,7 +145,7 @@ function apply({ pmFolder, ctx: c }) {
 
   return {
     suggestedHistory: [
-      `- chore(pm): apply migration \`1.7.0-roadmap-content-conventions\` — bring this PM folder up to D-007/D-008/D-009/D-010 conventions. Auto-fixed: ${log.length} file(s). Manual review: ${allManualReview.length} item(s).`,
+      `- **Roadmap notes now follow the D-007/D-008/D-009/D-010 scan conventions.** chore(pm): apply migration \`1.7.0-roadmap-content-conventions\`. Auto-fixed: ${log.length} file(s). Manual review: ${allManualReview.length} item(s).`,
     ],
     manualReview: allManualReview,
   };

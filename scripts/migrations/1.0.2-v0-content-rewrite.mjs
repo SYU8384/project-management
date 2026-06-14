@@ -701,7 +701,7 @@ function apply({ pmFolder, ctx }) {
 
   return {
     suggestedHistory: [
-      "- chore(pm): apply v1.0.2-v0-content-rewrite migration to refresh v0.x body text and frontmatter after the v1.0.0 lane restructure.",
+      "- **Legacy PM body text now matches the current lane model.** chore(pm): apply v1.0.2-v0-content-rewrite migration to refresh v0.x body text and frontmatter after the v1.0.0 lane restructure.",
     ],
     manualReview,
   };

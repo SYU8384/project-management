@@ -7,12 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+*(No changes yet.)*
+
+## [1.11.0] - 2026-06-14
+
 ### Added
 
+- `scripts/check-live-routing.mjs`: live-routing hygiene validator (D-013). Checks live notes outside `history/` and `archive/` for retired lane references, dead `roadmap/plans/decisions/...` paths, and `Relevant ADRs:` labels. Supports `--fix` for deterministic routing repairs and unique decision links.
+- `scripts/lib/live-routing-fixers.mjs`: shared pure-function fixers used by the live-routing validator and the `1.11.0-live-routing-and-feature-link-hygiene` migration.
+- `scripts/migrations/1.11.0-live-routing-and-feature-link-hygiene.mjs`: conservative migration for deterministic live-doc routing drift. It leaves `history/` and `archive/` intact and reports ambiguous or missing decision targets for manual review.
+- `decisions/D-013_POL_live-routing-and-link-hygiene.md`: records the live-lane, feature-link, and no-retired-routing policy.
+- Unit/integration coverage for live-routing fixes, including history/archive skip behavior, unique decision linking, ambiguous/missing manual review, and CLI `--fix`.
+- `scripts/migrations/1.10.0-human-readable-pm-notes.mjs`: deterministic cleanup for the human-readable PM note convention (D-012). Regenerates `roadmap/done-pending.md` Contents from actual H2 headings, links planning-note stems and relevant decision/feature/system/docs tokens only when a unique target exists, and inserts `**Summary:** TBD` in idea detail sections that lack a summary. Existing history prose is not rewritten.
+- `decisions/D-012_POL_human-readable-pm-notes.md`: records the outcome-first history, done-pending TOC/link, and idea-summary convention.
+- Unit/integration coverage for roadmap fixers, including an OpenManager-style broken `done-pending.md` fixture normalized by `check-roadmap-conventions.mjs --fix`.
 - `scripts/lib/convention.mjs`: canonical PM convention model for access values, lanes, required files, roadmap section shapes, page-type inference, and README route rows.
 - Shared internal helpers: `scripts/lib/markdown.mjs`, `findings.mjs`, `template-renderer.mjs`, `targets.mjs`, `scaffold-plan.mjs`, and `roadmap-fixers.mjs`.
 - `scripts/check-skill.mjs`: skill-repo quality gate for stale public-doc phrases, template placeholders, retired templates, and convention coverage.
-- `scripts/check-roadmap-conventions.mjs`: content-level validator for the four roadmap conventions (D-007 `done-pending.md` slug-only H2, D-008 `ideas.md` status-color emojis, D-009 `known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-010 `mvp-priorities.md` `### <Lane>` H3 in `## MVP Priorities`). Supports `--fix` for the deterministic fixes (D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 H2 rename); lane/domain names are project-specific and surface as `MANUAL REVIEW` findings.
+- `scripts/check-roadmap-conventions.mjs`: content-level validator for roadmap conventions (D-007 `done-pending.md` slug-only H2, D-008 `ideas.md` status-color emojis, D-009 `known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-010 `mvp-priorities.md` `### <Lane>` H3 in `## MVP Priorities`, and D-012 human-readable done-pending/ideas shape). Supports `--fix` for deterministic fixes; lane/domain names, ambiguous links, and missing human prose surface as `MANUAL REVIEW` findings.
 - `scripts/migrations/1.7.0-roadmap-content-conventions.mjs`: brings existing PM folders up to the four content-level conventions. Auto-applies the deterministic fixes via the shared `roadmap-fixers.mjs` lib; manual-review items (D-009 domain grouping, D-010 lane grouping) are surfaced for human triage. Idempotent. Registered in `scripts/migrations/_index.mjs`.
 - `scripts/lib/roadmap-fixers.mjs`: shared pure-function fixers used by both `check-roadmap-conventions.mjs` and the `1.7.0-roadmap-content-conventions.mjs` migration. Exports `insertStatusEmojisInIdeas`, `insertIdeasStatusColorsLeadNote`, `dropEmptyFixedSection`, `checkDomainGroupingInActive`, `checkLaneGroupingInMvpPriorities`, `renameDatePrefixedH2s`. All idempotent.
 - `test/`: Node built-in test suite for the shared convention, markdown, template-renderer, finding, and roadmap-fixer helpers.
@@ -20,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `SKILL.md`, `REFERENCE.md`, README, and templates now document a PM folder quality audit workflow: validate, scan live-lane drift, refresh current status, compress roadmap lanes, check for secrets, and write history last.
+- `templates/README.md`, `templates/feature.md`, and `templates/folder-note.md` now call out link hygiene and no-secrets rules. Feature templates use existing-note wikilinks for `source_of_truth`, `roadmap_source`, and `related` examples.
+- `scripts/validators/_index.mjs`: registered `check-live-routing.mjs` so `check-pm.mjs` runs live-routing hygiene on every project validation.
+- `scripts/check-roadmap-conventions.mjs` and `scripts/lib/roadmap-fixers.mjs`: D-012 checks and fixes are now part of the roadmap convention validator. `--fix` repairs done-pending Contents/link drift and inserts missing idea Summary fields as `TBD`; ambiguous links and `TBD` summaries surface as manual review.
+- `SKILL.md`, `REFERENCE.md`, README, templates, and bootstrap scaffolds now specify outcome-first history bullets: a bold human-readable outcome sentence first, followed by a concise conventional type/scope token and implementation detail.
+- Generated migration and AGENTS-sync history suggestions now use the outcome-first history bullet shape.
 - `templates/AGENTS_PM_SECTION.md`: replaced the separate authoritative/read-only AGENTS PM-section templates with one portable, path-agnostic section. Committed `AGENTS.md` files now resolve local PM identity from `~/.config/project-management/projects.json` at runtime; missing config or no matching project entry means no PM access and a silent no-op during normal coding.
 - `scripts/bootstrap-pm.mjs`, `scripts/check-agents.mjs`, and `scripts/sync-agents-section.mjs`: now render and validate the single portable AGENTS template while preserving the two-value local access model (`authoritative` and `read-only`).
 - `scripts/check-agents.mjs --fix`: now repairs registered code repo AGENTS integration by creating missing `AGENTS.md`, appending missing `## PM folder`, or replacing stale PM sections with the portable template. `check-pm.mjs --fix` treats Phase 1 as a report-only baseline so repaired baseline findings do not force a nonzero final exit.
@@ -31,11 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Live PM folder validation now catches live README/current-status/feature/docs notes that still teach retired PM lanes or dead decision paths. The deterministic parts are repairable through `check-live-routing.mjs --fix` and migration `1.11.0-live-routing-and-feature-link-hygiene`.
+- `roadmap/done-pending.md` validation now catches Contents links that point to plan-file stems instead of actual H2 headings, and can repair the deterministic cases.
+- `roadmap/ideas.md` validation now catches idea detail sections without a human-readable Summary field; auto-fix inserts `TBD` rather than inventing prose.
 - `README.md`, `SKILL.md`, `REFERENCE.md`, generated AGENTS.md text, and templates: removed stale phrases and aligned the documented conventions for summarization, known-issues lifecycle, and slug-only `done-pending.md` mirror headings.
-- `VERSION`: bumped the working version to `1.7.0` for the convention-model and quality-gate release candidate.
+- `VERSION`: bumped the working version to `1.11.0` for the live-routing hygiene release candidate.
 - Script header comments and migration prose: updated stale references to skill-root `projects.json` and date-prefixed done-pending mirror headings without changing runtime behavior.
 - `install.sh`: pre-existing pattern bug in `expand_path()`'s `case` statement. The original `~/"*` pattern never matched the common `~/foo` case. The fix escapes the `~` and removes the stray quote.
-- **Validator gap (closed by this release):** the four content-level roadmap conventions documented in the `Project Management` PM folder's `decisions/D-007_POL_done-pending-format.md`, `D-008_POL_ideas-status-colors.md`, `D-009_POL_known-issues-format.md`, and `D-010_POL_mvp-priorities-format.md` are now enforceable. Previously the validators only checked H2 section existence; they did not check the content inside the sections. The new `check-roadmap-conventions.mjs` closes that gap for the auto-fixable parts (D-008 emojis, D-009 empty `## Fixed`, D-007 H2 rename). The non-deterministic parts (D-009 `### <Domain>` H3 grouping, D-010 `### <Lane>` H3 grouping) surface as `MANUAL REVIEW` findings since the lane/domain names are project-specific.
+- **Validator gap (closed by this release):** the content-level roadmap conventions documented in the `Project Management` PM folder's D-007 through D-010 decisions are now enforceable. D-012 extends that same validator with done-pending Contents/link repair and idea Summary enforcement. Previously the validators only checked H2 section existence; they did not check the content inside the sections. The non-deterministic parts (lane/domain names, ambiguous links, and human prose) surface as `MANUAL REVIEW` findings.
 
 ### Notes
 

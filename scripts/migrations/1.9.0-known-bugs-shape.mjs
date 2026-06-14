@@ -91,7 +91,7 @@ function apply({ pmFolder, ctx: c }) {
 
   return {
     suggestedHistory: [
-      `- chore(pm): apply migration \`1.9.0-known-bugs-shape\` — bring \`docs/Developer Guide/known-bugs.md\` up to the D-011 shape convention. Auto-fixed: ${log.length} change(s). Manual review: ${allManualReview.length} item(s).`,
+      `- **Known-bugs entries now expose root cause, solution, and verification consistently.** chore(pm): apply migration \`1.9.0-known-bugs-shape\` and bring \`docs/Developer Guide/known-bugs.md\` up to the D-011 shape convention. Auto-fixed: ${log.length} change(s). Manual review: ${allManualReview.length} item(s).`,
     ],
     manualReview: allManualReview,
   };

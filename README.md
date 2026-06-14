@@ -83,9 +83,10 @@ The full per-access-mode behavior (how the portable `AGENTS.md` section resolves
 | 🧭 Guided setup | Lets users say `setup this repo` instead of knowing the bootstrap workflow. |
 | 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
 | 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
-| 📝 Log completed work | Updates current-state docs first, then writes a Conventional Commits-style history entry. |
+| 🧭 Keep live routing current | Catches live notes that still point to retired PM lanes and repairs deterministic plan/decision link drift. |
+| 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
-| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, and records typed decisions under `decisions/`. |
+| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md` with real section links, and records typed decisions under `decisions/`. |
 | 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
 | 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json`. |
 | 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
@@ -121,7 +122,7 @@ Each project gets a Markdown folder with stable lanes:
 | `roadmap/` | MVP priorities, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
 | `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight. |
 | `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. Type codes: `ADR / PRD / MKT / VND / POL / NEG / EXP`. |
-| `history/` | Chronological logs of completed work, organized by year-month. |
+| `history/` | Human-readable chronological logs of completed work, organized by year-month. |
 | `archive/` | Superseded material replaced by current docs. |
 
 Every visible folder has a folder-note index named after the folder, including history month folders such as `history/2026-06/2026-06.md`.
@@ -158,28 +159,35 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Migration Debt` for registry migrations that still apply and are not in the project ledger. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
+| [`scripts/check-roadmap-conventions.mjs`](./scripts/check-roadmap-conventions.mjs) | Content-level roadmap convention validator for done-pending, ideas, known-issues, MVP priorities, and human-readable note shape. |
+| [`scripts/check-content-semantics.mjs`](./scripts/check-content-semantics.mjs) | Semantic content validator for placeholders, dead links, plan status markers, and theoretical-risk wording. |
+| [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge. |
+| [`scripts/check-live-routing.mjs`](./scripts/check-live-routing.mjs) | Live routing hygiene validator for retired lane references and deterministic decision-link repair. |
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
-| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations (`1.0.0-lane-restructure.mjs`, `1.0.2-v0-content-rewrite.mjs`, `1.4.1-unavailable-downgrade.mjs`) and the registry index (`_index.mjs`). |
+| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, and live-routing hygiene. |
 | [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
 | [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
 | [`scripts/lib/findings.mjs`](./scripts/lib/findings.mjs) | Shared finding shape and report renderer for newer checks. |
 | [`scripts/lib/template-renderer.mjs`](./scripts/lib/template-renderer.mjs) | Template substitution and unresolved-placeholder detection. |
 | [`scripts/lib/scaffold-plan.mjs`](./scripts/lib/scaffold-plan.mjs) | Shared scaffold-plan summary helpers. |
+| [`scripts/lib/live-routing-fixers.mjs`](./scripts/lib/live-routing-fixers.mjs) | Shared pure fixers for retired live-lane paths and unique decision links. |
 | [`scripts/lib/paths.mjs`](./scripts/lib/paths.mjs) | Shared path-resolution helpers: `findSkillDir()`, `resolveProjectsConfigPath()` (the XDG user-specific `projects.json` lookup all validators use). |
 | [`scripts/lib/skip.mjs`](./scripts/lib/skip.mjs) | Shared `.pm/skip` parser used by validators to ignore project-specific files. |
-| [`test/`](./test/) | Node built-in test suite for the shared convention, markdown, template, and finding helpers. |
+| [`test/`](./test/) | Node built-in test suite for shared helpers plus AGENTS, roadmap, and live-routing behavior. |
 | [`LICENSE`](./LICENSE) | MIT license. |
 
 ## 📐 Design Principles
 
-- **Current truth before history.** Update durable docs first; use history as the final chronological log.
+- **Current truth before history.** Update durable docs first; use history as the final human-readable chronological log.
 - **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
 - **Bugs become knowledge.** Active bug tracking stays in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
 - **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md`.
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
-- **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md`.
+- **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md` with TOC links that match real H2 sections and plan/decision/feature links inside each section.
+- **Live instructions route future agents.** README, current status, folder notes, and feature pages must point to current lanes and existing notes.
+- **PM folders do not store secrets.** Keep account purpose and credential location in PM notes; keep plaintext credentials in external secret stores.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
 - **Conventions have one model.** Reusable PM vocabulary lives in `scripts/lib/convention.mjs`; scripts and checks import it instead of copying lists.
 - **Quality gates are local.** The repo stays dependency-free; `node --test` and `scripts/check-skill.mjs` cover the internal model and public-doc drift.

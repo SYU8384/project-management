@@ -43,6 +43,9 @@ check-vault-structure guard fails):
     (e.g. `roadmap/plans/`, `features/`, `decisions/`). Use it to state
     lane-local rules inline; keep it short (≤ 50 meaningful lines per
     the body-bloat guard).
+    Include link-hygiene and secret-hygiene rules when the lane needs
+    them: live links must point to existing current-lane notes, and PM
+    notes must not store plaintext credentials or tokens.
   - Nested folder notes should also add a `Back to <parent folder>`
     link in the Navigation section above (e.g., `roadmap/plans/plans.md`
     adds `Back to roadmap`).

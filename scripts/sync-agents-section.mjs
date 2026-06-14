@@ -20,7 +20,7 @@
  *     rendered template. If equal, skip with "already in sync".
  *   - Otherwise, write the new section in place. The script does not
  *     touch any other part of the AGENTS.md.
- *   - Optionally append a `chore(pm):` history bullet to the PM
+ *   - Optionally append an outcome-first history bullet to the PM
  *     folder's `history/YYYY-MM/history-YYYY-MM-DD.md` (if the file
  *     exists). Use `--no-history` to skip this.
  *
@@ -121,7 +121,7 @@ function appendHistoryBullet(pmFolder) {
   const monthDir = join(pmFolder, "history", `${yyyy}-${mm}`);
   const dayFile = join(monthDir, `history-${yyyy}-${mm}-${day}.md`);
   if (!existsSync(dayFile)) return false;   // don't create new history files
-  const bullet = `\n- **chore(pm):** sync AGENTS.md \`## PM folder\` section with the latest portable template (sync-agents-section.mjs)\n`;
+  const bullet = `\n- **The code repo PM instructions now match the portable template.** chore(pm): sync AGENTS.md \`## PM folder\` section with the latest portable template (sync-agents-section.mjs).\n`;
   appendFileSync(dayFile, bullet);
   return true;
 }

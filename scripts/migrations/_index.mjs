@@ -21,4 +21,6 @@ export default [
   "1.8.0-plans-related-h3-repair.mjs",
   "1.8.0-parent-subfolder-links.mjs",
   "1.9.0-known-bugs-shape.mjs",
+  "1.10.0-human-readable-pm-notes.mjs",
+  "1.11.0-live-routing-and-feature-link-hygiene.mjs",
 ];

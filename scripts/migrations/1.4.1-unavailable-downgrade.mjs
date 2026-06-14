@@ -108,7 +108,7 @@ function apply({ pmFolder, ctx }) {
 
   return {
     suggestedHistory: [
-      `- fix(pm): downgrade legacy \`access: "unavailable"\` entries to \`access: "read-only"\` (migration \`1.4.1-unavailable-downgrade\`). Downgraded ${unavailable.length} project entr${unavailable.length === 1 ? "y" : "ies"}: ${unavailable.join(", ")}.`,
+      `- **Legacy no-PM-access registrations now use the read-only collaborator model.** fix(pm): downgrade \`access: "unavailable"\` entries to \`access: "read-only"\` (migration \`1.4.1-unavailable-downgrade\`). Downgraded ${unavailable.length} project entr${unavailable.length === 1 ? "y" : "ies"}: ${unavailable.join(", ")}.`,
     ],
     manualReview: [
       `Rewrote ${unavailable.length} project entr${unavailable.length === 1 ? "y" : "ies"}: ${unavailable.join(", ")}. If any was a pre-v1.4.1 authoritative project, re-run \`bootstrap-pm.mjs --access authoritative --project <name>\` to upgrade.`,

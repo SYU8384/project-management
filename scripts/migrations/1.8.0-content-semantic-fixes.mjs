@@ -227,7 +227,7 @@ function apply({ pmFolder, ctx: c }) {
 
   return {
     suggestedHistory: [
-      `- chore(pm): apply migration \`1.8.0-content-semantic-fixes\` — close the content-semantic auto-fix gap. Auto-fixed: ${log.length} file(s) across 5 categories (A: domain/lane grouping placeholder, B: dead wikilink strip, C: plan \`status:\` body-marker sync, D: theoretical-risk wording markers, E: parent folder-note subfolder links). Manual review: ${allManualReview.length} item(s).`,
+      `- **Content-semantic roadmap drift is now marked or repaired deterministically.** chore(pm): apply migration \`1.8.0-content-semantic-fixes\`. Auto-fixed: ${log.length} file(s) across 5 categories (A: domain/lane grouping placeholder, B: dead wikilink strip, C: plan \`status:\` body-marker sync, D: theoretical-risk wording markers, E: parent folder-note subfolder links). Manual review: ${allManualReview.length} item(s).`,
     ],
     manualReview: allManualReview,
   };

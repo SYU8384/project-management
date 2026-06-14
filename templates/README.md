@@ -21,6 +21,7 @@ owner: PM
 - [[#Folder Structure]]
 - [[#Quick Rules]]
 - [[#Live PM Folder Rule]]
+- [[#Link and Secret Hygiene]]
 - [[#Naming Conventions]]
 - [[#Update Frequency]]
 - [[#Conventions by Page Type]]
@@ -108,6 +109,7 @@ owner: PM
 | Roadmap item completed | Mark the relevant roadmap item done and add a brief `history/` entry |
 | Entire `roadmap/done-pending.md` section completed | Distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the completed section; if it mirrors a completed planning file, archive that planning file too |
 | Product positioning or target user changed | `PRODUCT.md`, then `history/` |
+| Credential, token, API key, recovery code, or private connection detail appears in notes | Redact it from PM notes. Keep only account purpose/status and where credentials live outside the PM folder |
 
 **When to write a feature page** (vs only a `system/` doc): if it's a coherent user-facing capability an agent could ask "tell me about X" end-to-end, write a `features/<feature>.md`. If it's a technical component (auth, runtime, multi-tenancy) that informs multiple features, keep it in `system/` only and let feature pages link to it. Full decision rule, body shape, and frontmatter fields in [Conventions by Page Type → Feature pages](#feature-pages-featuresfeaturemd).
 
@@ -135,6 +137,13 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 
 For the full permission policy matrix, see `REFERENCE.md` → "Permission Policy".
 
+## Link and Secret Hygiene
+
+- Live notes outside `history/` and `archive/` use current lanes: `roadmap/plans/`, root `decisions/`, and `Relevant decisions:`.
+- Do not write live instructions that point agents to retired lanes. Run `check-live-routing.mjs --fix` after PM cleanup or migration work.
+- Feature frontmatter (`source_of_truth`, `roadmap_source`, `related`) and feature body references should point to existing notes. Prefer wikilinks in the body so Obsidian and validators can catch drift.
+- PM notes do not store plaintext passwords, tokens, API keys, private keys, recovery codes, or credential-bearing URLs. Document the account purpose/status and the external credential location instead.
+
 ## Naming Conventions
 
 | Type | Convention | Example |
@@ -159,9 +168,9 @@ For the full permission policy matrix, see `REFERENCE.md` → "Permission Policy
 - `roadmap/plans/`: update when a plan or implementation strategy is created or revised before fully shipped.
 - `decisions/`: add a new typed decision (`ADR / PRD / MKT / VND / POL / NEG / EXP`) when a significant decision is made. Update existing decisions only via `supersedes:` chains — do not edit an `accepted` decision's body to re-litigate it.
 - `features/`: update when a feature's current behavior, known issues, or roadmap changes.
-- `history/`: update last with brief chronological bullets after meaningful work is finished. New month folders must include `YYYY-MM/YYYY-MM.md` and be linked from `history/history.md`.
+- `history/`: update last with outcome-first bullets after meaningful work is finished. Each bullet starts with a bold human-readable sentence, then includes a concise conventional type/scope token and implementation detail. New month folders must include `YYYY-MM/YYYY-MM.md` and be linked from `history/history.md`.
 - `CURRENT_STATUS.md` (at root): update weekly with the current snapshot — top priorities, blocked, recent wins, major risks, stale docs. PM agent maintains.
-- `README.md`: update when folder structure or logging rules change.
+- `README.md`: update when folder structure, live routing, link hygiene, secret-handling rules, or logging rules change.
 
 ## Conventions by Page Type
 
@@ -180,7 +189,7 @@ Quick reference for how each page type is written. Detailed body shape lives in 
 
 ### Roadmap notes (`roadmap/*.md`)
 
-- **Ideas:** follow `templates/ideas.md`: `## Contents`, `## Status Key` (with the color-coded status scheme — see "Status color scheme" below), `## Idea Register` (4-column table with colored status in the Status column), five status buckets (`## Brainstorming` / `## Scoping` / `## Approved` / `## Implemented` / `## Declined`), `## Idea Details` (one section per idea with a colored Status line), and `## Navigation`. Use stable IDs such as `IDEA-001`; do not rely on list position for identity. The color scheme is adopted in `decisions/D-008_POL_ideas-status-colors.md`.
+- **Ideas:** follow `templates/ideas.md`: `## Contents`, `## Status Key` (with the color-coded status scheme — see "Status color scheme" below), `## Idea Register` (4-column table with colored status in the Status column), five status buckets (`## Brainstorming` / `## Scoping` / `## Approved` / `## Implemented` / `## Declined`), `## Idea Details` (one section per idea with `**Summary:**`, a colored Status line, owner/next step, value, open questions, and links), and `## Navigation`. Use stable IDs such as `IDEA-001`; do not rely on list position for identity. Summary is a 2-4 sentence human-readable description; auto-fix inserts `TBD` and the maintainer supplies the prose.
 - **Known issues:** follow `templates/known-issues.md` (OpenManager format). Two top-level sections: `## Active` (with the lead paragraph describing the domain-grouped convention and the migration rule), `## Deferred`. **There is no `## Fixed` section** — fixed items are migrated to `docs/Developer Guide/known-bugs.md` and removed from this file. A `### <Domain>` section that becomes fully fixed (no remaining active items) is archived to `archive/known-issues-<domain>-archived.md` per the planning-note archive convention (drop the date prefix, preserve the domain slug, append `-archived`). Each section is grouped by `### <Domain>` H3 subsections (e.g., `### Migrations`, `### Validators`, `### AGENTS.md integration`, `### CLI surface`, `### Documentation`). Each item uses one of the OpenManager checkbox formats:
   - `- [ ] **PENDING (YYYY-MM-DD):** <description>.` — active items.
   - `- [ ] **PENDING:** <description>.` — active items without a date.
@@ -193,7 +202,7 @@ Quick reference for how each page type is written. Detailed body shape lives in 
   - `- [ ] **PENDING:** <description>.` — in-flight items.
 
   The lane breakdown is project-specific; the bootstrap writes a worked example with the project-management skill's natural lanes (Bootstrap / Validations / Migrations / AGENTS.md integration / CLI surface / Documentation / OpenClaw PM-agent integration). Users replace the example lanes with their own project's lanes. The convention is adopted in `decisions/D-010_POL_mvp-priorities-format.md`.
-- **Done/pending:** follow `templates/done-pending.md`. The file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a `Planning note:` line, a DONE/PENDING checklist, and `Relevant decisions:` / `Relevant features:` bullets; (b) **general done/pending items** without a dedicated planning note, organized by date. Planning-note mirrors always take priority in the file's order. The H2 for a planning-note mirror is the slug only (e.g., `## v1.5.0 backlog from post-v1.4.1 audit`), not the date-prefixed stem — the validator at `scripts/check-pm-consistency.mjs` accepts both date-prefixed and slug-only H2. The convention is adopted in `decisions/D-007_POL_done-pending-format.md`.
+- **Done/pending:** follow `templates/done-pending.md`. The file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a linked `Planning note:` line, a DONE/PENDING checklist, and `Relevant decisions:` / `Relevant features:` / optional `Relevant system:` / `Relevant docs:` lines; (b) **general done/pending items** without a dedicated planning note, organized by date. Planning-note mirrors always take priority in the file's order. The H2 for a planning-note mirror is the slug only (e.g., `## v1.5.0 backlog from post-v1.4.1 audit`), not the date-prefixed stem. Contents links are generated from actual H2 headings in this note; they do not point directly to plan files. Use `Relevant decisions:`, not `Relevant ADRs:`.
 - **Routing:** rough ideas stay in `ideas.md`; approved concrete work gets a planning note and a `done-pending.md` mirror section; active bugs and risks stay in `known-issues.md`; engineering bug root causes and fixes are mirrored in `docs/Developer Guide/known-bugs.md`.
 
 #### Status color scheme (`ideas.md`)
@@ -224,7 +233,7 @@ The section headers (`## Brainstorming` / `## Scoping` / etc.) and the per-idea 
 - **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
 - **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). This rename is mandatory. Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with the planning note link. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2s for compatibility.
+- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with `Planning note: [[roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`, linked relevant notes, and a Contents TOC regenerated from actual H2 headings. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2s for compatibility, and `check-roadmap-conventions.mjs --fix` repairs deterministic TOC/link drift.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
 ### Feature pages (`features/<feature>.md`)
@@ -232,6 +241,7 @@ The section headers (`## Brainstorming` / `## Scoping` / etc.) and the per-idea 
 - **When to add:** a coherent user-facing capability (chat, memory, email) or a coherent technical pillar (runtime, isolation) that has accumulated enough cross-cutting context to need a "tell me everything about X" entry point. Not for every system/ doc — only for things with cross-cutting context. Most system/ docs are best surfaced via the `system/` index alone.
 - **Body sections:** Status (alpha/beta/stable/deprecated), Current Behavior, Known Issues, Roadmap, Relevant Decisions, Source of Truth.
 - **Frontmatter fields:** `pageType: feature`, `status`, `owner`, `source_of_truth` (path to the system/ doc that is canonical for this feature), `roadmap_source` (path to the relevant roadmap section).
+- **Link hygiene:** `source_of_truth`, `roadmap_source`, `related`, and body references must resolve to existing notes. Body references use wikilinks; frontmatter may use either wikilinks or PM-relative paths, but do not leave stale paths.
 - **Don't duplicate content:** feature pages *point* to system/, `roadmap/plans/`, and `decisions/`; they don't *replace* them. If a system/ doc changes, the feature page's `source_of_truth` link is still valid; no edit needed unless the feature itself changes.
 
 ### Decisions (`decisions/D-NNN_<type>_<slug>.md`)

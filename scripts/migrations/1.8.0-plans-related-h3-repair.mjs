@@ -98,7 +98,7 @@ function apply({ pmFolder, ctx: c }) {
   }
   return {
     suggestedHistory: [
-      `- chore(pm): apply migration \`1.8.0-plans-related-h3-repair\` — demoted \`## Related\` H2 to \`### Related\` H3 in ${totalChanges} file(s). Closes the v1.7.0 folder-note shape violation introduced by the 1.0.2-v0-content-rewrite.mjs migration.`,
+      `- **Folder notes no longer exceed the H2 shape limit because of Related sections.** chore(pm): apply migration \`1.8.0-plans-related-h3-repair\` and demote \`## Related\` H2 to \`### Related\` H3 in ${totalChanges} file(s). Closes the v1.7.0 folder-note shape violation introduced by the 1.0.2-v0-content-rewrite.mjs migration.`,
     ],
     manualReview: [],
   };

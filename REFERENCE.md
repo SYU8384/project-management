@@ -45,7 +45,10 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
 - `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale docs
 - `node <skill_dir>/scripts/check-pm-consistency.mjs` — verifies visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, and archive/sync-conflict naming
-- `node <skill_dir>/scripts/check-roadmap-conventions.mjs` — verifies the four content-level roadmap conventions (D-007 `roadmap/done-pending.md` slug-only H2, D-008 `roadmap/ideas.md` status-color emojis, D-009 `roadmap/known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-010 `roadmap/mvp-priorities.md` `### <Lane>` H3 in `## MVP Priorities`). Supports `--fix` for the deterministic parts; D-009 `### <Domain>` and D-010 `### <Lane>` surface as `MANUAL REVIEW` since the names are project-specific.
+- `node <skill_dir>/scripts/check-roadmap-conventions.mjs` — verifies the content-level roadmap conventions (D-007 `roadmap/done-pending.md` slug-only H2, D-008 `roadmap/ideas.md` status-color emojis, D-009 `roadmap/known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-010 `roadmap/mvp-priorities.md` `### <Lane>` H3 in `## MVP Priorities`, D-012 human-readable done-pending/ideas shape). Supports `--fix` for deterministic parts; domain/lane names, ambiguous links, and `TBD` idea summaries surface as `MANUAL REVIEW`.
+- `node <skill_dir>/scripts/check-content-semantics.mjs` — checks content-level semantic drift such as placeholder grouping, dead wikilinks, plan status/body mismatch, and theoretical-risk wording.
+- `node <skill_dir>/scripts/check-known-bugs-shape.mjs` — verifies `docs/Developer Guide/known-bugs.md` follows the D-011 engineering bug knowledge shape.
+- `node <skill_dir>/scripts/check-live-routing.mjs` — verifies live notes outside `history/` and `archive/` use current `roadmap/plans/` and root `decisions/` lanes, not retired routing. Supports `--fix` for deterministic path/decision-link repairs.
 - `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
 
 For changes to the skill repository itself, also run:
@@ -63,7 +66,7 @@ Then check the schema and content dimensions:
 2. **H1 vs filename** — each note's H1 matches its filename stem (no leftover numbered prefixes, no date prefix in the H1).
 3. **Cross-link integrity** — all `[[wiki-link]]` targets resolve to existing files.
 4. **CURRENT_STATUS freshness** — the weekly snapshot exists and is not stale.
-5. **Planning ↔ roadmap mirror** — each active or proposed `roadmap/plans/*.md` note has a matching mirror section in `roadmap/done-pending.md`. The canonical H2 is slug-only; validators also accept date-prefixed legacy H2s.
+5. **Planning ↔ roadmap mirror** — each active or proposed `roadmap/plans/*.md` note has a matching mirror section in `roadmap/done-pending.md`. The canonical H2 is slug-only; validators also accept date-prefixed legacy H2s. The Contents TOC links only to actual H2s inside `done-pending.md`; the section body links to the planning note and relevant decisions/features/system/docs.
 6. **History `kind:`** — every `history/YYYY-MM/history-YYYY-MM-DD.md` has a `kind: changelog | worklog | mixed` field.
 7. **Archive `archived:` field** — every moved archive file named `archive/*-archived.md` has both a meaningful `status:` (lifecycle) and an `archived: <date>` field. Folder indexes such as `archive/archive.md` must not carry `archived:`.
 8. **Folder structure** — all required folders and root files exist; feature/ADR/roadmap index pages exist where needed.
@@ -71,7 +74,9 @@ Then check the schema and content dimensions:
 10. **Docs guide indexes** — `docs/Admin Guide/Admin Guide.md`, `docs/Developer Guide/Developer Guide.md`, `docs/Quick Commands/Quick Commands.md`, and `docs/User Guide/User Guide.md` are folder-note indexes only; durable content lives in independent notes.
 11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with the D-011 per-section field shape (status, symptoms, root cause, solution/verification, references). Missing fields are FAIL; TBD/placeholder fields are MANUAL REVIEW.
 12. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
-13. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only`; no unresolved placeholders remain.
+13. **Live routing hygiene** — live notes outside `history/` and `archive/` do not mention retired PM lanes, dead decision paths, or `Relevant ADRs:` labels. Feature pages use existing `source_of_truth`, `roadmap_source`, and related links.
+14. **Sensitive-data hygiene** — PM notes do not contain plaintext passwords, tokens, private keys, API secrets, recovery codes, or credential-bearing URLs. Keep account purpose/status in PM notes; keep credentials in a password manager, local env file, secret store, or admin console.
+15. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only`; no unresolved placeholders remain.
 
 ### Phase 2: Plan
 
@@ -86,9 +91,25 @@ Apply the fixes in this order:
 
 1. **Schema first** (REFERENCE.md + templates) — establishes the new convention.
 2. **Verify, then migrate** existing files — each file read first to determine its original lifecycle / kind.
-3. **Update history** with brief bullets recording what was fixed.
+3. **Update history** with outcome-first bullets recording what changed and why.
 4. **Validate** with `node <skill_dir>/scripts/check-pm.mjs`.
 5. **Re-run the audit** to confirm a clean state.
+
+---
+
+## PM Folder Quality Audit
+
+Use this when the user asks for a PM folder "audit", "quality check", "checkup", "cleanup", or asks whether a PM folder is useful for humans. This workflow is broader than structural validation.
+
+1. Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` and note both FAIL and MANUAL REVIEW findings.
+2. Run targeted validators for the lanes under review: `check-roadmap-conventions.mjs`, `check-live-routing.mjs`, and `check-known-bugs-shape.mjs`. Use `--fix` only for deterministic repairs.
+3. Read live routing docs first: `README.md`, `CURRENT_STATUS.md`, folder notes, feature pages, and current docs guide notes. Replace retired routes with current `roadmap/plans/`, root `decisions/`, and existing wikilinks.
+4. Refresh `CURRENT_STATUS.md` so top priorities, recent wins, blockers, and risks match the current PM folder.
+5. Compress roadmap lanes for humans: keep `roadmap/done-pending.md` focused on active unresolved work and short outcome bullets; move fixed engineering detail to `docs/Developer Guide/known-bugs.md`; move rough ideas to `roadmap/ideas.md` with real summaries.
+6. Scan for sensitive data. Redact plaintext credentials, tokens, private keys, recovery codes, and credential-bearing URLs; leave purpose/status and the external credential location.
+7. Update current-state docs before history. History is last and uses outcome-first bullets.
+
+Do not auto-invent product meaning. When the tools insert `TBD` or report ambiguous links, read the surrounding note and either write the human summary from existing context or leave a manual-review item.
 
 ---
 
@@ -119,7 +140,7 @@ node <skill_dir>/scripts/sync-agents-section.mjs --config <path>    # explicit p
 - Extracts the existing `## PM folder` section from `<code_repo>/AGENTS.md` (anchored to `^## PM folder$` and the next `\n## ` heading).
 - If the extracted section equals the rendered template (after `normalizeMarkdownSection`), the project is in sync; the script reports `## PM folder is already in sync` and moves on.
 - Otherwise, replaces the section in place. All other AGENTS.md content (project-specific commands, architecture notes, conventions) is preserved untouched.
-- If the PM folder has a `history/YYYY-MM/history-YYYY-MM-DD.md` file for today, appends a `chore(pm):` bullet. If the file does not exist, the bullet is skipped (the script does not create new history files).
+- If the PM folder has a `history/YYYY-MM/history-YYYY-MM-DD.md` file for today, appends an outcome-first `chore(pm):` bullet. If the file does not exist, the bullet is skipped (the script does not create new history files).
 
 ### Exit codes
 
@@ -245,7 +266,7 @@ Preserves `archive/` and `history/` untouched. Idempotent: re-running is a no-op
 > 3. Read the project-management skill at `<skill_dir>/SKILL.md`.
 > 4. Apply the project README before any generic rule in this skill.
 > 5. Update current-state docs before history when behavior, architecture, data flow, runtime, auth, database, connectors, deployment, UX, user/admin/developer workflow, quick commands, roadmap status, or documentation structure changes.
-> 6. Update `history/` last with brief chronological bullets.
+> 6. Update `history/` last with outcome-first bullets that a human can scan without reading the code diff.
 > 7. In the final response, state exactly which project/vault files were updated.
 
 ### Project Detection
@@ -420,10 +441,10 @@ When adding or moving a docs note, update the nearest guide index and `docs/docs
 
 The four standard roadmap notes are active working notes, not folder notes, but they still need a predictable scan shape:
 
-- `roadmap/ideas.md` follows `templates/ideas.md`: `## Contents`, `## Status Key`, `## Idea Register`, status buckets (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`), `## Idea Details`, and `## Navigation`. Use stable IDs (`IDEA-001`, `IDEA-002`) so links survive reordering.
+- `roadmap/ideas.md` follows `templates/ideas.md`: `## Contents`, `## Status Key`, `## Idea Register`, status buckets (`## Brainstorming`, `## Scoping`, `## Approved`, `## Implemented`, `## Declined`), `## Idea Details`, and `## Navigation`. Use stable IDs (`IDEA-001`, `IDEA-002`) so links survive reordering. Every idea detail section starts with `**Summary:**` containing a 2-4 sentence human-readable description; auto-fix inserts `TBD` rather than inventing prose.
 - `roadmap/known-issues.md` follows `templates/known-issues.md`: `## Contents`, `## Active`, `## Deferred`, and `## Navigation`. Active and deferred items are grouped under `### <Domain>` subsections. Fixed items move to `docs/Developer Guide/known-bugs.md` and are removed from `known-issues.md`.
 - `roadmap/mvp-priorities.md` follows `templates/mvp-priorities.md`: `## Contents`, `## Alpha Goal`, `## MVP Priorities`, `## Not Yet MVP`, and `## Navigation`.
-- `roadmap/done-pending.md` follows `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`.
+- `roadmap/done-pending.md` follows `templates/done-pending.md`: `## Contents`, planning-note mirrored sections, `## General Done/Pending Without Dedicated Planning Note`, and `## Navigation`. Contents links must match actual H2 headings in the same note; relevant plan/decision/feature/system/docs links live inside each mirror section.
 - Keep rough ideas in `ideas.md`, concrete approved work in `roadmap/plans/` plus `done-pending.md`, active bugs/risks in `known-issues.md`, and engineering bug knowledge in `docs/Developer Guide/known-bugs.md`.
 
 ---
@@ -435,14 +456,16 @@ Concrete plans in `roadmap/plans/` must be reflected in `roadmap/done-pending.md
 `roadmap/done-pending.md` should mirror active or proposed planning notes first:
 
 - Create one `## <slug>` section for each active or proposed concrete `roadmap/plans/YYYY-MM-DD_<slug>.md` note except `plans.md`.
-- Start each mirrored section with `Planning note: [[...|YYYY-MM-DD_<slug>]]`.
-- Summarize the plan's current done/pending checklist under that section.
+- Start each mirrored section with `Planning note: [[roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`.
+- Summarize the plan's current done/pending checklist under that section in human-readable DONE/PENDING bullets.
+- Add `Relevant decisions:`, `Relevant features:`, and, when applicable, `Relevant system:` / `Relevant docs:` lines with actual wiki links. Do not use the old `Relevant ADRs:` label.
+- Keep the `## Contents` TOC generated from real H2 headings in `done-pending.md`; never put plan-file links in the TOC.
 - Keep `## General Done/Pending Without Dedicated Planning Note` for lightweight done/pending work that does not deserve a concrete planning note.
 - Do not hide concrete plans only in the general section.
 
 When creating or updating a planning note:
 
-1. Add or update the matching planning-file-stem section in `roadmap/done-pending.md`.
+1. Add or update the matching slug-only section in `roadmap/done-pending.md`, link the planning note from the section body, and keep Contents aligned to actual H2 headings.
 2. Keep high-level priority framing in `roadmap/mvp-priorities.md` if the plan changes MVP direction.
 3. Put bugs or risks discovered during planning in `roadmap/known-issues.md`.
 4. Move rough ideas that are not approved plans to `roadmap/ideas.md`.
@@ -457,7 +480,7 @@ When a plan ships:
 6. If a `roadmap/plans/*.md` note is complete even without a matching roadmap section, first distill durable truth into `system/`, `docs/`, or `PRODUCT.md`, then move it to `archive/`.
 7. Update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 8. Validate that the new archive filename is unique, each active planning note has a matching `done-pending.md` section, and no stale old planning stems remain.
-9. Add a brief dated entry to `history/YYYY-MM/history-YYYY-MM-DD.md` (e.g., `history/2026-05/history-2026-05-04.md`).
+9. Add an outcome-first dated entry to `history/YYYY-MM/history-YYYY-MM-DD.md` (e.g., `history/2026-05/history-2026-05-04.md`).
 
 Archived planning files use `<slug>-archived.md` (date prefix and any number are dropped; the slug from the original filename is preserved). The `created:` frontmatter is kept; an `archived: <date>` field is added. The renumbering rule from earlier conventions is no longer required.
 
@@ -572,9 +595,9 @@ The skill defines the schema and the stale detection concept. Validation scripts
 
 When creating a new `history/YYYY-MM/history-YYYY-MM-DD.md`, add a `kind:` field to the frontmatter:
 
-- `kind: changelog` — purely factual bullets ("Added X", "Fixed Y"). No reasoning. Quick to scan.
-- `kind: worklog` — reasoning, decisions, tradeoffs, why-we-didn't-do-X. Longer form. The "what" can be inferred from the rationale.
-- `kind: mixed` — both fact bullets and reasoning mixed in one entry. The default for daily files that mix both.
+- `kind: changelog` — outcome-first factual bullets. Each bullet starts with a bold sentence explaining what changed for humans, then includes concise implementation detail.
+- `kind: worklog` — reasoning, decisions, tradeoffs, why-we-didn't-do-X. Longer form. The first sentence still states the human-readable outcome.
+- `kind: mixed` — outcome-first bullets plus reasoning in one entry. The default for daily files that mix both.
 
 When reading history, agents and humans can filter by `kind` to find the level of detail they need. Existing history files have been retroactively tagged; new files should pick the right `kind` at creation time.
 
@@ -582,7 +605,7 @@ When reading history, agents and humans can filter by `kind` to find the level o
 
 ## History Conventions
 
-This section collects the conventions for the `history/` folder: file organization (year-month) and bullet prefixes (Conventional Commits).
+This section collects the conventions for the `history/` folder: file organization (year-month), human-readable bullet shape, and Conventional Commits type tokens.
 
 ### History organization (year-month folders)
 
@@ -608,9 +631,17 @@ history/
 
 **Filename convention:** `history-YYYY-MM-DD.md` (date is in the filename AND in the file's `created:` frontmatter; the year-month subfolder is for organization only).
 
-### History bullet prefixes (Conventional Commits)
+### History bullet shape
 
-Adopt [Conventional Commits](https://www.conventionalcommits.org/) prefixes for history bullets. The 10 standard types:
+History is for humans first. Each bullet starts with a bold outcome sentence that explains what the change actually does, then includes a concise conventional type/scope token and implementation detail. This preserves machine-friendly search without making the file read like raw git commit comments.
+
+Canonical shape:
+
+```markdown
+- **Outcome sentence explaining the real change.** type(scope): concise implementation detail, verification, PR/deploy/migration link, or why it matters.
+```
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) type tokens after the bold sentence. The 10 standard types:
 
 | Prefix | Use for |
 |---|---|
@@ -640,17 +671,17 @@ kind: mixed
 
 # 2026-05-04
 
-- **feat(auth):** add Google sign-in flow (PR #1234)
-- **fix(email):** handle OAuth provider misconfiguration in the wizard
-- **docs:** update README with new `tracker:` field convention
-- **chore(deps):** bump minimax SDK to v2.3
-- **refactor(system/):** split connectors-and-sessions.md into per-connector docs
-- **BREAKING CHANGE:** the `source_of_truth` field replaces `current_behavior_source` on feature pages (migration in `archive/2026-05-04_current_behavior_source-archived.md`)
+- **Users can sign in with Google from the auth screen.** feat(auth): add the Google sign-in flow (PR #1234).
+- **Email setup no longer fails silently when the provider is misconfigured.** fix(email): handle OAuth provider misconfiguration in the wizard.
+- **The issue tracker convention is documented where maintainers look first.** docs(pm): update README with the new `tracker:` field convention.
+- **Dependency updates are isolated from product behavior.** chore(deps): bump minimax SDK to v2.3.
+- **Connector docs are easier to maintain by topic.** refactor(system): split connectors-and-sessions.md into per-connector docs.
+- **Feature pages now use `source_of_truth` instead of `current_behavior_source`.** BREAKING CHANGE: migration recorded in `archive/2026-05-04_current_behavior_source-archived.md`.
 ```
 
-**The win:** when a bug recurs, `grep -E "^fix.*<symptom>" history/2026-*/history-*.md` finds all past fixes and their solutions. The Conventional Commits format is the de facto standard for code commits and changelogs; using it in history makes the skill's history files compatible with existing tooling (e.g., `conventional-changelog`, `standard-version`).
+**The win:** a human can scan the bold sentences for what changed, while `grep -E "(fix|feat|docs|refactor).*<symptom>" history/2026-*/history-*.md` still finds past fixes and their solutions. The conventional token stays present, but it no longer dominates the sentence.
 
-**Optional, not required.** Agents are encouraged to use Conventional Commits prefixes, but the skill accepts free-form bullets too.
+**Required for new history.** New agent-authored history bullets should use the outcome-first shape. Existing history files are historical records; do not rewrite old prose just to match this convention.
 
 ---
 
@@ -852,7 +883,7 @@ The `access` field is set during Setup Intake or when the project is added to th
 7. Did a new idea, declined proposal, or backlog candidate appear? If yes, update `roadmap/ideas.md`.
 8. Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md`. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment). Architecture shifts default to `ADR`.
 9. Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
-10. Always add a `history/YYYY-MM/history-YYYY-MM-DD.md` bullet for what changed and why (use Conventional Commits prefixes — see "History Conventions").
+10. Always add a `history/YYYY-MM/history-YYYY-MM-DD.md` bullet for what changed and why. Use the outcome-first history shape: bold human-readable sentence first, then the conventional type/scope token and concise detail.
 
 **The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
 
@@ -938,9 +969,9 @@ If a feature, fix, or change has **multi-step work, multi-session work, or many 
    - A clear title and status (`proposed` initially)
    - Context, options considered, decision
    - A step-by-step implementation checklist
-2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the plan's checklist items and a link to the date-prefixed planning note.
+2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the plan's checklist items, a `Planning note: [[roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]` line, and linked `Relevant decisions:` / `Relevant features:` lines. Regenerate the Contents TOC from actual H2 headings.
 3. **Update plan status** from `proposed` → `active` when implementation begins.
-4. **Implement step by step.** For each step completed, mark the done-pending checkbox AND add a history bullet. Update the planning file's checklist as you go.
+4. **Implement step by step.** For each step completed, mark the done-pending checkbox AND add an outcome-first history bullet. Update the planning file's checklist as you go.
 5. **Distill + archive** when shipped (per existing rules): move the plan to `archive/<slug>-archived.md`, distill the durable behavior into `system/`, and add the closing history bullets.
 
 **Don't skip the plan for big tasks.** If the user says "this is a big task" but the agent dives in without writing the plan, that's a violation. The trigger phrase is a clear signal to plan first.
@@ -1093,8 +1124,8 @@ Management folders are live. Agents may create notes inside the right folder whe
 
 | Action | Ask the user first? | Rule |
 |---|---:|---|
-| Create `history/YYYY-MM/history-YYYY-MM-DD.md` | No | Use for completed meaningful work on that date. Add `kind: changelog | worklog | mixed` to the frontmatter. If creating the month folder, also create/update `history/YYYY-MM/YYYY-MM.md` and link it from `history/history.md`. Use Conventional Commits prefixes (`feat:`, `fix:`, etc.) for each bullet — see "History Conventions" |
-| Prefix history bullets with Conventional Commits types (`feat:`, `fix:`, etc.) | No (encouraged) | See "History bullet prefixes" for the 10 standard types and optional scope syntax |
+| Create `history/YYYY-MM/history-YYYY-MM-DD.md` | No | Use for completed meaningful work on that date. Add `kind: changelog | worklog | mixed` to the frontmatter. If creating the month folder, also create/update `history/YYYY-MM/YYYY-MM.md` and link it from `history/history.md`. Use outcome-first bullets: bold human-readable sentence first, then the conventional type/scope token and concise detail |
+| Use conventional type/scope tokens (`feat:`, `fix:`, etc.) in history bullets | No (required for new agent-authored history) | See "History bullet shape" for the 10 standard types and optional scope syntax |
 | Add a `tracker:` field to a `roadmap/known-issues.md` entry | No (encouraged) | Use when the project has an external issue tracker (GitHub, GitLab, Linear, etc.). Format: `**Tracker:** [GH-NNNN](url)`. See "External Issue Tracker Integration" |
 | Create a dated `roadmap/plans/<date>_slug.md` for an approved plan | No | Also update `roadmap/done-pending.md`. Required for big tasks (multi-step / multi-session / many rounds) — see "Big Tasks Must Be Planned" |
 | Create `decisions/D-NNN_<type>_<slug>.md` for a significant decision | No | Decision lifecycle: `proposed` → `accepted` → `active` (temporary) → `superseded` / `deprecated`. If superseding, set the new decision's `supersedes:` field |

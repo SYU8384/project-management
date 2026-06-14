@@ -30,7 +30,7 @@ owner: PM
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
 
-Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into `roadmap/plans/` and `roadmap/done-pending.md`.
+Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into `roadmap/plans/` and `roadmap/done-pending.md`. Every idea detail section needs a `**Summary:**` field with a 2-4 sentence human-readable description; auto-fix may insert `TBD`, but agents must not invent the missing prose.
 
 **Status colors:** 🟣 Brainstorming · 🟡 Scoping · 🔵 Approved · 🟢 Implemented · 🔴 Declined. The colors appear in the Status Key, the Idea Register, and the Idea Details sections. (Convention adopted in `decisions/D-008_POL_ideas-status-colors.md`.)
 
@@ -74,6 +74,7 @@ Ideas here are not commitments. Keep rough proposals here until they are approve
 
 ### IDEA-001 - <idea title>
 
+- **Summary:** TBD
 - **Status:** 🟣 Brainstorming
 - **Date:** <YYYY-MM-DD>
 - **Owner / next step:** <owner / next step>

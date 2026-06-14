@@ -94,7 +94,7 @@ function apply({ pmFolder, ctx: c }) {
   }
   return {
     suggestedHistory: [
-      `- chore(pm): apply migration \`1.8.0-parent-subfolder-links\` — added ${totalChanges} parent subfolder link(s) to bring every folder note's parent index in line with the "Folder Note Parent Link Violations" check.`,
+      `- **Folder indexes now link to their child folder notes.** chore(pm): apply migration \`1.8.0-parent-subfolder-links\` and add ${totalChanges} parent subfolder link(s) for the "Folder Note Parent Link Violations" check.`,
     ],
     manualReview: [],
   };

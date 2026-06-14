@@ -14,19 +14,22 @@
  *     uses `### <Domain>` H3 subsections.
  *   - D-010: `roadmap/mvp-priorities.md` `## MVP Priorities` uses
  *     `### <Lane>` H3 subsections when it has items.
+ *   - D-012: human-readable PM notes conventions: done-pending Contents
+ *     links match actual H2s, planning/relevant links point to existing
+ *     notes when deterministic, and each idea detail has a Summary field.
  *
  * Run with `--fix` to auto-apply the deterministic fixes (D-008
- * emoji insertion, D-009 empty-`## Fixed` removal, D-007 H2 rename).
- * The auto-fixer cannot pick project-specific domain or lane names
- * (D-009 grouping, D-010 grouping), so those checks surface as
- * MANUAL REVIEW findings rather than auto-fixing.
+ * emoji insertion, D-009 empty-`## Fixed` removal, D-007 H2 rename,
+ * D-012 TOC/link repair and missing idea Summary insertion). The
+ * auto-fixer cannot pick project-specific domain/lane names or infer
+ * missing human prose, so those checks surface as MANUAL REVIEW findings.
  *
  * Exits 1 on FAIL, 0 on PASS. Hidden directories are skipped (same
  * convention as `check-pm-consistency.mjs`).
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, join, relative, resolve } from "node:path";
 
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import {
@@ -36,6 +39,10 @@ import {
   checkDomainGroupingInActive,
   checkLaneGroupingInMvpPriorities,
   renameDatePrefixedH2s,
+  syncDonePendingContents,
+  linkDonePendingPlanningNotes,
+  normalizeDonePendingRelevantLinks,
+  ensureIdeaDetailSummaries,
 } from "./lib/roadmap-fixers.mjs";
 
 function parseArgs(argv) {
@@ -102,6 +109,23 @@ function readIfExists(path) {
   }
 }
 
+function collectMarkdownTargets(root) {
+  const targets = [];
+  function walk(abs) {
+    if (!existsSync(abs)) return;
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      if (entry.name.startsWith(".")) continue;
+      const child = join(abs, entry.name);
+      if (entry.isDirectory()) walk(child);
+      else if (entry.isFile() && entry.name.endsWith(".md")) {
+        targets.push(relative(root, child).split("\\").join("/").replace(/\.md$/, ""));
+      }
+    }
+  }
+  walk(root);
+  return targets;
+}
+
 function writeIfChanged(path, original, updated, rel) {
   if (updated === original) return 0;
   if (CLI.fix) {
@@ -121,6 +145,7 @@ function runFor(target) {
   const project = target.project ?? basename(target.vault);
   const issues = [];
   const manualReview = [];
+  const markdownTargets = collectMarkdownTargets(target.vault);
 
   const ideasPath = join(target.vault, "roadmap/ideas.md");
   const knownIssuesPath = join(target.vault, "roadmap/known-issues.md");
@@ -130,22 +155,26 @@ function runFor(target) {
   // ---- D-008: ideas.md status colors ----
   const ideasContent = readIfExists(ideasPath);
   if (ideasContent !== null) {
+    let working = ideasContent;
     const lead = insertIdeasStatusColorsLeadNote(ideasContent);
-    if (CLI.fix) writeIfChanged(ideasPath, ideasContent, lead.updated, "roadmap/ideas.md (lead note)");
-    const withLead = lead.updated;
-    const emoji = insertStatusEmojisInIdeas(withLead);
-    if (CLI.fix) writeIfChanged(ideasPath, withLead, emoji.updated, "roadmap/ideas.md (emojis)");
-    if (lead.changes.length > 0 || emoji.changes.length > 0) {
+    working = lead.updated;
+    const emoji = insertStatusEmojisInIdeas(working);
+    working = emoji.updated;
+    const summary = ensureIdeaDetailSummaries(working);
+    working = summary.updated;
+    if (CLI.fix) writeIfChanged(ideasPath, ideasContent, working, "roadmap/ideas.md");
+    if (lead.changes.length > 0 || emoji.changes.length > 0 || summary.changes.length > 0) {
       // The fix is about to be applied; we won't re-report the same
       // items as FAIL when --fix is on, but we will still note them.
       if (!CLI.fix) {
         for (const c of lead.changes) issues.push(`roadmap/ideas.md: D-008 ${c}`);
         for (const c of emoji.changes) issues.push(`roadmap/ideas.md: D-008 ${c}`);
+        for (const c of summary.changes) issues.push(`roadmap/ideas.md: D-012 ${c}`);
       }
     }
     // If the Status Key has a status name that is NOT in the canonical
     // list, flag it.
-    const statusKeyMatch = withLead.match(/^## Status Key[\s\S]*?\n([\s\S]*?)\n## /m);
+    const statusKeyMatch = working.match(/^## Status Key[\s\S]*?\n([\s\S]*?)\n## /m);
     if (statusKeyMatch) {
       const statusKeyBody = statusKeyMatch[1];
       const hasBrainstorming = /Brainstorming/.test(statusKeyBody);
@@ -155,6 +184,7 @@ function runFor(target) {
     }
     for (const r of lead.manualReview) manualReview.push(r);
     for (const r of emoji.manualReview) manualReview.push(r);
+    for (const r of summary.manualReview) manualReview.push(r);
   }
 
   // ---- D-009: known-issues.md (no `## Fixed`, domain grouping) ----
@@ -188,11 +218,26 @@ function runFor(target) {
   // ---- D-007: done-pending.md slug-only H2 ----
   const donePendingContent = readIfExists(donePendingPath);
   if (donePendingContent !== null) {
+    let working = donePendingContent;
     const rename = renameDatePrefixedH2s(donePendingContent);
-    if (CLI.fix) writeIfChanged(donePendingPath, donePendingContent, rename.updated, "roadmap/done-pending.md (slug-only H2)");
-    if (rename.changes.length > 0 && !CLI.fix) {
+    working = rename.updated;
+    const planningLinks = linkDonePendingPlanningNotes(working, markdownTargets);
+    working = planningLinks.updated;
+    const relevantLinks = normalizeDonePendingRelevantLinks(working, markdownTargets);
+    working = relevantLinks.updated;
+    const toc = syncDonePendingContents(working);
+    working = toc.updated;
+    if (CLI.fix) writeIfChanged(donePendingPath, donePendingContent, working, "roadmap/done-pending.md");
+    if ((rename.changes.length > 0 || planningLinks.changes.length > 0 || relevantLinks.changes.length > 0 || toc.changes.length > 0) && !CLI.fix) {
       for (const c of rename.changes) issues.push(`roadmap/done-pending.md: D-007 ${c}`);
+      for (const c of planningLinks.changes) issues.push(`roadmap/done-pending.md: D-012 ${c}`);
+      for (const c of relevantLinks.changes) issues.push(`roadmap/done-pending.md: D-012 ${c}`);
+      for (const c of toc.changes) issues.push(`roadmap/done-pending.md: D-012 ${c}`);
     }
+    for (const r of rename.manualReview) manualReview.push(r);
+    for (const r of planningLinks.manualReview) manualReview.push(r);
+    for (const r of relevantLinks.manualReview) manualReview.push(r);
+    for (const r of toc.manualReview) manualReview.push(r);
   }
 
   // Report
@@ -200,7 +245,7 @@ function runFor(target) {
   console.log(`**Status:** ${issues.length === 0 ? "PASS" : "FAIL"}`);
   console.log("");
   if (issues.length === 0) {
-    console.log("All 4 content-level conventions (D-007 / D-008 / D-009 / D-010) hold for the project's roadmap files.");
+    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-010 / D-012) hold for the project's roadmap files.");
   } else {
     for (const issue of issues) console.log(`- ${issue}`);
   }

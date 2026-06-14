@@ -18,27 +18,29 @@ owner: PM
 <!-- vault-maintain:toc:start -->
 ## Contents
 
-- [[#v1.5.0 example planning note]]
+- [[#example-plan-slug]]
 - [[#General Done/Pending Without Dedicated Planning Note]]
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
 
-This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a DONE/PENDING checklist and relevant decisions/features links; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order.
+This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a DONE/PENDING checklist and relevant decisions/features/system/docs links; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order.
 
-Planning-note mirror H2 format: `## <slug>` (slug only, not the date-prefixed stem). Each mirror section starts with a `Planning note:` line linking to the plan, then a DONE/PENDING checklist, then `Relevant decisions:` and `Relevant features:` bullet lines. The H2 is slug-only (per the convention adopted in `decisions/D-007_POL_done-pending-format.md`); the validator at `scripts/check-pm-consistency.mjs` accepts both date-prefixed and slug-only H2.
+Planning-note mirror H2 format: `## <slug>` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a `Planning note:` line linking to the plan, then a DONE/PENDING checklist, then `Relevant decisions:`, `Relevant features:`, and optional `Relevant system:` / `Relevant docs:` lines. Do not use `Relevant ADRs:`; decisions are the first-class lane.
 
 Sections that are fully done should be archived to `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md`.
 
-## v1.5.0 example planning note
+## example-plan-slug
 
-Planning note: [[YYYY-MM-DD example-plan-slug|YYYY-MM-DD example-plan-slug]]
+Planning note: [[roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]
 
 - [x] DONE: <one-line description of what shipped>.
 - [ ] PENDING: <one-line description of what's still open>.
 - [ ] PENDING: <another pending item>.
 
-- Relevant decisions: [[decisions/D-NNN_<type>_<slug>]] *(or list multiple, or `*(none)*` if there are no related decisions yet)*
-- Relevant features: [[features/<feature-slug>]] *(or list multiple, or `*(none)*` if there are no related features yet)*
+- Relevant decisions: [[decisions/D-NNN_<type>_<slug>]] *(or `*(none)*` if there are no related decisions yet)*
+- Relevant features: [[features/<feature-slug>]] *(or `*(none)*` if there are no related features yet)*
+- Relevant system: [[system/<topic>]] *(optional; use `*(none)*` if not applicable)*
+- Relevant docs: [[docs/<Guide>/<topic>]] *(optional; use `*(none)*` if not applicable)*
 
 ## General Done/Pending Without Dedicated Planning Note
 

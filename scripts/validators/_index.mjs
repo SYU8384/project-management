@@ -25,9 +25,10 @@ const validators = [
   { file: "check-vault-structure.mjs",       label: "Vault structure" },
   { file: "check-stale-docs.mjs",            label: "Stale docs" },
   { file: "check-pm-consistency.mjs",        label: "PM consistency" },
-  { file: "check-roadmap-conventions.mjs",   label: "Roadmap conventions (D-007/008/009/010)" },
+  { file: "check-roadmap-conventions.mjs",   label: "Roadmap conventions (D-007/008/009/010/012)" },
   { file: "check-content-semantics.mjs",     label: "Content semantics (A/B/C/D)" },
   { file: "check-known-bugs-shape.mjs",      label: "Known-bugs shape (D-011)" },
+  { file: "check-live-routing.mjs",          label: "Live routing hygiene (D-013)" },
   { file: "check-agents.mjs",                label: "AGENTS.md integration" },
 ];
 
