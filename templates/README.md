@@ -233,7 +233,7 @@ The section headers (`## Brainstorming` / `## Scoping` / etc.) and the per-idea 
 - **Archive indexes:** `archive/archive.md` is a folder index created in place, not moved into archive. It must not have `archived:`.
 - **Archive rename:** when retiring, `mv roadmap/plans/YYYY-MM-DD_slug.md archive/<slug>-archived.md` (drop the date prefix, preserve the slug, append `-archived`). This rename is mandatory. Then update `roadmap/plans/plans.md`, `archive/archive.md`, `roadmap/done-pending.md`, the moved note's `## Navigation`, and every wiki link that points to the old planning filename.
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with `Planning note: [[roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`, linked relevant notes, and a Contents TOC regenerated from actual H2 headings. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2s for compatibility, and `check-roadmap-conventions.mjs --fix` repairs deterministic TOC/link drift.
+- **Cross-link:** when a planning note is approved, add a `## <slug>` section (slug only, not the date-prefixed stem) to `roadmap/done-pending.md` with `Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`, linked relevant notes, and a Contents TOC regenerated from actual H2 headings. When it ships, distill durable current truth into `system/` and archive the file. The validator accepts both slug-only and date-prefixed H2s for compatibility, and `check-roadmap-conventions.mjs --fix` repairs deterministic TOC/link drift.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 
 ### Feature pages (`features/<feature>.md`)
@@ -270,7 +270,7 @@ This is an *optional* lane for projects that have a meeting-recording agent or a
 
 | Anchor | Link |
 |---|---|
-| Project root | `[[Projects/<Project>/<Project>\|<Project>]]` |
+| Project root | `[[<ProjectPath>/<Project>\|<Project>]]` |
 | Parent collection | `[[Projects/Projects\|Back to Projects]]` |
 | Vault home | `[[Home\|Back to Home]]` |
 
@@ -278,6 +278,6 @@ This is an *optional* lane for projects that have a meeting-recording agent or a
 
 ## Navigation
 
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

@@ -17,7 +17,7 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
 ## Notes
 
 <!-- Add planning notes here, one per line:
-- [[Projects/<Project>/roadmap/plans/YYYY-MM-DD_slug|YYYY-MM-DD_slug]]
+- [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_slug|YYYY-MM-DD_slug]]
 -->
 <!-- vault-maintain:index:end -->
 
@@ -42,15 +42,15 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
 ## Related
 
 <!-- Add related decisions, system docs, and feature pages here, one per line:
-- [[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
-- [[Projects/<Project>/system/<topic>|<topic>]] — system doc that implements this plan
-- [[Projects/<Project>/features/<feature>|<feature>]] — feature page affected by this plan
+- [[<ProjectPath>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
+- [[<ProjectPath>/system/<topic>|<topic>]] — system doc that implements this plan
+- [[<ProjectPath>/features/<feature>|<feature>]] — feature page affected by this plan
 -->
 
 ## Navigation
 
-- [[Projects/<Project>/roadmap/roadmap|Back to roadmap]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
-- [[Projects/<Project>/README|README]]
+- [[<ProjectPath>/roadmap/roadmap|Back to roadmap]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/README|README]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

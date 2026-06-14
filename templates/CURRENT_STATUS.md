@@ -48,18 +48,18 @@ owner: PM
 
 ## Relevant Decisions
 
-- `[[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]]`
-- `[[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]]`
+- `[[<ProjectPath>/decisions/D-NNN_<type>_slug|D-NNN <title>]]`
+- `[[<ProjectPath>/decisions/D-NNN_<type>_slug|D-NNN <title>]]`
 
 ## Relevant Features
 
-- `[[Projects/<Project>/features/<feature>|<feature>]]`
-- `[[Projects/<Project>/features/<feature>|<feature>]]`
+- `[[<ProjectPath>/features/<feature>|<feature>]]`
+- `[[<ProjectPath>/features/<feature>|<feature>]]`
 
 ## Navigation
 
-- [[Projects/<Project>/<Project>|Back to <Project>]]
-- [[Projects/<Project>/README|README]]
-- [[Projects/<Project>/roadmap/done-pending|roadmap/done-pending]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/README|README]]
+- [[<ProjectPath>/roadmap/done-pending|roadmap/done-pending]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

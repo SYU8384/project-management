@@ -73,7 +73,7 @@ owner: PM
 
 ## Navigation
 
-- [[Projects/<Project>/roadmap/roadmap|Back to roadmap]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/roadmap/roadmap|Back to roadmap]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

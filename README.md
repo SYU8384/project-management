@@ -84,6 +84,7 @@ The full per-access-mode behavior (how the portable `AGENTS.md` section resolves
 | 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
 | 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
 | 🧭 Keep live routing current | Catches live notes that still point to retired PM lanes and repairs deterministic plan/decision link drift. |
+| 🔗 Keep Obsidian links navigable | Validates rendered wikilinks against the vault model and repairs deterministic PM-root-relative links, malformed links, and marked TOCs. |
 | 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
 | 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md` with real section links, and records typed decisions under `decisions/`. |
@@ -163,19 +164,21 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-content-semantics.mjs`](./scripts/check-content-semantics.mjs) | Semantic content validator for placeholders, dead links, plan status markers, and theoretical-risk wording. |
 | [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge. |
 | [`scripts/check-live-routing.mjs`](./scripts/check-live-routing.mjs) | Live routing hygiene validator for retired lane references and deterministic decision-link repair. |
+| [`scripts/check-obsidian-links.mjs`](./scripts/check-obsidian-links.mjs) | Obsidian rendered-link validator for malformed wiki syntax, missing targets/headings, marked TOCs, and PM-root-relative slash links. |
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
-| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, and live-routing hygiene. |
+| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, and vault-relative Obsidian link normalization. |
 | [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
 | [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
+| [`scripts/lib/obsidian-links.mjs`](./scripts/lib/obsidian-links.mjs) | Shared Obsidian link helpers for vault-relative targets, rendered-link scanning, marked TOCs, and deterministic link normalization. |
 | [`scripts/lib/findings.mjs`](./scripts/lib/findings.mjs) | Shared finding shape and report renderer for newer checks. |
 | [`scripts/lib/template-renderer.mjs`](./scripts/lib/template-renderer.mjs) | Template substitution and unresolved-placeholder detection. |
 | [`scripts/lib/scaffold-plan.mjs`](./scripts/lib/scaffold-plan.mjs) | Shared scaffold-plan summary helpers. |
 | [`scripts/lib/live-routing-fixers.mjs`](./scripts/lib/live-routing-fixers.mjs) | Shared pure fixers for retired live-lane paths and unique decision links. |
-| [`scripts/lib/paths.mjs`](./scripts/lib/paths.mjs) | Shared path-resolution helpers: `findSkillDir()`, `resolveProjectsConfigPath()` (the XDG user-specific `projects.json` lookup all validators use). |
+| [`scripts/lib/paths.mjs`](./scripts/lib/paths.mjs) | Shared path-resolution helpers: `findSkillDir()`, `resolveProjectsConfigPath()` (the XDG user-specific `projects.json` lookup all validators use), and `findVaultRoot()`. |
 | [`scripts/lib/skip.mjs`](./scripts/lib/skip.mjs) | Shared `.pm/skip` parser used by validators to ignore project-specific files. |
-| [`test/`](./test/) | Node built-in test suite for shared helpers plus AGENTS, roadmap, and live-routing behavior. |
+| [`test/`](./test/) | Node built-in test suite for shared helpers plus AGENTS, roadmap, live-routing, and Obsidian-link behavior. |
 | [`LICENSE`](./LICENSE) | MIT license. |
 
 ## 📐 Design Principles
@@ -187,6 +190,7 @@ History is written last because it records what changed after the durable docs h
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md` with TOC links that match real H2 sections and plan/decision/feature links inside each section.
 - **Live instructions route future agents.** README, current status, folder notes, and feature pages must point to current lanes and existing notes.
+- **Obsidian links follow the vault model.** Generated cross-note PM links use vault-relative targets derived from `vault_root`; same-note section links stay as `[[#Heading]]`.
 - **PM folders do not store secrets.** Keep account purpose and credential location in PM notes; keep plaintext credentials in external secret stores.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
 - **Conventions have one model.** Reusable PM vocabulary lives in `scripts/lib/convention.mjs`; scripts and checks import it instead of copying lists.

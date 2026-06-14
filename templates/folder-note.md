@@ -18,13 +18,13 @@ last_reviewed: <YYYY-MM-DD>
 ## Notes
 
 <!-- Add folder entries here, one per line:
-- [[Projects/<Project>/<folder>/<entry>|<entry>]] - <one-line description>
+- [[<ProjectPath>/<folder>/<entry>|<entry>]] - <one-line description>
 -->
 <!-- vault-maintain:index:end -->
 
 ## Navigation
 
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]
 

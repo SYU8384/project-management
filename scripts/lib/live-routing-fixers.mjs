@@ -8,6 +8,8 @@
  * History and archive records are intentionally skipped.
  */
 
+import { pmRelToVaultTarget, pmWikiLink } from "./obsidian-links.mjs";
+
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -113,11 +115,11 @@ export function findUniqueDecisionTarget(rawToken, targets = []) {
   return { status: "missing", ref };
 }
 
-function linkForDecision(target, display) {
-  return `[[${target.rel}|${display}]]`;
+function linkForDecision(target, display, options = {}) {
+  return pmWikiLink(target.rel, display, options);
 }
 
-function repairDecisionPathReferences(text, targets) {
+function repairDecisionPathReferences(text, targets, options = {}) {
   const changes = [];
   const manualReview = [];
   let updated = text;
@@ -127,7 +129,7 @@ function repairDecisionPathReferences(text, targets) {
   updated = updated.replace(decisionPathRe, (match, token) => {
     const result = findUniqueDecisionTarget(token, targets);
     if (result.status === "found") {
-      const next = result.target.rel;
+      const next = pmRelToVaultTarget(result.target.rel, options);
       if (next !== match) changes.push(`rewrote ${match} -> ${next}`);
       return next;
     }
@@ -186,7 +188,7 @@ function isLikelyFrontmatterLine(line) {
   );
 }
 
-function linkBareDecisionRefsInBody(body, targets) {
+function linkBareDecisionRefsInBody(body, targets, options = {}) {
   const changes = [];
   const manualReview = [];
   const lines = body.split("\n");
@@ -205,7 +207,7 @@ function linkBareDecisionRefsInBody(body, targets) {
       const result = findUniqueDecisionTarget(token, targets);
       if (result.status === "found") {
         changes.push(`linked ${token} -> ${result.target.rel}`);
-        return `${prefix}${linkForDecision(result.target, token)}`;
+        return `${prefix}${linkForDecision(result.target, token, options)}`;
       }
       if (result.status === "ambiguous") {
         manualReview.push(
@@ -221,7 +223,7 @@ function linkBareDecisionRefsInBody(body, targets) {
   return { updated: lines.join("\n"), changes, manualReview };
 }
 
-export function repairLiveRoutingDrift(content, relPath, targets = []) {
+export function repairLiveRoutingDrift(content, relPath, targets = [], options = {}) {
   if (isHistoricalRel(relPath)) return { updated: content, changes: [], manualReview: [] };
 
   const changes = [];
@@ -234,7 +236,7 @@ export function repairLiveRoutingDrift(content, relPath, targets = []) {
     const text = segment === "frontmatter" ? workingFrontmatter : workingBody;
     if (!text) continue;
 
-    const decisionPaths = repairDecisionPathReferences(text, targets);
+    const decisionPaths = repairDecisionPathReferences(text, targets, options);
     let updated = decisionPaths.updated;
     changes.push(...decisionPaths.changes);
     manualReview.push(...decisionPaths.manualReview);
@@ -251,7 +253,7 @@ export function repairLiveRoutingDrift(content, relPath, targets = []) {
     else workingBody = updated;
   }
 
-  const linked = linkBareDecisionRefsInBody(workingBody, targets);
+  const linked = linkBareDecisionRefsInBody(workingBody, targets, options);
   workingBody = linked.updated;
   changes.push(...linked.changes);
   manualReview.push(...linked.manualReview);

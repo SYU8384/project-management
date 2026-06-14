@@ -514,9 +514,9 @@ function processPlansFolderNote(file, ctx) {
 ### Related
 
 <!-- Add related decisions, system docs, and feature pages here, one per line:
-- [[Projects/<Project>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
-- [[Projects/<Project>/system/<topic>|<topic>]] — system doc that implements this plan
-- [[Projects/<Project>/features/<feature>|<feature>]] — feature page affected by this plan
+- [[<ProjectPath>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
+- [[<ProjectPath>/system/<topic>|<topic>]] — system doc that implements this plan
+- [[<ProjectPath>/features/<feature>|<feature>]] — feature page affected by this plan
 -->
 
 `;

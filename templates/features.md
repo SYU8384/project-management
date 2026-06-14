@@ -22,7 +22,7 @@ Curated per-feature pages. Each feature page is a single index that points into 
 ## Notes
 
 <!-- Add feature pages here as features enter the design phase:
-- [[Projects/<Project>/features/<feature>|<feature>]] - <one-line description>
+- [[<ProjectPath>/features/<feature>|<feature>]] - <one-line description>
 -->
 <!-- vault-maintain:index:end -->
 
@@ -41,8 +41,8 @@ Curated per-feature pages. Each feature page is a single index that points into 
 
 ## Navigation
 
-- [[Projects/<Project>/<Project>|Back to <Project>]]
-- [[Projects/<Project>/README|README]]
-- [[Projects/<Project>/CURRENT_STATUS|CURRENT_STATUS]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/README|README]]
+- [[<ProjectPath>/CURRENT_STATUS|CURRENT_STATUS]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

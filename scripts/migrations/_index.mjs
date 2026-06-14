@@ -23,4 +23,5 @@ export default [
   "1.9.0-known-bugs-shape.mjs",
   "1.10.0-human-readable-pm-notes.mjs",
   "1.11.0-live-routing-and-feature-link-hygiene.mjs",
+  "1.12.0-vault-relative-obsidian-links.mjs",
 ];

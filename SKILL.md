@@ -42,6 +42,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 - `roadmap/known-issues.md` is for observed bugs, risks, and blockers only. Theoretical risks stay in the plan's risk/error map until they happen.
 - History bullets start with a bold human-readable outcome sentence, then keep a concise conventional type/scope token (`feat:`, `fix:`, `docs:`, etc.) in the detail text. Do not write history as raw commit-comment bullets.
 - `roadmap/done-pending.md` Contents links point only to actual H2 headings inside the same note. Put planning-note, decision, feature, system, and docs links inside each section, not in the TOC.
+- Cross-note PM wikilinks are vault-relative when `vault_root` is known (for example `[[Projects/Example/roadmap/done-pending|done-pending]]`), never OS-absolute and never hardcoded to a specific user's folder layout. Same-note links stay as `[[#Heading]]`.
 - `roadmap/ideas.md` entries need a real `**Summary:**` paragraph in `## Idea Details`; do not leave one-line backlog dumps.
 - Deferred items have one home: ideas if never scoped, the plan's `NOT in scope` section if scoped then deferred, or a `NEG` decision if explicitly rejected.
 - Decisions live in root `decisions/` as `D-NNN_<type>_<slug>.md`, with type `ADR / PRD / MKT / VND / POL / NEG / EXP`.
@@ -59,6 +60,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 - Validate roadmap content conventions (D-007/008/009/010/012): `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path>`
 - Auto-fix roadmap content conventions: `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path> --fix` (covers D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 slug-only H2 rename, D-012 done-pending TOC/link repair, and missing idea Summary insertion as `TBD`; D-009 `### <Domain>`, D-010 `### <Lane>`, ambiguous links, and `TBD` summaries surface as `MANUAL REVIEW`)
 - Validate live routing hygiene (D-013): `node <skill_dir>/scripts/check-live-routing.mjs --project <name> --config <path>`; add `--fix` to repair deterministic retired lane paths and unique decision links.
+- Validate Obsidian links (D-014): `node <skill_dir>/scripts/check-obsidian-links.mjs --project <name> --config <path>`; add `--fix` to repair deterministic malformed links, marked TOCs, and PM-root-relative slash links.
 - Run migrations: `node <skill_dir>/scripts/migrate.mjs --project <name> --config ~/.config/project-management/projects.json`
 - Check the skill repo itself: `node <skill_dir>/scripts/check-skill.mjs`
 

@@ -35,7 +35,7 @@ Shape rules: every entry must include the fields listed for its section; the val
 **Root cause:** <Durable cause, not just the symptom.>
 **Solution:** <General fix or diagnostic rule.>
 **Seen in:** <Files, features, jobs, endpoints, or workflows.>
-**References:** [[Projects/<Project>/roadmap/known-issues|known-issues]], [[Projects/<Project>/history/YYYY-MM/history-YYYY-MM-DD|history-YYYY-MM-DD]]
+**References:** [[<ProjectPath>/roadmap/known-issues|known-issues]], [[<ProjectPath>/history/YYYY-MM/history-YYYY-MM-DD|history-YYYY-MM-DD]]
 
 ## Active Bugs
 
@@ -46,7 +46,7 @@ Shape rules: every entry must include the fields listed for its section; the val
 **Root cause:** unknown | <Known cause.>
 **Current workaround:** <If any.>
 **Next action:** <Concrete investigation or fix step.>
-**References:** [[Projects/<Project>/roadmap/known-issues|known-issues]]
+**References:** [[<ProjectPath>/roadmap/known-issues|known-issues]]
 
 ## Fixed Bugs
 
@@ -57,7 +57,7 @@ Shape rules: every entry must include the fields listed for its section; the val
 **Root cause:** <Why it happened.>
 **Solution:** <What changed.>
 **Verification:** <Tests, commands, manual checks, or production checks.>
-**References:** [[Projects/<Project>/history/YYYY-MM/history-YYYY-MM-DD|history-YYYY-MM-DD]]
+**References:** [[<ProjectPath>/history/YYYY-MM/history-YYYY-MM-DD|history-YYYY-MM-DD]]
 
 ## Deferred / Monitoring
 
@@ -67,12 +67,12 @@ Shape rules: every entry must include the fields listed for its section; the val
 **Symptoms:** <What to watch for.>
 **Reason deferred:** <Why this is not being fixed now.>
 **Trigger to reopen:** <When to move it back to Active Bugs.>
-**References:** [[Projects/<Project>/roadmap/known-issues|known-issues]]
+**References:** [[<ProjectPath>/roadmap/known-issues|known-issues]]
 
 ## Navigation
 
-- [[Projects/<Project>/docs/Developer Guide/Developer Guide|Back to Developer Guide]]
-- [[Projects/<Project>/docs/docs|Back to docs]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/docs/Developer Guide/Developer Guide|Back to Developer Guide]]
+- [[<ProjectPath>/docs/docs|Back to docs]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

@@ -9,6 +9,7 @@ import {
   normalizeDonePendingRelevantLinks,
   ensureIdeaDetailSummaries,
 } from "../lib/roadmap-fixers.mjs";
+import { findVaultRoot } from "../lib/paths.mjs";
 
 function readIfExists(path) {
   if (!existsSync(path)) return null;
@@ -36,15 +37,15 @@ function collectMarkdownTargets(pmFolder) {
   return targets;
 }
 
-function runDonePendingFixers(content, targets) {
+function runDonePendingFixers(content, targets, linkOptions = {}) {
   const manualReview = [];
   const changes = [];
   let working = content;
 
   for (const fixer of [
     (value) => renameDatePrefixedH2s(value),
-    (value) => linkDonePendingPlanningNotes(value, targets),
-    (value) => normalizeDonePendingRelevantLinks(value, targets),
+    (value) => linkDonePendingPlanningNotes(value, targets, linkOptions),
+    (value) => normalizeDonePendingRelevantLinks(value, targets, linkOptions),
     (value) => syncDonePendingContents(value),
   ]) {
     const result = fixer(working);
@@ -56,10 +57,11 @@ function runDonePendingFixers(content, targets) {
   return { updated: working, changes, manualReview };
 }
 
-function detect({ pmFolder }) {
+function detect({ pmFolder, ctx = {} }) {
   const targets = collectMarkdownTargets(pmFolder);
+  const linkOptions = { pmFolder, vaultRoot: findVaultRoot(pmFolder, ctx.configPath) };
   const donePending = readIfExists(join(pmFolder, "roadmap/done-pending.md"));
-  if (donePending !== null && runDonePendingFixers(donePending, targets).changes.length > 0) {
+  if (donePending !== null && runDonePendingFixers(donePending, targets, linkOptions).changes.length > 0) {
     return true;
   }
 
@@ -81,6 +83,7 @@ function plan() {
 
 function apply({ pmFolder, ctx }) {
   const targets = collectMarkdownTargets(pmFolder);
+  const linkOptions = { pmFolder, vaultRoot: findVaultRoot(pmFolder, ctx.configPath) };
   const manualReview = [];
   const log = [];
 
@@ -88,7 +91,7 @@ function apply({ pmFolder, ctx }) {
   const donePendingPath = join(pmFolder, donePendingRel);
   const donePending = readIfExists(donePendingPath);
   if (donePending !== null) {
-    const result = runDonePendingFixers(donePending, targets);
+    const result = runDonePendingFixers(donePending, targets, linkOptions);
     if (result.updated !== donePending) {
       if (!ctx.dryRun) writeFileSync(donePendingPath, result.updated);
       log.push(`${donePendingRel}: ${result.changes.length} deterministic change(s) applied`);

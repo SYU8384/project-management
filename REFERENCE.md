@@ -49,6 +49,7 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-content-semantics.mjs` — checks content-level semantic drift such as placeholder grouping, dead wikilinks, plan status/body mismatch, and theoretical-risk wording.
 - `node <skill_dir>/scripts/check-known-bugs-shape.mjs` — verifies `docs/Developer Guide/known-bugs.md` follows the D-011 engineering bug knowledge shape.
 - `node <skill_dir>/scripts/check-live-routing.mjs` — verifies live notes outside `history/` and `archive/` use current `roadmap/plans/` and root `decisions/` lanes, not retired routing. Supports `--fix` for deterministic path/decision-link repairs.
+- `node <skill_dir>/scripts/check-obsidian-links.mjs` — verifies rendered Obsidian wikilinks against the vault model (D-014). Supports `--fix` for deterministic malformed-link closure, marked H2 TOC regeneration, and PM-root-relative slash-link conversion to vault-relative targets.
 - `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
 
 For changes to the skill repository itself, also run:
@@ -64,7 +65,7 @@ Then check the schema and content dimensions:
 
 1. **Schema compliance** — every note has the right `pageType:`, `status:` (per pageType vocabulary), `archived:` (only on archive files), `kind:` (only on history files), and other recommended fields. The `status: archived` value is **invalid** — `archived` is a separate date field, not a status value.
 2. **H1 vs filename** — each note's H1 matches its filename stem (no leftover numbered prefixes, no date prefix in the H1).
-3. **Cross-link integrity** — all `[[wiki-link]]` targets resolve to existing files.
+3. **Cross-link integrity** — all rendered `[[wiki-link]]` targets resolve to existing files under the Obsidian vault model. Cross-note PM links are vault-relative when `vault_root` is known; same-note links remain `[[#Heading]]`.
 4. **CURRENT_STATUS freshness** — the weekly snapshot exists and is not stale.
 5. **Planning ↔ roadmap mirror** — each active or proposed `roadmap/plans/*.md` note has a matching mirror section in `roadmap/done-pending.md`. The canonical H2 is slug-only; validators also accept date-prefixed legacy H2s. The Contents TOC links only to actual H2s inside `done-pending.md`; the section body links to the planning note and relevant decisions/features/system/docs.
 6. **History `kind:`** — every `history/YYYY-MM/history-YYYY-MM-DD.md` has a `kind: changelog | worklog | mixed` field.
@@ -75,8 +76,9 @@ Then check the schema and content dimensions:
 11. **Known bugs note** — `docs/Developer Guide/known-bugs.md` exists and records engineering bug knowledge with the D-011 per-section field shape (status, symptoms, root cause, solution/verification, references). Missing fields are FAIL; TBD/placeholder fields are MANUAL REVIEW.
 12. **README sync** — the project's `README.md` "What Goes Where", "Quick Rules", and "Update Frequency" sections match the canonical template.
 13. **Live routing hygiene** — live notes outside `history/` and `archive/` do not mention retired PM lanes, dead decision paths, or `Relevant ADRs:` labels. Feature pages use existing `source_of_truth`, `roadmap_source`, and related links.
-14. **Sensitive-data hygiene** — PM notes do not contain plaintext passwords, tokens, private keys, API secrets, recovery codes, or credential-bearing URLs. Keep account purpose/status in PM notes; keep credentials in a password manager, local env file, secret store, or admin console.
-15. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only`; no unresolved placeholders remain.
+14. **Obsidian link hygiene** — no rendered malformed wiki syntax, missing note targets, missing heading anchors, or PM-root-relative slash links such as `[[roadmap/done-pending]]` remain.
+15. **Sensitive-data hygiene** — PM notes do not contain plaintext passwords, tokens, private keys, API secrets, recovery codes, or credential-bearing URLs. Keep account purpose/status in PM notes; keep credentials in a password manager, local env file, secret store, or admin console.
+16. **AGENTS.md integration** — registered projects with a real `code_repo` have an `AGENTS.md` file with the expected `## PM folder` section for `access: authoritative | read-only`; no unresolved placeholders remain.
 
 ### Phase 2: Plan
 
@@ -300,7 +302,7 @@ Use this when the user says "summarize this project", "summarize <ProjectName>",
 
 **Output shape:**
 
-One paragraph, 4-8 sentences, covering: the project's name, what it is, current phase, top 2-3 priorities (cite `CURRENT_STATUS.md`), active planning notes / known-issues (cite `roadmap/`), and recent wins (cite `history/`). End with 2-3 wikilinks to the most-likely-next-action files (e.g., `[[README]]`, `[[CURRENT_STATUS]]`, `[[roadmap/done-pending]]`).
+One paragraph, 4-8 sentences, covering: the project's name, what it is, current phase, top 2-3 priorities (cite `CURRENT_STATUS.md`), active planning notes / known-issues (cite `roadmap/`), and recent wins (cite `history/`). End with 2-3 wikilinks to the most-likely-next-action files using vault-relative targets when known (e.g., `[[<ProjectPath>/README|README]]`, `[[<ProjectPath>/CURRENT_STATUS|CURRENT_STATUS]]`, `[[<ProjectPath>/roadmap/done-pending|done-pending]]`).
 
 **Anti-patterns:**
 
@@ -409,7 +411,7 @@ Navigation must be folder-structure agnostic beyond the project folder.
 
 - Existing projects: read `README.md` first and copy its navigation context and external anchor style.
 - New projects: ask once whether the user wants links beyond the project folder. If they do not, use only project-internal links.
-- Generic templates must not assume a vault root structure such as `Projects/Projects`, `Home`, or `Projects/<Project>/...`.
+- Generic templates must not assume the project itself lives at a hardcoded path such as `Projects/<Project>/...`; use `<ProjectPath>` for project-local links.
 - For the user's current vault projects, keep using `[[Projects/Projects|Back to Projects]]` and `[[Home|Back to Home]]` only when the project README defines them as external anchors.
 
 When moving or renaming notes/folders:
@@ -456,7 +458,7 @@ Concrete plans in `roadmap/plans/` must be reflected in `roadmap/done-pending.md
 `roadmap/done-pending.md` should mirror active or proposed planning notes first:
 
 - Create one `## <slug>` section for each active or proposed concrete `roadmap/plans/YYYY-MM-DD_<slug>.md` note except `plans.md`.
-- Start each mirrored section with `Planning note: [[roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`.
+- Start each mirrored section with a vault-relative planning-note link, for example `Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`.
 - Summarize the plan's current done/pending checklist under that section in human-readable DONE/PENDING bullets.
 - Add `Relevant decisions:`, `Relevant features:`, and, when applicable, `Relevant system:` / `Relevant docs:` lines with actual wiki links. Do not use the old `Relevant ADRs:` label.
 - Keep the `## Contents` TOC generated from real H2 headings in `done-pending.md`; never put plan-file links in the TOC.
@@ -969,7 +971,7 @@ If a feature, fix, or change has **multi-step work, multi-session work, or many 
    - A clear title and status (`proposed` initially)
    - Context, options considered, decision
    - A step-by-step implementation checklist
-2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the plan's checklist items, a `Planning note: [[roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]` line, and linked `Relevant decisions:` / `Relevant features:` lines. Regenerate the Contents TOC from actual H2 headings.
+2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the plan's checklist items, a vault-relative `Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]` line, and linked `Relevant decisions:` / `Relevant features:` lines. Regenerate the Contents TOC from actual H2 headings.
 3. **Update plan status** from `proposed` → `active` when implementation begins.
 4. **Implement step by step.** For each step completed, mark the done-pending checkbox AND add an outcome-first history bullet. Update the planning file's checklist as you go.
 5. **Distill + archive** when shipped (per existing rules): move the plan to `archive/<slug>-archived.md`, distill the durable behavior into `system/`, and add the closing history bullets.
@@ -1034,6 +1036,8 @@ The skill does not endorse any specific mechanism; the user picks based on their
 ## Templates
 
 Reusable templates are provided in the `templates/` directory relative to this skill's installation location (i.e., `<skill_dir>/templates/`). When creating a new note or integration artifact, copy the relevant template and fill in the body:
+
+Template wikilinks use `<ProjectPath>` for the project folder path relative to the Obsidian vault root. For example, if the PM folder is under the vault at `Projects/OpenManager`, then `<ProjectPath>` is `Projects/OpenManager`; if the PM folder lives somewhere else, derive it from that actual location instead of hardcoding `Projects/<Project>`.
 
 - `templates/README.md` — project root README (sections: What Goes Where, Folder Structure, Quick Rules, Live PM Folder Rule, Naming Conventions, Update Frequency, Conventions by Page Type, Navigation)
 - `templates/CURRENT_STATUS.md` — weekly snapshot at project root
@@ -1162,7 +1166,7 @@ The canonical reference for any project's current state is its `README.md` at th
 - The Setup Intake routing and selectable phase/access suggestions
 
 **What the skill leaves to each project:**
-- Vault structure (`Projects/<Project>/...` vs other layouts)
+- Vault structure (`<ProjectPath>/...`, such as `Projects/<Project>/...`, vs other layouts)
 - Project name, tagline, target user, MVP loop
 - Choice of access mechanism for collaborators (OneDrive / Syncthing / Git subtree / web mirror)
 - Choice of AI runtime, code style, deployment target

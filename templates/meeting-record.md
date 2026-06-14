@@ -44,7 +44,7 @@ owner: PM
 
 ## Navigation
 
-- [[Projects/<Project>/meetings/meetings|Back to meetings]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/meetings/meetings|Back to meetings]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

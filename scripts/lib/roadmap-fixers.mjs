@@ -16,6 +16,8 @@
  * this property to be safe to re-apply.
  */
 
+import { pmWikiLink } from "./obsidian-links.mjs";
+
 const STATUS_EMOJI = Object.freeze({
   Brainstorming: "🟣",
   Scoping: "🟡",
@@ -106,9 +108,9 @@ function isWikiLink(value) {
   return /^\[\[[^\]]+\]\]$/.test(value.trim());
 }
 
-function linkFor(target, display) {
+function linkFor(target, display, options = {}) {
   const base = basenameNoExt(target.rel);
-  return `[[${target.rel}|${display || base}]]`;
+  return pmWikiLink(target.rel, display || base, options);
 }
 
 function targetMatchesToken(target, token, kind) {
@@ -440,7 +442,7 @@ export function syncDonePendingContents(content) {
  * present. Missing targets are surfaced as manual review; the fixer does
  * not invent plan notes.
  */
-export function linkDonePendingPlanningNotes(content, targets = []) {
+export function linkDonePendingPlanningNotes(content, targets = [], options = {}) {
   const changes = [];
   const manualReview = [];
   let updated = content;
@@ -451,7 +453,7 @@ export function linkDonePendingPlanningNotes(content, targets = []) {
       const found = findUniqueTarget(stem, "plans", targets);
       if (found.status === "found") {
         changes.push(`linked planning note ${stem}`);
-        return `${prefix}${linkFor(found.target, stem)}`;
+        return `${prefix}${linkFor(found.target, stem, options)}`;
       }
       if (found.status === "missing") {
         manualReview.push(`Planning note \`${stem}\` has no matching \`roadmap/plans/${stem}.md\` target`);
@@ -470,7 +472,7 @@ export function linkDonePendingPlanningNotes(content, targets = []) {
  * and link relevant decision/feature/system/docs tokens when they resolve
  * to exactly one existing target in the expected lane.
  */
-export function normalizeDonePendingRelevantLinks(content, targets = []) {
+export function normalizeDonePendingRelevantLinks(content, targets = [], options = {}) {
   const changes = [];
   const manualReview = [];
   const lines = content.split("\n");
@@ -507,7 +509,7 @@ export function normalizeDonePendingRelevantLinks(content, targets = []) {
       if (found.status === "found") {
         touched = true;
         changes.push(`linked ${canonicalLabel.toLowerCase()} token \`${found.token}\` on line ${index + 1}`);
-        return linkFor(found.target, found.token);
+        return linkFor(found.target, found.token, options);
       }
       if (found.status === "missing") {
         manualReview.push(`line ${index + 1}: \`${trimmed}\` has no unique ${kind} target to link`);

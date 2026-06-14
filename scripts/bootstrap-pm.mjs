@@ -20,6 +20,8 @@ import { homedir } from "node:os";
 
 import { ACCESS_VALUES } from "./lib/convention.mjs";
 import { replaceSectionBody as replaceMarkdownSectionBody } from "./lib/markdown.mjs";
+import { findVaultRoot } from "./lib/paths.mjs";
+import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
 import { summarizeScaffoldCounts } from "./lib/scaffold-plan.mjs";
 
@@ -181,12 +183,13 @@ const codeRepo = cli.codeRepo === null ? null : resolve(cli.codeRepo);
 const configPath = cli.config
   ? resolve(cli.config)
   : join(homedir(), ".config", "project-management", "projects.json");
-const vaultRoot = cli.vaultRoot ? resolve(cli.vaultRoot) : dirname(pmFolder);
+const discoveredVaultRoot = cli.vaultRoot ? resolve(cli.vaultRoot) : findVaultRoot(pmFolder, configPath);
+const vaultRoot = discoveredVaultRoot === pmFolder ? dirname(pmFolder) : discoveredVaultRoot;
 const date = cli.date;
 const month = monthOf(date);
 const notes = cli.notes || `${project} project.`;
 const access = cli.access;
-const linkRoot = `Projects/${project}`;
+const linkRoot = projectPathFromVault(vaultRoot, pmFolder);
 
 function ensureDir(abs) {
   if (existsSync(abs)) {
@@ -688,10 +691,112 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
     `Open bugs, risks, and blockers for ${project}.\n\n## Contents\n\n- [[#Active]]\n- [[#Migrations]]\n- [[#Validators]]\n- [[#AGENTS.md integration]]\n- [[#CLI surface]]\n- [[#Documentation]]\n- [[#Deferred]]\n- [[#Navigation]]\n\n## Active\n\nActive items are grouped by domain below. **Fixed items are migrated to \`docs/Developer Guide/known-bugs.md\`** (the engineering knowledge base) and removed from this file. A \`### <Domain>\` section that becomes fully fixed (no remaining active items) is archived to \`archive/known-issues-<domain>-archived.md\` per the planning-note archive convention. \`## Deferred\` items stay in this file until re-opened.\n\n### Migrations\n\n- [ ] **PENDING:** <one-line description of the bug/risk/blocker>. The migration gap. Tracked for v1.5.0.\n\n### Validators\n\n- [ ] **PENDING:** <one-line description of the validator gap>. The expected behavior. The actual behavior.\n\n### AGENTS.md integration\n\n- [ ] **PENDING:** <one-line description of the AGENTS.md gap>.\n\n### CLI surface\n\n*(no items)*\n\n### Documentation\n\n*(no items)*\n\n## Deferred\n\n### Validators\n\n- [ ] **DEFERRED:** <one-line description of the deferred validator item>.\n\n### CLI surface\n\n- [ ] **DEFERRED:** <one-line description of the deferred CLI item>.\n\n${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/docs/Developer Guide/known-bugs`, "known-bugs"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "roadmap/done-pending.md"), page("done-pending", "roadmap",
-    `## Contents\n\n- [[#example-plan-slug]]\n- [[#General Done/Pending Without Dedicated Planning Note]]\n- [[#Navigation]]\n\nThis file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from \`roadmap/plans/\`, with a DONE/PENDING checklist and relevant decisions/features/system/docs links; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order.\n\nPlanning-note mirror H2 format: \`## <slug>\` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a \`Planning note:\` line linking to the plan, then a DONE/PENDING checklist, then \`Relevant decisions:\`, \`Relevant features:\`, and optional \`Relevant system:\` / \`Relevant docs:\` lines. Do not use \`Relevant ADRs:\`; decisions are the first-class lane.\n\n## example-plan-slug\n\nPlanning note: [[roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]\n\n- [x] DONE: <one-line description of what shipped>.\n- [ ] PENDING: <one-line description of what's still open>.\n- [ ] PENDING: <another pending item>.\n\n- Relevant decisions: [[decisions/D-NNN_<type>_<slug>]] *(or \`*(none)*\` if there are no related decisions yet)*\n- Relevant features: [[features/<feature-slug>]] *(or \`*(none)*\` if there are no related features yet)*\n- Relevant system: [[system/<topic>]] *(optional; use \`*(none)*\` if not applicable)*\n- Relevant docs: [[docs/<Guide>/<topic>]] *(optional; use \`*(none)*\` if not applicable)*\n\n## General Done/Pending Without Dedicated Planning Note\n\n### Pending\n\n*(no items)*\n\n### Done — YYYY-MM-DD\n\n*(no items)*\n\n${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
+    `## Contents
+
+- [[#example-plan-slug]]
+- [[#General Done/Pending Without Dedicated Planning Note]]
+- [[#Navigation]]
+
+This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from \`roadmap/plans/\`, with a DONE/PENDING checklist and relevant decisions/features/system/docs links; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order.
+
+Planning-note mirror H2 format: \`## <slug>\` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a \`Planning note:\` line linking to the plan, then a DONE/PENDING checklist, then \`Relevant decisions:\`, \`Relevant features:\`, and optional \`Relevant system:\` / \`Relevant docs:\` lines. Do not use \`Relevant ADRs:\`; decisions are the first-class lane.
+
+## example-plan-slug
+
+Planning note: [[${linkRoot}/roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]
+
+- [x] DONE: <one-line description of what shipped>.
+- [ ] PENDING: <one-line description of what's still open>.
+- [ ] PENDING: <another pending item>.
+
+- Relevant decisions: [[${linkRoot}/decisions/D-NNN_<type>_<slug>]] *(or \`*(none)*\` if there are no related decisions yet)*
+- Relevant features: [[${linkRoot}/features/<feature-slug>]] *(or \`*(none)*\` if there are no related features yet)*
+- Relevant system: [[${linkRoot}/system/<topic>]] *(optional; use \`*(none)*\` if not applicable)*
+- Relevant docs: [[${linkRoot}/docs/<Guide>/<topic>]] *(optional; use \`*(none)*\` if not applicable)*
+
+## General Done/Pending Without Dedicated Planning Note
+
+### Pending
+
+*(no items)*
+
+### Done — YYYY-MM-DD
+
+*(no items)*
+
+${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "roadmap/ideas.md"), page("ideas", "roadmap",
-    `Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into roadmap/plans/ and roadmap/done-pending.md.\n\n**Status colors:** 🟣 Brainstorming · 🟡 Scoping · 🔵 Approved · 🟢 Implemented · 🔴 Declined. The colors appear in the Status Key, the Idea Register, and the Idea Details sections. (Convention adopted in [[decisions/D-008_POL_ideas-status-colors|D-008]].)\n\n## Contents\n\n- [[#Status Key]]\n- [[#Idea Register]]\n- [[#Brainstorming]]\n- [[#Scoping]]\n- [[#Approved]]\n- [[#Implemented]]\n- [[#Declined]]\n- [[#Idea Details]]\n- [[#Navigation]]\n\n## Status Key\n\n| Status | Meaning |\n|---|---|\n| 🟣 Brainstorming | Rough idea, needs validation |\n| 🟡 Scoping | Worth exploring, decisions being made |\n| 🔵 Approved | Scoped, ready for implementation |\n| 🟢 Implemented | Built and shipped |\n| 🔴 Declined | Rejected or intentionally not pursued |\n\n## Idea Register\n\n| ID | Title | Status | One-line |\n|---|---|---|---|\n| IDEA-001 | Example idea | 🟣 Brainstorming | One-line description of the idea. |\n\n## Brainstorming\n\n- **IDEA-001** — Example idea. *Why brainstorming:* <why this is at this stage>.\n\n## Scoping\n\n*(no items)*\n\n## Approved\n\n*(no items)*\n\n## Implemented\n\n*(no items)*\n\n## Declined\n\n*(no items)*\n\n## Idea Details\n\n### IDEA-001 - Example idea\n\n- **Summary:** TBD\n- **Status:** 🟣 Brainstorming\n- **Date:** YYYY-MM-DD\n- **Owner / next step:** <who is responsible; what's the next concrete action>.\n- **Differentiation:** <what makes this idea distinct from similar ones>.\n- **Why valuable:** <the case for the idea>.\n- **Open questions:** <what's still unresolved>.\n- **References:** <links to related decisions/features/known-issues, or \`None yet\`>.\n\nReplace \`TBD\` with a 2-4 sentence description before approving or implementing the idea. Auto-fix may insert \`TBD\`, but agents must not invent the missing prose.\n\n## Navigation\n\n${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
+    `Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into roadmap/plans/ and roadmap/done-pending.md.
+
+**Status colors:** 🟣 Brainstorming · 🟡 Scoping · 🔵 Approved · 🟢 Implemented · 🔴 Declined. The colors appear in the Status Key, the Idea Register, and the Idea Details sections. This convention comes from the project-management skill policy for idea status colors.
+
+## Contents
+
+- [[#Status Key]]
+- [[#Idea Register]]
+- [[#Brainstorming]]
+- [[#Scoping]]
+- [[#Approved]]
+- [[#Implemented]]
+- [[#Declined]]
+- [[#Idea Details]]
+- [[#Navigation]]
+
+## Status Key
+
+| Status | Meaning |
+|---|---|
+| 🟣 Brainstorming | Rough idea, needs validation |
+| 🟡 Scoping | Worth exploring, decisions being made |
+| 🔵 Approved | Scoped, ready for implementation |
+| 🟢 Implemented | Built and shipped |
+| 🔴 Declined | Rejected or intentionally not pursued |
+
+## Idea Register
+
+| ID | Title | Status | One-line |
+|---|---|---|---|
+| IDEA-001 | Example idea | 🟣 Brainstorming | One-line description of the idea. |
+
+## Brainstorming
+
+- **IDEA-001** — Example idea. *Why brainstorming:* <why this is at this stage>.
+
+## Scoping
+
+*(no items)*
+
+## Approved
+
+*(no items)*
+
+## Implemented
+
+*(no items)*
+
+## Declined
+
+*(no items)*
+
+## Idea Details
+
+### IDEA-001 - Example idea
+
+- **Summary:** TBD
+- **Status:** 🟣 Brainstorming
+- **Date:** YYYY-MM-DD
+- **Owner / next step:** <who is responsible; what's the next concrete action>.
+- **Differentiation:** <what makes this idea distinct from similar ones>.
+- **Why valuable:** <the case for the idea>.
+- **Open questions:** <what's still unresolved>.
+- **References:** <links to related decisions/features/known-issues, or \`None yet\`>.
+
+Replace \`TBD\` with a 2-4 sentence description before approving or implementing the idea. Auto-fix may insert \`TBD\`, but agents must not invent the missing prose.
+
+## Navigation
+
+${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "system/system.md"), folderNote({
     title: "system",

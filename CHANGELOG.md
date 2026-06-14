@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *(No changes yet.)*
 
+## [1.12.0] - 2026-06-14
+
+### Added
+
+- `scripts/check-obsidian-links.mjs`: rendered Obsidian wikilink validator (D-014). Checks malformed wiki syntax, missing note targets, missing heading anchors, and PM-root-relative slash links against the vault model. Supports `--fix` for deterministic malformed-link closure, marked H2 TOC regeneration, and PM-relative link conversion.
+- `scripts/lib/obsidian-links.mjs`: shared vault-relative link helper for Obsidian target generation, rendered-link scanning, heading matching, marked TOCs, and deterministic link normalization.
+- `scripts/migrations/1.12.0-vault-relative-obsidian-links.mjs`: deterministic migration that normalizes PM links to vault-relative Obsidian targets when `vault_root` is known, closes simple malformed links, and regenerates marked TOCs.
+- `decisions/D-014_POL_vault-relative-obsidian-links.md`: records the vault-relative Obsidian link policy.
+- Unit and fixture coverage for vault-relative target generation, code-span-aware link scanning, malformed-link closure, PM-relative link conversion, and marked TOC regeneration.
+
+### Changed
+
+- Generated cross-note PM wikilinks now use vault-relative targets derived from `vault_root` and `pm_folder`; same-note heading links remain `[[#Heading]]`.
+- `bootstrap-pm.mjs`, roadmap fixers, live-routing fixers, folder-note parent-link repair, templates, and validators now share the D-014 link policy instead of hardcoding `Projects/<Project>`.
+- `scripts/validators/_index.mjs`: registered `check-obsidian-links.mjs` so `check-pm.mjs` includes rendered Obsidian link validation.
+- Templates now use `<ProjectPath>` for the project folder's vault-relative path.
+
+### Fixed
+
+- Reconcile can now catch and repair deterministic Obsidian-rendered link defects that previously passed PM-shape validation, including marked plan TOCs that pointed at missing H2 headings and PM-root-relative slash links such as `[[roadmap/done-pending]]`.
+
 ## [1.11.0] - 2026-06-14
 
 ### Added

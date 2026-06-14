@@ -33,6 +33,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
+import { pmWikiLink } from "./obsidian-links.mjs";
 
 /* ---------------------------------------------------------------------- */
 /* Fixer A.1: D-009 `## Active` introduce a `### Pending Triage` placeholder. */
@@ -298,10 +299,10 @@ export function ensureParentLinksToChild(parentContent, childRel, opts = {}) {
   const changes = [];
   const manualReview = [];
   const childStem = childRel.replace(/\.md$/, "").replace(/^.*\//, "");
-  const childLink = `[[${childRel.replace(/\.md$/, "")}|${childStem}]]`;
   const childTarget = childRel.replace(/\.md$/, "");
 
   const { pmFolder, vaultRoot } = opts;
+  const childLink = pmWikiLink(childRel, childStem, { pmFolder, vaultRoot });
   const childVaultRel =
     pmFolder && vaultRoot
       ? relative(vaultRoot, join(pmFolder, childRel)).replace(/\.md$/, "")

@@ -2,6 +2,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { findVaultRoot } from "../lib/paths.mjs";
 import { repairLiveRoutingDrift } from "../lib/live-routing-fixers.mjs";
 
 function collectMarkdownFiles(pmFolder) {
@@ -24,12 +25,13 @@ function collectTargets(files) {
   return files.map((file) => file.rel.replace(/\.md$/i, ""));
 }
 
-function detect({ pmFolder }) {
+function detect({ pmFolder, ctx = {} }) {
   const files = collectMarkdownFiles(pmFolder);
   const targets = collectTargets(files);
+  const linkOptions = { pmFolder, vaultRoot: findVaultRoot(pmFolder, ctx.configPath) };
   for (const file of files) {
     const original = readFileSync(file.abs, "utf8");
-    const result = repairLiveRoutingDrift(original, file.rel, targets);
+    const result = repairLiveRoutingDrift(original, file.rel, targets, linkOptions);
     if (result.updated !== original) return true;
   }
   return false;
@@ -46,12 +48,13 @@ function plan() {
 function apply({ pmFolder, ctx }) {
   const files = collectMarkdownFiles(pmFolder);
   const targets = collectTargets(files);
+  const linkOptions = { pmFolder, vaultRoot: findVaultRoot(pmFolder, ctx.configPath) };
   const log = [];
   const manualReview = [];
 
   for (const file of files) {
     const original = readFileSync(file.abs, "utf8");
-    const result = repairLiveRoutingDrift(original, file.rel, targets);
+    const result = repairLiveRoutingDrift(original, file.rel, targets, linkOptions);
     if (result.updated !== original) {
       if (!ctx.dryRun) writeFileSync(file.abs, result.updated);
       log.push(`${file.rel}: ${result.changes.length} deterministic live-routing change(s)`);

@@ -47,7 +47,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
+import { findVaultRoot, resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import {
   REQUIRED_DIRS,
@@ -60,6 +60,7 @@ import {
   isCanonicalTopLevelLane,
 } from "./lib/convention.mjs";
 import { countH2Sections, hasH2, stripFrontmatter, splitByH2Sections, countMeaningfulLines } from "./lib/markdown.mjs";
+import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { TOP_LEVEL_LANES } from "./lib/convention.mjs";
 
 const SKILL_DIR = findSkillDir();
@@ -115,7 +116,7 @@ function resolveTargets() {
         `      Falling back to CWD scan (${process.cwd()}).\n`
       );
     }
-    return [{ vault: resolve(CLI.vault ?? process.cwd()), label: resolve(CLI.vault ?? process.cwd()) }];
+    return [{ vault: resolve(CLI.vault ?? process.cwd()), label: resolve(CLI.vault ?? process.cwd()), configPath: null }];
   }
   const cfgRaw = readFileSync(configPath, "utf8");
   const cfg = JSON.parse(cfgRaw);
@@ -129,13 +130,13 @@ function resolveTargets() {
       console.error(configSetupError(CLI.project, configPath, cfg, `project '${CLI.project}' has no pm_folder`));
       process.exit(2);
     }
-    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})` }];
+    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, configPath }];
   }
   const projects = cfg.projects ?? {};
   const targets = [];
   for (const [name, proj] of Object.entries(projects)) {
     if (!proj.pm_folder) continue;
-    targets.push({ vault: resolve(proj.pm_folder), label: `${name} (${proj.pm_folder})` });
+    targets.push({ vault: resolve(proj.pm_folder), label: `${name} (${proj.pm_folder})`, configPath });
   }
   if (targets.length === 0) {
     console.log(`\nNo projects with available pm_folder entries in ${configPath}.`);
@@ -146,6 +147,7 @@ function resolveTargets() {
 // Per-target state (mutated by check()/emit() before each runFor call)
 let vaultRoot = null;
 let skipSet = new Set();
+let obsidianProjectPath = null;
 
 const CANONICAL_DOCS_GUIDE_DIRS = docsGuideDirMap();
 
@@ -551,8 +553,9 @@ function listVisibleFolderNotes() {
 function containsObsidianLinkTo(content, indexRel) {
   const target = indexRel.replace(/\.md$/, "");
   const projectTarget = `Projects/${basename(vaultRoot)}/${target}`;
+  const vaultTarget = obsidianProjectPath ? `${obsidianProjectPath}/${target}` : null;
   const links = [...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1]);
-  return links.some((link) => link === target || link === projectTarget);
+  return links.some((link) => link === target || link === projectTarget || link === vaultTarget);
 }
 
 // Defensive validator: a folder-note should not link to itself in its
@@ -564,8 +567,9 @@ function containsObsidianLinkTo(content, indexRel) {
 function containsSelfLink(content, indexRel) {
   const target = indexRel.replace(/\.md$/, "");
   const projectTarget = `Projects/${basename(vaultRoot)}/${target}`;
+  const vaultTarget = obsidianProjectPath ? `${obsidianProjectPath}/${target}` : null;
   const links = [...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1]);
-  return links.some((link) => link === target || link === projectTarget);
+  return links.some((link) => link === target || link === projectTarget || link === vaultTarget);
 }
 
 function listMarkdownFilesUnder(relDir) {
@@ -720,6 +724,7 @@ function emit() {
         // Substitute placeholders so the template is ready to use
         const content = tmpl
           .replace(/<Project>/g, basename(vaultRoot))
+          .replace(/<ProjectPath>/g, obsidianProjectPath || basename(vaultRoot))
           .replace(/<YYYY-MM-DD>/g, new Date().toISOString().slice(0, 10))
           .replace(/title: [^\n]+/, `title: ${title}`);
         writeFileSync(abs, content);
@@ -884,6 +889,7 @@ function issueTotal() {
 
 async function runFor(target) {
   vaultRoot = target.vault;
+  obsidianProjectPath = projectPathFromVault(findVaultRoot(target.vault, target.configPath), target.vault);
   skipSet = loadPmSkip(target.vault);
   if (skipSet.size > 0) {
     console.log(`(Honoring .pm/skip: ${[...skipSet].join(", ")})\n`);

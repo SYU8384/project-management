@@ -60,14 +60,14 @@ Why this decision came up. What forces are at play. What constraints exist. The 
 
 ## Related
 
-- `[[Projects/<Project>/roadmap/plans/YYYY-MM-DD_slug|YYYY-MM-DD_slug]]` — the planning note that contains the full design (or "—")
-- `[[Projects/<Project>/system/<topic>|system/<topic>]]` — the current-behavior doc that reflects the decision (or "—")
-- `[[Projects/<Project>/features/<feature>|features/<feature>]]` — the feature page that summarizes the decision (or "—")
-- `[[Projects/<Project>/decisions/D-NNN|D-NNN]]` — related decision (or "—")
+- `[[<ProjectPath>/roadmap/plans/YYYY-MM-DD_slug|YYYY-MM-DD_slug]]` — the planning note that contains the full design (or "—")
+- `[[<ProjectPath>/system/<topic>|system/<topic>]]` — the current-behavior doc that reflects the decision (or "—")
+- `[[<ProjectPath>/features/<feature>|features/<feature>]]` — the feature page that summarizes the decision (or "—")
+- `[[<ProjectPath>/decisions/D-NNN|D-NNN]]` — related decision (or "—")
 
 ## Navigation
 
-- [[Projects/<Project>/decisions/decisions|Back to decisions index]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/decisions/decisions|Back to decisions index]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

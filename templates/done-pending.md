@@ -31,16 +31,16 @@ Sections that are fully done should be archived to `history/YYYY-MM/history-YYYY
 
 ## example-plan-slug
 
-Planning note: [[roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]
+Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]
 
 - [x] DONE: <one-line description of what shipped>.
 - [ ] PENDING: <one-line description of what's still open>.
 - [ ] PENDING: <another pending item>.
 
-- Relevant decisions: [[decisions/D-NNN_<type>_<slug>]] *(or `*(none)*` if there are no related decisions yet)*
-- Relevant features: [[features/<feature-slug>]] *(or `*(none)*` if there are no related features yet)*
-- Relevant system: [[system/<topic>]] *(optional; use `*(none)*` if not applicable)*
-- Relevant docs: [[docs/<Guide>/<topic>]] *(optional; use `*(none)*` if not applicable)*
+- Relevant decisions: [[<ProjectPath>/decisions/D-NNN_<type>_<slug>]] *(or `*(none)*` if there are no related decisions yet)*
+- Relevant features: [[<ProjectPath>/features/<feature-slug>]] *(or `*(none)*` if there are no related features yet)*
+- Relevant system: [[<ProjectPath>/system/<topic>]] *(optional; use `*(none)*` if not applicable)*
+- Relevant docs: [[<ProjectPath>/docs/<Guide>/<topic>]] *(optional; use `*(none)*` if not applicable)*
 
 ## General Done/Pending Without Dedicated Planning Note
 
@@ -54,7 +54,7 @@ Planning note: [[roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-p
 
 ## Navigation
 
-- [[Projects/<Project>/roadmap/roadmap|Back to roadmap]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/roadmap/roadmap|Back to roadmap]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

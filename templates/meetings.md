@@ -18,7 +18,7 @@ This lane is *not* auto-scaffolded by `bootstrap-pm.mjs`. To use it, create the 
 ## Notes
 
 <!-- Add meeting files here, one per line:
-- [[Projects/<Project>/meetings/YYYY-MM-DD_slug|YYYY-MM-DD <topic>]]
+- [[<ProjectPath>/meetings/YYYY-MM-DD_slug|YYYY-MM-DD <topic>]]
 -->
 <!-- vault-maintain:index:end -->
 
@@ -33,6 +33,6 @@ This lane is *not* auto-scaffolded by `bootstrap-pm.mjs`. To use it, create the 
 
 ## Navigation
 
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

@@ -31,7 +31,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 
-import { resolveProjectsConfigPath } from "./lib/paths.mjs";
+import { findVaultRoot, resolveProjectsConfigPath } from "./lib/paths.mjs";
 import {
   insertStatusEmojisInIdeas,
   insertIdeasStatusColorsLeadNote,
@@ -82,7 +82,7 @@ function configSetupError(project, configPath, reason) {
 
 function resolveTargets() {
   const configPath = loadConfigPath();
-  if (!configPath) return [{ vault: resolve(CLI.vault ?? process.cwd()), label: resolve(CLI.vault ?? process.cwd()) }];
+  if (!configPath) return [{ vault: resolve(CLI.vault ?? process.cwd()), label: resolve(CLI.vault ?? process.cwd()), configPath: null }];
   const cfg = JSON.parse(readFileSync(configPath, "utf8"));
   if (CLI.project) {
     const proj = cfg.projects?.[CLI.project];
@@ -93,11 +93,11 @@ function resolveTargets() {
       console.error(configSetupError(CLI.project, configPath, reason));
       process.exit(2);
     }
-    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project }];
+    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project, configPath }];
   }
   return Object.entries(cfg.projects ?? {})
     .filter(([, proj]) => Boolean(proj.pm_folder))
-    .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project }));
+    .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project, configPath }));
 }
 
 function readIfExists(path) {
@@ -146,6 +146,7 @@ function runFor(target) {
   const issues = [];
   const manualReview = [];
   const markdownTargets = collectMarkdownTargets(target.vault);
+  const linkOptions = { pmFolder: target.vault, vaultRoot: findVaultRoot(target.vault, target.configPath) };
 
   const ideasPath = join(target.vault, "roadmap/ideas.md");
   const knownIssuesPath = join(target.vault, "roadmap/known-issues.md");
@@ -221,9 +222,9 @@ function runFor(target) {
     let working = donePendingContent;
     const rename = renameDatePrefixedH2s(donePendingContent);
     working = rename.updated;
-    const planningLinks = linkDonePendingPlanningNotes(working, markdownTargets);
+    const planningLinks = linkDonePendingPlanningNotes(working, markdownTargets, linkOptions);
     working = planningLinks.updated;
-    const relevantLinks = normalizeDonePendingRelevantLinks(working, markdownTargets);
+    const relevantLinks = normalizeDonePendingRelevantLinks(working, markdownTargets, linkOptions);
     working = relevantLinks.updated;
     const toc = syncDonePendingContents(working);
     working = toc.updated;

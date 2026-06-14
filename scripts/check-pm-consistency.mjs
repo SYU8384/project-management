@@ -10,10 +10,11 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
+import { findVaultRoot, resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import { expectedPageTypeForPath, isFolderNotePath } from "./lib/convention.mjs";
 import { parseFrontmatter, markdownStem, wikiLinks } from "./lib/markdown.mjs";
+import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -52,7 +53,7 @@ function configSetupError(project, configPath, reason) {
 
 function resolveTargets() {
   const configPath = loadConfigPath();
-  if (!configPath) return [{ vault: resolve(CLI.vault ?? process.cwd()), label: resolve(CLI.vault ?? process.cwd()) }];
+  if (!configPath) return [{ vault: resolve(CLI.vault ?? process.cwd()), label: resolve(CLI.vault ?? process.cwd()), configPath: null }];
   const cfg = JSON.parse(readFileSync(configPath, "utf8"));
   if (CLI.project) {
     const proj = cfg.projects?.[CLI.project];
@@ -63,11 +64,11 @@ function resolveTargets() {
       console.error(configSetupError(CLI.project, configPath, reason));
       process.exit(2);
     }
-    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project }];
+    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project, configPath }];
   }
   return Object.entries(cfg.projects ?? {})
     .filter(([project, proj]) => Boolean(proj.pm_folder))
-    .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project }));
+    .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project, configPath }));
 }
 
 function walk(root, skipSet) {
@@ -100,11 +101,14 @@ function expectedPageType(rel, project, existing) {
   return expectedPageTypeForPath(rel, project, existing);
 }
 
-function resolveLinkTarget(target, project) {
+function resolveLinkTarget(target, project, projectPath) {
   if (target === "Home" || target === "Projects/Projects") return null;
-  if (target.startsWith("Projects/") && !target.startsWith(`Projects/${project}/`)) return null;
-  const prefix = `Projects/${project}/`;
-  return (target.startsWith(prefix) ? target.slice(prefix.length) : target).replace(/\.md$/, "");
+  const legacyPrefix = `Projects/${project}/`;
+  const prefixes = [projectPath ? `${projectPath}/` : null, legacyPrefix].filter(Boolean);
+  const matchedPrefix = prefixes.find((prefix) => target.startsWith(prefix));
+  if (matchedPrefix) return target.slice(matchedPrefix.length).replace(/\.md$/, "");
+  if (target.startsWith("Projects/")) return null;
+  return target.replace(/\.md$/, "");
 }
 
 function checkTarget(targets, normalizedTarget) {
@@ -121,6 +125,7 @@ function runFor(target) {
   // once per run, not once per file.
   let expectedPhase = null;
   const configPath = resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
+  const projectPath = projectPathFromVault(findVaultRoot(target.vault, target.configPath ?? configPath), target.vault);
   if (configPath && existsSync(configPath)) {
     try {
       const cfg = JSON.parse(readFileSync(configPath, "utf8"));
@@ -246,7 +251,7 @@ function runFor(target) {
       if (!ok) issues.push(`${rel}: missing roadmap/done-pending mirror section`);
     }
     for (const link of wikiLinks(content)) {
-      const normalized = resolveLinkTarget(link, project);
+      const normalized = resolveLinkTarget(link, project, projectPath);
       if (!checkTarget(targets, normalized)) issues.push(`${rel}: unresolved link [[${link}]]`);
     }
   }

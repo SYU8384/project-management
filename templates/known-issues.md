@@ -67,7 +67,7 @@ Active items are grouped by domain below. **Fixed items are migrated to `docs/De
 
 ## Navigation
 
-- [[Projects/<Project>/roadmap/roadmap|Back to roadmap]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/roadmap/roadmap|Back to roadmap]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]

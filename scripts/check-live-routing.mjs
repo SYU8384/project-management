@@ -12,7 +12,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
-import { resolveProjectsConfigPath } from "./lib/paths.mjs";
+import { findVaultRoot, resolveProjectsConfigPath } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import { repairLiveRoutingDrift, findLiveRoutingDrift } from "./lib/live-routing-fixers.mjs";
 
@@ -41,7 +41,7 @@ function configSetupError(project, configPath, reason) {
 }
 
 function resolveTargets() {
-  if (CLI.vault) return [{ vault: resolve(CLI.vault), label: resolve(CLI.vault) }];
+  if (CLI.vault) return [{ vault: resolve(CLI.vault), label: resolve(CLI.vault), configPath: null }];
   const configPath = resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
   if (!configPath) {
     console.error("ERROR: no projects.json found. Pass a PM folder path or --config <path>.");
@@ -57,11 +57,11 @@ function resolveTargets() {
       console.error(configSetupError(CLI.project, configPath, reason));
       process.exit(2);
     }
-    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project }];
+    return [{ vault: resolve(proj.pm_folder), label: `${CLI.project} (${proj.pm_folder})`, project: CLI.project, configPath }];
   }
   return Object.entries(cfg.projects ?? {})
     .filter(([, proj]) => Boolean(proj.pm_folder))
-    .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project }));
+    .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project, configPath }));
 }
 
 function collectMarkdownFiles(root, skipSet) {
@@ -92,12 +92,13 @@ function runFor(target) {
   const skipSet = loadPmSkip(target.vault);
   const files = collectMarkdownFiles(target.vault, skipSet);
   const targets = collectMarkdownTargets(files);
+  const linkOptions = { pmFolder: target.vault, vaultRoot: findVaultRoot(target.vault, target.configPath) };
 
   console.log(`\n# Live routing hygiene: ${target.label}\n`);
 
   for (const file of files) {
     const original = readFileSync(file.abs, "utf8");
-    const result = repairLiveRoutingDrift(original, file.rel, targets);
+    const result = repairLiveRoutingDrift(original, file.rel, targets, linkOptions);
     const drift = findLiveRoutingDrift(original, file.rel);
 
     if (result.updated !== original) {

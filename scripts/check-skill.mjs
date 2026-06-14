@@ -40,6 +40,7 @@ const PUBLIC_DOCS = [
 
 const ALLOWED_PLACEHOLDERS = new Set([
   "<Project>",
+  "<ProjectPath>",
   "<ProjectName>",
   "<Project Name>",
   "<Project README>",

@@ -32,7 +32,7 @@ owner: PM
 
 Ideas here are not commitments. Keep rough proposals here until they are approved and concrete enough to move into `roadmap/plans/` and `roadmap/done-pending.md`. Every idea detail section needs a `**Summary:**` field with a 2-4 sentence human-readable description; auto-fix may insert `TBD`, but agents must not invent the missing prose.
 
-**Status colors:** 🟣 Brainstorming · 🟡 Scoping · 🔵 Approved · 🟢 Implemented · 🔴 Declined. The colors appear in the Status Key, the Idea Register, and the Idea Details sections. (Convention adopted in `decisions/D-008_POL_ideas-status-colors.md`.)
+**Status colors:** 🟣 Brainstorming · 🟡 Scoping · 🔵 Approved · 🟢 Implemented · 🔴 Declined. The colors appear in the Status Key, the Idea Register, and the Idea Details sections. This convention comes from the project-management skill policy for idea status colors.
 
 ## Status Key
 
@@ -85,7 +85,7 @@ Ideas here are not commitments. Keep rough proposals here until they are approve
 
 ## Navigation
 
-- [[Projects/<Project>/roadmap/roadmap|Back to roadmap]]
-- [[Projects/<Project>/<Project>|Back to <Project>]]
+- [[<ProjectPath>/roadmap/roadmap|Back to roadmap]]
+- [[<ProjectPath>/<Project>|Back to <Project>]]
 - [[Projects/Projects|Back to Projects]]
 - [[Home|Back to Home]]
