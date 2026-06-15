@@ -55,9 +55,11 @@ The order below follows a new user's natural flow: **register your project first
 | Bootstrap a new project's PM folder | `setup this repo` | First time you set up a project. | Creates PM folder + registers project as `access: authoritative`. |
 | Register as a collaborator | `setup as collaborator` | When you have the PM folder mounted read-only (e.g., OneDrive read-link, Syncthing read-only mirror). | Registers `access: read-only` (you can read the PM folder but cannot edit it). |
 | Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs the registered validators. No mutation. |
-| Fix everything that's wrong | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix`, repairs registered repo `AGENTS.md` PM sections, applies pending migrations, re-validates. Idempotent. |
+| Fix one project's PM state | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix` for the resolved project, repairs its registered repo `AGENTS.md` PM section, applies pending migrations, re-validates. Idempotent. |
+| Update all registered projects | `reconcile all projects` *(or* `reconcile existing projects` */* `reconcile outdated projects` */* `update projects with latest skill changes`*) | When the skill changed and registered projects may be stale. | Runs all registered projects with no `--project` filter: deterministic fixes, pending migrations, stale registered repo `AGENTS.md` repairs, then re-validation. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
+| Check code-work PM close-out | run `check-pm-closeout.mjs` | Before a coding agent gives its final response after meaningful code work. | Verifies local access, worktree changes, current-state PM updates, and the current-day history log; allows explicit no-impact reasons. |
 | Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, active roadmap state, known issues, and recent history; produces a 1-paragraph summary pointing to the right files. |
 
 If you have code access but no PM folder at all, none of these apply — see **Access model** below.
@@ -66,7 +68,7 @@ If you have code access but no PM folder at all, none of these apply — see **A
 
 The skill behaves differently depending on whether you own the PM folder or are a collaborator on a project whose PM folder is maintained by someone else. Pick your path at setup time; the agent uses the access mode you register to decide which files to write and which trigger phrases to expose. Code repos get one portable `AGENTS.md` PM section; local `projects.json` decides what that section means on each machine.
 
-- **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, or `reconcile this project` to fix an existing one.
+- **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, `reconcile this project` to fix one existing project, or `reconcile all projects` to update every registered project after skill changes.
 - **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode. You need the PM folder mounted read-only (e.g., via OneDrive read-link, Syncthing read-only mirror) to use this mode.
 - **Contributor (no PM access)** — the skill is not really for you. You have code access but no PM folder: either the maintainer doesn't share the PM folder with you, or the maintainer doesn't use the skill at all. Don't run `setup as collaborator` — there's nothing to register on your side.
 
@@ -85,6 +87,7 @@ The full per-access-mode behavior (how the portable `AGENTS.md` section resolves
 | 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
 | 🧭 Keep live routing current | Catches live notes that still point to retired PM lanes and repairs deterministic plan/decision link drift. |
 | 🔗 Keep Obsidian links navigable | Validates rendered wikilinks against the vault model and repairs deterministic PM-root-relative links, malformed links, and marked TOCs. |
+| ✅ Guard PM close-out | Checks whether meaningful local code changes in authoritative projects have matching current-state PM updates and a current-day history entry. |
 | 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
 | 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md` with real section links, and records typed decisions under `decisions/`. |
@@ -138,10 +141,10 @@ The workflow has three branches — one per access mode. The owner's path is the
 | 2. Update current-state docs (`system/`, `docs/`, `features/`, `roadmap/`, `decisions/`) | Yes | No | No |
 | 3. Update folder-note indexes and navigation | Yes | No | No |
 | 4. Write `history/YYYY-MM/history-YYYY-MM-DD.md` | Yes | No | No |
-| 5. PR body's `PM folder impact` section | n/a | Fill in the per-lane checkboxes (be specific) | Leave the section empty |
+| 5. Run close-out guard / PR impact check | `check-pm-closeout.mjs` should pass, or the agent states an explicit no-impact reason | Fill in the per-lane checkboxes (be specific) | Leave the section empty |
 | After merge | (done) | Maintainer applies PM updates from the PR body | Maintainer inspects the code diff and infers PM updates |
 
-History is written last because it records what changed after the durable docs have already been updated.
+History is written last because it records what changed after the durable docs have already been updated. The close-out guard is a worktree/session check, not a replacement for `check-pm.mjs` structural validation.
 
 ## 🧰 Repository Map
 
@@ -155,6 +158,7 @@ History is written last because it records what changed after the durable docs h
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter for `projects.json`; the bootstrap script copies it to `~/.config/project-management/projects.json` on first run. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation/reconcile entry point that runs all PM checks and coordinates `--fix`. |
+| [`scripts/check-pm-closeout.mjs`](./scripts/check-pm-closeout.mjs) | Non-mutating worktree/session guard that checks whether meaningful code changes have PM close-out evidence. |
 | [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator and `--fix` repair path for missing/stale PM sections. |
 | [`scripts/sync-agents-section.mjs`](./scripts/sync-agents-section.mjs) | Targeted AGENTS PM-section sync utility for re-rendering registered repos from the latest portable template. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Migration Debt` for registry migrations that still apply and are not in the project ledger. |
@@ -194,7 +198,7 @@ History is written last because it records what changed after the durable docs h
 - **PM folders do not store secrets.** Keep account purpose and credential location in PM notes; keep plaintext credentials in external secret stores.
 - **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
 - **Conventions have one model.** Reusable PM vocabulary lives in `scripts/lib/convention.mjs`; scripts and checks import it instead of copying lists.
-- **Quality gates are local.** The repo stays dependency-free; `node --test` and `scripts/check-skill.mjs` cover the internal model and public-doc drift.
+- **Quality gates are local.** The repo stays dependency-free; `node --test`, `scripts/check-skill.mjs`, and `scripts/check-pm-closeout.mjs` cover the internal model, public-doc drift, and coding-session PM close-out.
 - **The skill is portable.** `projects.json` lives at `~/.config/project-management/projects.json` (user-specific, gitignored); the repo itself contains only reusable conventions, templates, and scripts.
 
 ## 🏷️ Versioning

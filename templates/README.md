@@ -108,6 +108,7 @@ owner: PM
 | New idea or declined proposal | `roadmap/ideas.md` |
 | Roadmap item completed | Mark the relevant roadmap item done and add a brief `history/` entry |
 | Entire `roadmap/done-pending.md` section completed | Distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the completed section; if it mirrors a completed planning file, archive that planning file too |
+| Meaningful code work finished in an authoritative repo | Run `check-pm-closeout.mjs` if available; otherwise inspect the diff and confirm current-state docs plus history were updated, or record a no-impact reason |
 | Product positioning or target user changed | `PRODUCT.md`, then `history/` |
 | Credential, token, API key, recovery code, or private connection detail appears in notes | Redact it from PM notes. Keep only account purpose/status and where credentials live outside the PM folder |
 

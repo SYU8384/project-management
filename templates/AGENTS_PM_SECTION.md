@@ -8,7 +8,7 @@ Before doing PM-related work, resolve local access:
 - If there is no config, no matching entry, the entry has no accessible `pm_folder`, or the `access` value is not `authoritative` or `read-only`, treat this as **no PM access**.
 
 Behavior by resolved access:
-- **`authoritative`**: read the PM folder `README.md` before coding, read relevant `system/`, `features/`, and active `roadmap/plans/` notes for context, then update affected PM docs directly after meaningful code changes. Update current-state docs before `history/YYYY-MM/history-YYYY-MM-DD.md`.
+- **`authoritative`**: read the PM folder `README.md` before coding, read relevant `system/`, `features/`, and active `roadmap/plans/` notes for context, then update affected PM docs directly after meaningful code changes. Update current-state docs before `history/YYYY-MM/history-YYYY-MM-DD.md`. Before the final response, run `node path/to/project-management/scripts/check-pm-closeout.mjs --project "Project Name" --config ~/.config/project-management/projects.json` when the project-management skill path is known; otherwise manually verify the same close-out: repo diff inspected, current-state docs updated or explicitly no-impact, history updated last.
 - **`read-only`**: read the PM folder for context, but never edit it. When opening a PR, fill in the PR body's `PM folder impact` section with specific suggested PM updates.
 - **No PM access**: ignore this PM section during normal coding. Do not ask PM setup questions, do not invent PM paths, and do not edit PM files. If a PR template has a `PM folder impact` section, leave it empty so the maintainer can backfill from the code diff.
 

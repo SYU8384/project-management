@@ -18,7 +18,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
    - `read-only`: read the PM folder, then fill the PR body's PM impact section; do not edit the PM folder.
    - no PM access: do not register the project locally; contributor workflow is PR-body-only.
 4. Update current-state docs before history. For code work, check `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, then append `history/YYYY-MM/history-YYYY-MM-DD.md`.
-5. Validate when setup, repair, migration, or structural drift is in scope.
+5. Before the final response after meaningful code work, run `scripts/check-pm-closeout.mjs` when possible, or explicitly state the no-impact reason. Validate when setup, repair, migration, or structural drift is in scope.
 
 ## Trigger Map
 
@@ -29,13 +29,15 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 | "initialize/bootstrap/create PM folder" | Run `scripts/bootstrap-pm.mjs` with project, PM folder, code repo/null, phase, notes, access, and config path. |
 | "verify/check/audit setup" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` when registered. |
 | "audit/check PM folder quality", "checkup PM folder" | Use the PM Folder Quality Audit workflow in `REFERENCE.md`: validate, scan live routing/link drift, refresh status, compress roadmap lanes, check for secrets, then write history last. |
-| "repair/reconcile/fix everything" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path> --fix`, then re-check residual findings. |
+| "repair/reconcile/fix everything" for one project | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path> --fix`, then re-check residual findings. |
+| "reconcile all projects", "reconcile existing projects", "reconcile outdated projects", "update projects with latest skill changes" | Run `node <skill_dir>/scripts/check-pm.mjs --config ~/.config/project-management/projects.json --fix` with no `--project` filter. This reconciles every registered project: deterministic fixes, pending migrations, registered repo `AGENTS.md` repairs, then re-validation. |
 | "migrate/upgrade PM/clear migration debt" | Use `scripts/migrate.mjs`; name the migration and concrete effects before applying. |
 | "add/fix AGENTS.md PM folder section" | Apply the portable AGENTS template; local `projects.json` access controls runtime behavior. |
 | "sync AGENTS.md / PM section is stale" | Run `node <skill_dir>/scripts/sync-agents-section.mjs --project <name>` (or omit `--project` for all). Re-renders the `## PM folder` span in each code repo's `AGENTS.md` from the latest template; preserves all other AGENTS.md content. |
 | "summarize this project" | Read README, CURRENT_STATUS, PRODUCT, done-pending, known-issues, and recent history; return one paragraph. |
 | "PR PM impact", "opened/merged/reviewed a PR" | Use Contributor Workflow in `REFERENCE.md`; maintainer agents backfill PM docs when needed. |
 | "big task", "multi-session", or broad architecture/doc redesign | Write or update a planning note before implementation and mirror it in `roadmap/done-pending.md`. |
+| meaningful code work finishes | Run `node <skill_dir>/scripts/check-pm-closeout.mjs --project <name> --config <path>` before final response; fix PM docs or pass `--allow-no-impact "reason"` only for real no-PM-impact work. |
 
 ## High-Risk Routing Rules
 
@@ -56,6 +58,8 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 
 - Validate PM setup: `node <skill_dir>/scripts/check-pm.mjs --project <name> --config ~/.config/project-management/projects.json`
 - Reconcile PM setup: `node <skill_dir>/scripts/check-pm.mjs --project <name> --config ~/.config/project-management/projects.json --fix`
+- Reconcile all registered PM setups: `node <skill_dir>/scripts/check-pm.mjs --config ~/.config/project-management/projects.json --fix`
+- Check code-work PM close-out: `node <skill_dir>/scripts/check-pm-closeout.mjs --project <name> --config ~/.config/project-management/projects.json` (add `--since 2026-06-16T00:00:00+09:00` for a stricter session baseline, or `--allow-no-impact "reason"` for explicit no-PM-impact work)
 - Sync the AGENTS.md `## PM folder` section with the latest template: `node <skill_dir>/scripts/sync-agents-section.mjs --project <name> --config ~/.config/project-management/projects.json` (use `--dry-run --no-history` to preview; `--no-history` to skip the auto history bullet)
 - Validate roadmap content conventions (D-007/008/009/010/012): `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path>`
 - Auto-fix roadmap content conventions: `node <skill_dir>/scripts/check-roadmap-conventions.mjs --project <name> --config <path> --fix` (covers D-008 emoji insertion, D-009 empty `## Fixed` removal, D-007 slug-only H2 rename, D-012 done-pending TOC/link repair, and missing idea Summary insertion as `TBD`; D-009 `### <Domain>`, D-010 `### <Lane>`, ambiguous links, and `TBD` summaries surface as `MANUAL REVIEW`)
@@ -66,4 +70,4 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 
 ## Final Response
 
-After logging, bootstrapping, repairing, or migrating, state exactly which project/vault files changed. If no files changed, say so and explain why.
+After logging, bootstrapping, repairing, migrating, or closing out code work, state exactly which project/vault files changed. If no PM files changed, state the `check-pm-closeout.mjs` no-impact reason or resolved access mode.

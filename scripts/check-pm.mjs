@@ -13,16 +13,19 @@
  *   Phase 3: pending migrations (from registry, idempotent, reads ledger)
  *   Phase 4: validators (final report; residual failures determine final exit)
  *
- * The orchestrator passes through all `--project`, `--config`, and `--vault`
- * args to the focused validators. `--dry-run` is honored at Phase 3 (migrations
- * report what they'd do, don't apply). `--force` is passed to migrations so
- * ledger-blocked re-applies work (e.g., v1.0.2 re-run after v1.2.0 detection-pattern
- * extension).
+ * The orchestrator passes target args through to focused validators. During
+ * Phase 3, a config-only all-project reconcile expands into focused per-project
+ * migration invocations. `--dry-run` is honored at Phase 3 (migrations report
+ * what they'd do, don't apply). `--force` is passed to migrations so
+ * ledger-blocked re-applies work (e.g., v1.0.2 re-run after v1.2.0
+ * detection-pattern extension).
  */
 
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { buildMigrationArgs, expandMigrationTargetArgs } from "./lib/check-pm-migrations.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const ARGS = process.argv.slice(2);
@@ -98,21 +101,35 @@ function runMigrations() {
     console.log("\n## Migrations\n\nNo unapplied migrations found.\n");
     return [];
   }
-  console.log(`\n## Migrations (${migrationIds.length} registered; checking each project)\n`);
+  const migrationTargets = expandMigrationTargetArgs(ARGS);
+  if (migrationTargets.length === 0) {
+    console.log("\n## Migrations\n\nNo PM folders registered for migration.\n");
+    return [];
+  }
+  console.log(
+    `\n## Migrations (${migrationIds.length} registered; ${migrationTargets.length} target${migrationTargets.length === 1 ? "" : "s"})\n`
+  );
   const failures = [];
 
-  for (const id of migrationIds) {
-    console.log(`\n## Migration ${id}\n`);
-    const safeArgs = ARGS.filter((a) => a !== "--fix");
-    const args = ["--migration", id, "--yes", ...safeArgs];
-    if (dryRunRequested) args.push("--dry-run");
-    if (forceRequested) args.push("--force");
-    const result = runChild(join(SCRIPT_DIR, "migrate.mjs"), args);
-    if (result.error) {
-      failures.push(`${id}: ${result.error.message}`);
-      continue;
+  for (const target of migrationTargets) {
+    console.log(`\n## Migration target: ${target.label}\n`);
+    for (const id of migrationIds) {
+      console.log(`\n### Migration ${id}\n`);
+      const result = runChild(
+        join(SCRIPT_DIR, "migrate.mjs"),
+        buildMigrationArgs(id, target.args, {
+          dryRun: dryRunRequested,
+          force: forceRequested,
+        })
+      );
+      if (result.error) {
+        failures.push(`${target.label} ${id}: ${result.error.message}`);
+        continue;
+      }
+      if (result.status !== 0) {
+        failures.push(`${target.label} ${id}: exit ${result.status ?? "unknown"}`);
+      }
     }
-    if (result.status !== 0) failures.push(`${id}: exit ${result.status ?? "unknown"}`);
   }
   return failures;
 }

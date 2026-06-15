@@ -197,7 +197,7 @@ Respect project access:
 
 (Contributors with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.)
 
-Coding agents still update PM folders after code changes. The OpenClaw PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless the user explicitly asks for coding work.
+Coding agents still update PM folders after code changes and should run `check-pm-closeout.mjs` before final response when the skill path is available. The OpenClaw PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless the user explicitly asks for coding work.
 
 Common routes:
 - Ideas go to `roadmap/ideas.md`.
@@ -279,6 +279,16 @@ node <skill_dir>/scripts/check-pm.mjs \
 If the project is in a non-default `projects.json` location, pass `--config <projects_json>`. v1.3.0+ resolves `projects.json` from `~/.config/project-management/projects.json` by default.
 
 If validation fails and the project has `access: authoritative`, ask whether to repair the PM folder. If access is `read-only`, report suggested fixes without editing.
+
+For singular wording such as "reconcile this project", repair only the resolved/current project. For plural or update wording such as "reconcile all projects", "reconcile existing projects", "reconcile outdated projects", or "update projects with latest skill changes", run:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs \
+  --config <projects_json> \
+  --fix
+```
+
+This all-project reconcile applies deterministic fixes, pending migrations, stale registered repo `AGENTS.md` PM-section repairs, and final re-validation across every registered project.
 
 Finish by reporting:
 

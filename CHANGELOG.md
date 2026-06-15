@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-*(No changes yet.)*
+### Added
+
+- `scripts/check-pm-closeout.mjs`: non-mutating coding-session guard that resolves local PM access, inspects git worktree changes, and verifies authoritative projects have current-state PM updates plus the current-day history log before final response.
+- `scripts/lib/check-pm-migrations.mjs`: helper for expanding config-wide reconcile into focused per-project migration invocations.
+- Tests for close-out project matching, access-mode behavior, no-change pass, missing-PM failure, successful PM evidence, explicit no-impact reasons, and changed-file PM lane suggestions.
+- Tests for all-project reconcile migration target expansion and migration argument construction.
+
+### Changed
+
+- `AGENTS.md`, `templates/AGENTS_PM_SECTION.md`, `SKILL.md`, `REFERENCE.md`, README, generated README scaffolds, and OpenClaw instructions now document the PM close-out guard and explicit no-impact path.
+- `SKILL.md`, `README.md`, `REFERENCE.md`, OpenClaw instructions, and PM trigger docs now distinguish singular `reconcile this project` from plural/update wording that reconciles every registered project with no `--project` filter.
+
+### Fixed
+
+- `scripts/check-pm.mjs --config <projects.json> --fix` now expands Phase 3 migrations per registered project instead of invoking `migrate.mjs` without a project target.
 
 ## [1.12.0] - 2026-06-14
 

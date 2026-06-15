@@ -24,4 +24,5 @@ test("portable AGENTS PM section documents all resolved access outcomes", () => 
   assert.match(content, /read-only/);
   assert.match(content, /No PM access/);
   assert.match(content, /projects\.json/);
+  assert.match(content, /check-pm-closeout\.mjs/);
 });

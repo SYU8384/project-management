@@ -24,6 +24,8 @@ node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>
 
 The wrapper runs all focused validators and returns nonzero if any check fails. The individual scripts remain available for debugging specific failures.
 
+`scripts/check-pm-closeout.mjs` is separate from this registry. Use it after meaningful code work to inspect the local git worktree and confirm PM close-out evidence; do not add it to `scripts/validators/_index.mjs` because its result depends on session timing and uncommitted repo changes.
+
 The repair workflow has 3 phases: **audit, plan, fix**.
 
 ### Phase 1: Audit
@@ -40,6 +42,12 @@ For one registered project, prefer:
 node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>
 ```
 
+For all registered projects, omit `--project`:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs --config ~/.config/project-management/projects.json
+```
+
 The wrapper runs:
 
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
@@ -51,6 +59,14 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-live-routing.mjs` — verifies live notes outside `history/` and `archive/` use current `roadmap/plans/` and root `decisions/` lanes, not retired routing. Supports `--fix` for deterministic path/decision-link repairs.
 - `node <skill_dir>/scripts/check-obsidian-links.mjs` — verifies rendered Obsidian wikilinks against the vault model (D-014). Supports `--fix` for deterministic malformed-link closure, marked H2 TOC regeneration, and PM-root-relative slash-link conversion to vault-relative targets.
 - `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
+
+Use `reconcile this project` for one resolved/current project. Use `reconcile all projects`, `reconcile existing projects`, `reconcile outdated projects`, or `update projects with latest skill changes` to run every registered project with no `--project` filter:
+
+```bash
+node <skill_dir>/scripts/check-pm.mjs --config ~/.config/project-management/projects.json --fix
+```
+
+All-project reconcile applies deterministic validator fixes, pending migrations, stale registered repo `AGENTS.md` repairs, then re-validates. `sync-agents-section.mjs` remains the targeted AGENTS-only tool; full reconcile should use `check-pm.mjs --fix`.
 
 For changes to the skill repository itself, also run:
 
@@ -269,7 +285,8 @@ Preserves `archive/` and `history/` untouched. Idempotent: re-running is a no-op
 > 4. Apply the project README before any generic rule in this skill.
 > 5. Update current-state docs before history when behavior, architecture, data flow, runtime, auth, database, connectors, deployment, UX, user/admin/developer workflow, quick commands, roadmap status, or documentation structure changes.
 > 6. Update `history/` last with outcome-first bullets that a human can scan without reading the code diff.
-> 7. In the final response, state exactly which project/vault files were updated.
+> 7. Run `node <skill_dir>/scripts/check-pm-closeout.mjs --project <ProjectName> --config ~/.config/project-management/projects.json` before final response when possible.
+> 8. In the final response, state exactly which project/vault files were updated, or the explicit no-impact reason.
 
 ### Project Detection
 
@@ -886,6 +903,7 @@ The `access` field is set during Setup Intake or when the project is added to th
 8. Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md`. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment). Architecture shifts default to `ADR`.
 9. Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
 10. Always add a `history/YYYY-MM/history-YYYY-MM-DD.md` bullet for what changed and why. Use the outcome-first history shape: bold human-readable sentence first, then the conventional type/scope token and concise detail.
+11. Run `node <skill_dir>/scripts/check-pm-closeout.mjs --project <ProjectName> --config ~/.config/project-management/projects.json` before the final response. Use `--since 2026-06-16T00:00:00+09:00` when you know the session start. Use `--allow-no-impact "reason"` only after inspecting the diff and confirming there is no PM-facing effect.
 
 **The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
 
