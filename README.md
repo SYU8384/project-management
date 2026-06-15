@@ -205,10 +205,11 @@ History is written last because it records what changed after the durable docs h
 
 This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
 
-- **Default install (v1.0.1+):** pulls `v1` (latest `v1.x.x` release). Use `--ref main` or `--channel main` for the bleeding edge.
+- **Default install:** pulls `main` (bleeding edge). Use `--ref v1.0.0` to pin an exact release, or `--channel v1` to follow the latest `v1.x.x` release.
 - **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
 - **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
-- **Update an existing install:** re-run the same install command; existing clones `git pull --ff-only` and the script prints the resolved version from the `VERSION` file.
+- **Update an existing install:** re-run the same install command; existing clones fetch and fast-forward to the selected ref. If the checkout has local changes, pass `--force` to discard them.
+- **Force update:** `curl -fsSL .../install.sh | bash -s -- --force --yes` resets the skill directory to the selected ref and removes untracked files.
 
 **Check the installed version** without re-running the installer:
 

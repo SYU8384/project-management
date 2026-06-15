@@ -39,16 +39,18 @@ git pull --ff-only
 If no valid install exists, install to the default OpenClaw managed/local skill root:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/v1/install.sh \
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
   | bash -s -- --target openclaw --yes
 ```
 
 If the user chose a custom root, install/update with `--dest <skills-dir>` instead:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/v1/install.sh \
+curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
   | bash -s -- --dest <skills-dir> --yes
 ```
+
+To discard local changes during an update, add `--force` before `--yes`.
 
 After install/update, set:
 

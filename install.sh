@@ -2,29 +2,31 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/SYU8384/project-management.git"
-REF="v1"
+REF="main"
 CHANNEL=""
 SKILL_NAME="project-management"
 TARGET=""
 DEST_PARENT=""
 YES=0
+FORCE=0
 
 usage() {
   cat <<'USAGE'
 Install or update the project-management skill.
 
 Usage:
-  install.sh [--target codex|agents|claude|openclaw] [--yes] [--update]
-  install.sh --dest <skills-dir> [--name project-management] [--yes] [--update]
+  install.sh [--target codex|agents|claude|openclaw] [--yes] [--update] [--force]
+  install.sh --dest <skills-dir> [--name project-management] [--yes] [--update] [--force]
 
 Options:
   --target <target>  Install/update target: codex, agents, claude, or openclaw.
   --dest <dir>       Custom parent skills directory.
   --name <name>      Installed skill directory name. Default: project-management.
   --repo <url>       Git repo URL. Default: https://github.com/SYU8384/project-management.git
-  --ref <ref>        Branch or tag to install. Default: v1 (latest v1.x.x). For bleeding edge, use --ref main or --channel main.
-  --channel <name>   Release channel: main (bleeding edge) or v1 (latest v1.x.x). Default: unset.
+  --ref <ref>        Branch or tag to install. Default: main (bleeding edge). Pin with e.g. v1.0.0.
+  --channel <name>   Release channel: main (bleeding edge) or v1 (latest v1.x.x release). Default: unset.
   --update           Explicitly request update behavior. Existing installs update automatically.
+  --force            On existing installs, discard local changes and untracked files before updating.
   --yes              Skip confirmation prompts.
   --help            Show this help.
 
@@ -155,6 +157,10 @@ parse_args() {
       --update)
         shift
         ;;
+      --force|-f)
+        FORCE=1
+        shift
+        ;;
       --help|-h)
         usage
         exit 0
@@ -215,11 +221,23 @@ install_or_update() {
   if [[ -e "$install_dir" ]]; then
     [[ -d "$install_dir/.git" ]] || die "$install_dir already exists but is not a git checkout."
     ensure_same_repo "$install_dir" || die "$install_dir exists but does not point at $REPO_URL."
+
     if [[ -n "$(git -C "$install_dir" status --porcelain)" ]]; then
-      die "$install_dir has local changes. Commit, stash, or remove them before updating."
+      if [[ "$FORCE" -ne 1 ]]; then
+        die "$install_dir has local changes. Commit, stash, or remove them before updating, or re-run with --force to discard them."
+      fi
+      info "Forcing update: discarding local changes and untracked files at $install_dir"
+      git -C "$install_dir" reset --hard
+      git -C "$install_dir" clean -fd
     fi
-    info "Updating existing install at $install_dir"
-    git -C "$install_dir" pull --ff-only
+
+    info "Updating existing install at $install_dir to $REF"
+    git -C "$install_dir" fetch --tags origin
+    git -C "$install_dir" checkout "$REF"
+    git -C "$install_dir" pull --ff-only origin "$REF" || {
+      # If pull fails because REF is a tag or detached, checkout already did the work.
+      info "Note: could not fast-forward pull $REF; staying at checked-out ref."
+    }
   else
     info "Cloning $REPO_URL ($REF) to $install_dir"
     git clone --depth 1 --branch "$REF" "$REPO_URL" "$install_dir"
