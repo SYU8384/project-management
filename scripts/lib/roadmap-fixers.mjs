@@ -2,7 +2,7 @@
  * lib/roadmap-fixers.mjs
  *
  * Auto-fixer functions for roadmap content conventions
- * (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018). Imported by both the
+ * (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018 / D-019). Imported by both the
  * `check-roadmap-conventions.mjs` validator (for `--fix` mode) and roadmap
  * content migrations (for `apply()`).
  *
@@ -48,6 +48,24 @@ function normalizeRelPath(value) {
 function basenameNoExt(relPath) {
   const normalized = normalizeRelPath(relPath);
   return normalized.split("/").pop() ?? normalized;
+}
+
+function splitFrontmatter(content) {
+  const normalized = String(content ?? "").replace(/\r\n/g, "\n");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return { frontmatter: "", body: normalized, bodyStart: 0 };
+  return {
+    frontmatter: match[1],
+    body: normalized.slice(match[0].length),
+    bodyStart: match[0].length,
+  };
+}
+
+function frontmatterScalar(content, key) {
+  const split = splitFrontmatter(content);
+  const match = split.frontmatter.match(new RegExp(`^${escapeRegExp(key)}:\\s*(.+?)\\s*$`, "m"));
+  if (!match) return "";
+  return match[1].trim().replace(/^["']|["']$/g, "");
 }
 
 function normalizeToken(value) {
@@ -296,6 +314,144 @@ function planRelatedReplacement(existingBody, requiredLines) {
   return { body: next.join("\n").trimEnd(), changed };
 }
 
+function firstH2Section(content) {
+  return h2Sections(content)[0] ?? null;
+}
+
+function beforeTrailingTocMarker(content, index) {
+  const before = String(content ?? "").slice(0, index);
+  const match = before.match(/<!--\s*vault-maintain:toc:start\s*-->\s*$/);
+  if (!match) return index;
+  return index - match[0].length;
+}
+
+function relatedInsertionIndex(content) {
+  const summary = h2SectionByHeading(content, "Summary");
+  if (summary) return beforeTrailingTocMarker(content, summary.end);
+
+  const first = firstH2Section(content);
+  if (first) return first.start;
+
+  return content.length;
+}
+
+function joinBeforeRelated(slice) {
+  const trimmed = String(slice ?? "").replace(/\n+$/, "");
+  if (!trimmed) return "";
+  if (/^---\n[\s\S]*?\n---$/.test(trimmed)) return `${trimmed}\n`;
+  return `${trimmed}\n\n`;
+}
+
+function removeRelatedSection(content, section) {
+  const before = joinBeforeRelated(content.slice(0, section.start));
+  const after = content.slice(section.end).replace(/^\n+/, "");
+  return `${before}${after}`.replace(/\n{3,}/g, "\n\n");
+}
+
+function insertRelatedSection(content, body) {
+  const block = `## Related\n\n${String(body ?? "").trimEnd()}\n\n`;
+  const index = relatedInsertionIndex(content);
+  const before = joinBeforeRelated(content.slice(0, index));
+  const after = content.slice(index).replace(/^\n+/, "");
+  return `${before}${block}${after}`.replace(/\n{3,}/g, "\n\n");
+}
+
+function placeRelatedSection(content, body) {
+  const withoutRelated = h2SectionByHeading(content, "Related")
+    ? removeRelatedSection(content, h2SectionByHeading(content, "Related"))
+    : content;
+  return insertRelatedSection(withoutRelated, body);
+}
+
+function comparableHeading(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/^#+\s*/, "")
+    .replace(/[`*_~"']/g, "")
+    .replace(/&/g, " and ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function isFenceToggle(line) {
+  return /^\s*(```|~~~)/.test(line);
+}
+
+function duplicatePlanH1Candidates(planRel, content) {
+  const stem = basenameNoExt(planRel);
+  const slug = planMirrorHeadingFromRel(planRel);
+  const title = frontmatterScalar(content, "title");
+  return new Set([stem, slug, title].map(comparableHeading).filter(Boolean));
+}
+
+function planOpeningShape(content, planRel) {
+  const split = splitFrontmatter(content);
+  const candidates = duplicatePlanH1Candidates(planRel, content);
+  const lines = split.body.replace(/^\n+/, "").split("\n");
+  const out = [];
+  const changes = [];
+  const manualReview = [];
+  let inFence = false;
+  let sawH2 = false;
+
+  for (const line of lines) {
+    if (isFenceToggle(line)) {
+      inFence = !inFence;
+      out.push(line);
+      continue;
+    }
+
+    const h2 = !inFence && /^##\s+\S+/.test(line);
+    if (h2) sawH2 = true;
+
+    const h1 = !inFence ? line.match(/^#\s+(.+?)\s*$/) : null;
+    if (h1) {
+      const heading = h1[1].trim();
+      if (candidates.has(comparableHeading(heading))) {
+        changes.push(`${planRel}: removed redundant planning-note H1 \`# ${heading}\``);
+        continue;
+      }
+      if (!sawH2) {
+        manualReview.push(
+          `${planRel}: non-matching early H1 \`# ${heading}\` preserved; confirm whether it is an imported report title or accidental title duplication`
+        );
+      }
+    }
+
+    out.push(line);
+  }
+
+  const body = out.join("\n").replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "");
+  const prefix = split.bodyStart > 0
+    ? `---\n${split.frontmatter.trimEnd()}\n---\n`
+    : "";
+  return {
+    updated: `${prefix}${body}`,
+    changes,
+    manualReview,
+  };
+}
+
+export function ensurePlanningNoteOpeningShape(planContent, { planRel } = {}) {
+  const normalized = String(planContent ?? "").replace(/\r\n/g, "\n");
+  const opening = planOpeningShape(normalized, planRel);
+  let updated = opening.updated;
+  const changes = [...opening.changes];
+  const manualReview = [...opening.manualReview];
+
+  const related = h2SectionByHeading(updated, "Related");
+  if (related) {
+    const placed = placeRelatedSection(updated, related.body.replace(/^\n+/, "").replace(/\n+$/, ""));
+    if (placed !== updated) {
+      updated = placed;
+      changes.push(`${planRel}: moved \`## Related\` near the top of the planning note`);
+    }
+  }
+
+  return { updated, changes, manualReview };
+}
+
 export function ensurePlanRelatedLinks(planContent, { planRel, donePendingContent, linkOptions = {} } = {}) {
   const changes = [];
   const manualReview = [];
@@ -313,23 +469,18 @@ export function ensurePlanRelatedLinks(planContent, { planRel, donePendingConten
   const related = h2SectionByHeading(planContent, "Related");
   if (related) {
     const replacement = planRelatedReplacement(related.body, requiredLines);
-    if (!replacement.changed) return { updated: planContent, changes, manualReview };
-    const updated = `${planContent.slice(0, related.start)}## Related\n\n${replacement.body}\n\n${planContent.slice(related.end).replace(/^\n+/, "")}`.replace(/\n{3,}/g, "\n\n");
-    changes.push(`${planRel}: updated \`## Related\` with done-pending mirror traceability`);
+    const updated = placeRelatedSection(planContent, replacement.body);
+    if (updated === planContent && !replacement.changed) return { updated: planContent, changes, manualReview };
+    changes.push(
+      replacement.changed
+        ? `${planRel}: updated \`## Related\` with done-pending mirror traceability`
+        : `${planRel}: moved \`## Related\` near the top of the planning note`
+    );
     return { updated, changes, manualReview };
   }
 
-  const relatedBlock = `## Related\n\n${requiredLines.join("\n")}\n\n`;
-  const navigation = planContent.match(/^##\s+Navigation\s*$/m);
-  if (navigation) {
-    const before = planContent.slice(0, navigation.index).replace(/\n+$/, "\n\n");
-    const after = planContent.slice(navigation.index);
-    changes.push(`${planRel}: added \`## Related\` with done-pending mirror traceability`);
-    return { updated: `${before}${relatedBlock}${after}`.replace(/\n{3,}/g, "\n\n"), changes, manualReview };
-  }
-
-  changes.push(`${planRel}: appended \`## Related\` with done-pending mirror traceability`);
-  return { updated: `${planContent.replace(/\n+$/, "\n\n")}${relatedBlock}`.replace(/\n{3,}/g, "\n\n"), changes, manualReview };
+  changes.push(`${planRel}: added \`## Related\` with done-pending mirror traceability`);
+  return { updated: placeRelatedSection(planContent, requiredLines.join("\n")), changes, manualReview };
 }
 
 function hasPlanningNote(body) {

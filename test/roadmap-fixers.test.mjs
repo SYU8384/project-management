@@ -17,6 +17,7 @@ import {
   HUMAN_ARCHIVE_CONFIRMATION_LINE,
   HUMAN_ARCHIVE_CONFIRMATION_TEXT,
   planArchiveReadyDonePendingSections,
+  ensurePlanningNoteOpeningShape,
   ensurePlanRelatedLinks,
   planMirrorHeadingFromRel,
 } from "../scripts/lib/roadmap-fixers.mjs";
@@ -65,6 +66,173 @@ test("planMirrorHeadingFromRel derives slug-only done-pending headings", () => {
   assert.equal(
     planMirrorHeadingFromRel("roadmap/plans/2026-06-23_email_connector_architecture"),
     "email-connector-architecture"
+  );
+});
+
+test("ensurePlanningNoteOpeningShape removes duplicate H1 after Summary", () => {
+  const input = `---
+title: traceability-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+## Summary
+
+Traceability plan.
+
+# 2026-06-23_traceability-plan
+
+## Implementation
+
+Ship it.
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+
+  assert.match(result.changes.join("\n"), /removed redundant planning-note H1/);
+  assert.equal(result.updated.includes("# 2026-06-23_traceability-plan"), false);
+  assert.match(result.updated, /## Summary\n\nTraceability plan\.\n\n## Implementation/);
+});
+
+test("ensurePlanningNoteOpeningShape removes slug H1 before Summary", () => {
+  const input = `# traceability-plan
+
+## Summary
+
+Traceability plan.
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+
+  assert.equal(result.updated.startsWith("## Summary"), true);
+  assert.equal(result.updated.includes("# traceability-plan"), false);
+});
+
+test("ensurePlanningNoteOpeningShape removes H1 matching normalized frontmatter title", () => {
+  const input = `---
+title: "Full Codebase Audit & Remediation Plan"
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+# Full Codebase Audit and Remediation Plan
+
+## Summary
+
+Audit plan.
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_audit-plan",
+  });
+
+  assert.equal(result.updated.includes("# Full Codebase Audit and Remediation Plan"), false);
+  assert.match(result.updated, /## Summary\n\nAudit plan\./);
+});
+
+test("ensurePlanningNoteOpeningShape preserves non-matching early H1 for manual review", () => {
+  const input = `# Imported Report Title
+
+## Executive Summary
+
+Report body.
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_audit-plan",
+  });
+
+  assert.equal(result.updated, input);
+  assert.match(result.manualReview.join("\n"), /non-matching early H1 `# Imported Report Title` preserved/);
+});
+
+test("ensurePlanningNoteOpeningShape moves existing Related near top and preserves prose", () => {
+  const input = `## Summary
+
+Plan summary.
+
+## Implementation
+
+Implement it.
+
+## Related
+
+Context note stays here.
+
+## Navigation
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+
+  assert.match(result.updated, /## Summary\n\nPlan summary\.\n\n## Related\n\nContext note stays here\.\n\n## Implementation/);
+  assert.equal(result.updated.indexOf("## Related") < result.updated.indexOf("## Implementation"), true);
+
+  const again = ensurePlanningNoteOpeningShape(result.updated, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+  assert.equal(again.changes.length, 0);
+  assert.equal(again.updated, result.updated);
+});
+
+test("ensurePlanningNoteOpeningShape is idempotent when Related follows frontmatter directly", () => {
+  const input = `---
+title: traceability-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+## Related
+
+Done-pending mirror: [[Projects/Project Management/roadmap/done-pending#traceability-plan|done-pending#traceability-plan]]
+
+## Context
+
+Plan context.
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+
+  assert.deepEqual(result.changes, []);
+  assert.equal(result.updated, input);
+});
+
+test("ensurePlanningNoteOpeningShape keeps vault TOC marker with Contents", () => {
+  const input = `## Summary
+
+Plan summary.
+<!-- vault-maintain:toc:start -->
+## Contents
+
+- [[#Summary]]
+- [[#Implementation]]
+<!-- vault-maintain:toc:end -->
+
+## Implementation
+
+Implement it.
+
+## Related
+
+Context note stays here.
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+
+  assert.match(
+    result.updated,
+    /Plan summary\.\n\n## Related\n\nContext note stays here\.\n\n<!-- vault-maintain:toc:start -->\n## Contents/
   );
 });
 
@@ -357,7 +525,7 @@ Planning note: [[roadmap/plans/2026-06-01_completed-plan|2026-06-01_completed-pl
     const donePending = readFileSync(join(pm, "roadmap", "done-pending.md"), "utf8");
     assert.match(donePending, new RegExp(escapeRegExp(HUMAN_ARCHIVE_CONFIRMATION_LINE)));
     assert.match(donePending, /## completed-plan/);
-    assert.equal(readFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), "utf8").includes("# completed-plan"), true);
+    assert.equal(readFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), "utf8").includes("# completed-plan"), false);
   } finally {
     rmSync(pm, { recursive: true, force: true });
   }
@@ -414,6 +582,75 @@ Relevant decisions: [[decisions/D-018_POL_bidirectional-plan-traceability|D-018]
   }
 });
 
+test("check-roadmap-conventions reports and fixes duplicate planning-note H1s", () => {
+  const pm = mkdtempSync(join(tmpdir(), "pm-opening-shape-"));
+  try {
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), `---
+title: traceability-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: shipped
+owner: PM
+---
+## Summary
+
+Traceability plan.
+
+# 2026-06-23_traceability-plan
+
+## Navigation
+`);
+
+    const before = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(before.status, 1, before.stdout + before.stderr);
+    assert.match(before.stdout, /D-019/);
+    assert.match(before.stdout, /removed redundant planning-note H1/);
+
+    const fixed = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm, "--fix"], { encoding: "utf8" });
+    assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+
+    const plan = readFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), "utf8");
+    assert.equal(plan.includes("# 2026-06-23_traceability-plan"), false);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+test("check-roadmap-conventions preserves non-matching early H1s as manual review", () => {
+  const pm = mkdtempSync(join(tmpdir(), "pm-opening-shape-manual-"));
+  try {
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_audit-plan.md"), `---
+title: audit-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: shipped
+owner: PM
+---
+# Imported Report Title
+
+## Executive Summary
+
+Report body.
+`);
+
+    const fixed = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm, "--fix"], { encoding: "utf8" });
+    assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+    assert.match(fixed.stdout, /Manual Review Summary/);
+    assert.match(fixed.stdout, /non-matching early H1/);
+
+    const plan = readFileSync(join(pm, "roadmap", "plans", "2026-06-23_audit-plan.md"), "utf8");
+    assert.match(plan, /# Imported Report Title/);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});
+
 test("check-roadmap-conventions ignores shipped planning notes for traceability", () => {
   const pm = mkdtempSync(join(tmpdir(), "pm-plan-traceability-shipped-"));
   try {
@@ -427,7 +664,9 @@ pageType: planning
 status: shipped
 owner: PM
 ---
-# shipped-plan
+## Summary
+
+Shipped plan.
 `);
     writeFileSync(join(pm, "roadmap", "done-pending.md"), `# done-pending
 
@@ -566,6 +805,86 @@ Relevant docs: [[Projects/Example/docs/Developer Guide/traceability|traceability
   }
 });
 
+test("1.16.0 migration repairs planning-note opening shape without rewriting body", () => {
+  const vault = mkdtempSync(join(tmpdir(), "pm-opening-shape-vault-"));
+  const pm = join(vault, "Projects", "Example");
+  try {
+    mkdirSync(join(vault, ".obsidian"), { recursive: true });
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), `---
+title: traceability-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+## Summary
+
+Original body stays here.
+
+# 2026-06-23_traceability-plan
+
+## Implementation
+
+Implement.
+
+## Related
+
+Existing related prose.
+
+## Navigation
+`);
+    const config = join(vault, "projects.json");
+    writeFileSync(config, JSON.stringify({
+      vault_root: vault,
+      skill_dir: SKILL_DIR,
+      projects: {
+        Example: {
+          code_repo: null,
+          pm_folder: pm,
+          phase: "beta",
+          notes: "test",
+          access: "authoritative",
+        },
+      },
+    }, null, 2));
+
+    const result = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.16.0-planning-note-opening-shape",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    const plan = readFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), "utf8");
+    assert.match(plan, /Original body stays here\./);
+    assert.equal(plan.includes("# 2026-06-23_traceability-plan"), false);
+    assert.match(plan, /## Summary\n\nOriginal body stays here\.\n\n## Related\n\nExisting related prose\.\n\n## Implementation/);
+
+    const second = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.16.0-planning-note-opening-shape",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.match(second.stdout, /No applicable migrations/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
 test("check-roadmap-conventions --fix archives deterministic completed planning mirrors", () => {
   const pm = mkdtempSync(join(tmpdir(), "pm-archive-ready-"));
   try {
@@ -672,7 +991,7 @@ Planning note: [[roadmap/plans/2026-06-01_completed-plan|2026-06-01_completed-pl
     const fixed = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm, "--fix"], { encoding: "utf8" });
     assert.equal(fixed.status, 1, fixed.stdout + fixed.stderr);
     assert.match(fixed.stdout, /unparseable frontmatter/);
-    assert.equal(readFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), "utf8"), "# completed-plan\n");
+    assert.equal(readFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), "utf8"), "");
   } finally {
     rmSync(pm, { recursive: true, force: true });
   }

@@ -22,6 +22,8 @@
  *     `Related Notes` link dumps in favor of inline evidence links.
  *   - D-018: active/proposed planning notes link back to their exact
  *     `roadmap/done-pending.md#<section>` mirror from `## Related`.
+ *   - D-019: planning notes open with useful content: no redundant body
+ *     title H1, and existing `## Related` sections are placed near the top.
  *   - Planning mirrors in `roadmap/done-pending.md` carry a human
  *     archive-confirmation checkbox. Completed mirrors fail in report-only
  *     mode and auto-archive under `--fix` only after that checkbox is done.
@@ -29,6 +31,7 @@
  * Run with `--fix` to auto-apply the deterministic fixes (D-008
  * emoji insertion, D-009 empty-`## Fixed` removal, D-007 H2 rename,
  * D-012 TOC/link repair, D-018 plan-side mirror traceability repair,
+ * D-019 planning-note opening-shape repair,
  * missing idea Summary insertion, missing human
  * archive-confirmation insertion, and completed-mirror archive close-out
  * when the linked plan target is unique).
@@ -75,6 +78,7 @@ import {
   findArchiveReadyDonePendingSections,
   findPlanningMirrorsMissingHumanArchiveConfirmation,
   ensureHumanArchiveConfirmation,
+  ensurePlanningNoteOpeningShape,
   ensurePlanRelatedLinks,
   planArchiveReadyDonePendingSections,
   removeDonePendingSections,
@@ -708,6 +712,28 @@ function runFor(target) {
     donePendingForPlanTraceability = working;
   }
 
+  // ---- D-019: planning notes open with useful content, not repeated titles ----
+  {
+    const planRels = markdownTargets
+      .filter((rel) => rel.startsWith("roadmap/plans/") && rel !== "roadmap/plans/plans")
+      .sort();
+    for (const rel of planRels) {
+      const abs = join(target.vault, `${rel}.md`);
+      const content = readIfExists(abs);
+      if (content === null) continue;
+
+      const opening = ensurePlanningNoteOpeningShape(content, { planRel: rel });
+      const working = CLI.fix && opening.updated !== content
+        ? touchFrontmatter(opening.updated, todayIsoDate())
+        : opening.updated;
+      if (CLI.fix) writeIfChanged(abs, content, working, rel);
+      if (opening.changes.length > 0 && !CLI.fix) {
+        for (const c of opening.changes) issues.push(`D-019 ${c}`);
+      }
+      for (const r of opening.manualReview) manualReview.push(`D-019 ${r}`);
+    }
+  }
+
   // ---- D-018: planning notes link back to their done-pending mirror ----
   if (donePendingForPlanTraceability !== null) {
     const planRels = markdownTargets
@@ -719,8 +745,11 @@ function runFor(target) {
       if (content === null) continue;
       const status = planningNoteStatus(content);
       if (status !== "active" && status !== "proposed") continue;
+      const contentForTraceability = CLI.fix
+        ? content
+        : ensurePlanningNoteOpeningShape(content, { planRel: rel }).updated;
 
-      const trace = ensurePlanRelatedLinks(content, {
+      const trace = ensurePlanRelatedLinks(contentForTraceability, {
         planRel: rel,
         donePendingContent: donePendingForPlanTraceability,
         linkOptions,
@@ -744,7 +773,7 @@ function runFor(target) {
   console.log(`**Status:** ${issues.length === 0 ? "PASS" : "FAIL"}`);
   console.log("");
   if (issues.length === 0) {
-    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018) hold for the project's roadmap files.");
+    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018 / D-019) hold for the project's roadmap files.");
   } else {
     for (const issue of issues) console.log(`- ${issue}`);
   }

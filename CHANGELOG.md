@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/migrations/1.16.0-planning-note-opening-shape.mjs`: removes deterministic duplicate planning-note H1s and moves existing `## Related` sections near the top while preserving plan bodies.
+- D-019 planning-note opening-shape validation in `check-roadmap-conventions.mjs`: planning notes must not repeat their filename, slug, or frontmatter title as a body H1, and existing `## Related` sections are kept near the top.
+- `decisions/D-019_POL_planning-note-opening-shape.md`: records the planning-note opening policy.
+- Tests for duplicate H1 removal, `## Related` repositioning, non-matching early-H1 manual review, validator fix/report behavior, and the 1.16.0 migration.
 - `scripts/migrations/1.15.0-plan-related-links.mjs`: adds deterministic `## Related` done-pending mirror and relevant-link entries to active/proposed planning notes when the matching mirror already exists.
 - D-018 plan-to-mirror traceability validation in `check-roadmap-conventions.mjs`: active/proposed `roadmap/plans/*.md` notes must link back to their exact `roadmap/done-pending.md#<section>` mirror.
 - `decisions/D-018_POL_bidirectional-plan-traceability.md`: records the bidirectional planning-note/done-pending mirror policy.
@@ -36,8 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Planning-note guidance now treats Obsidian/file title as the note title: plan bodies start with useful content such as `## Summary`, and `## Related` is positioned near the top for quick access.
+- Working version bumped to `1.16.0` for the planning-note opening-shape release candidate.
 - Planning-note guidance now treats `## Related` as bidirectional traceability: plans link to their done-pending mirror section and reuse relevant decision/feature/system/docs links from that mirror.
-- Working version bumped to `1.15.0` for the bidirectional plan traceability release candidate.
 - The canonical folder model, README route tables, folder templates, and PM close-out guidance now treat `inbox/` as required and reserve it for raw intake only, not backlog management.
 - Bootstrap now creates the milestone roadmap folder and an initial milestone note from the configured phase instead of creating `roadmap/mvp-priorities.md`.
 - Roadmap convention validation now enforces milestone-note sections from D-015/D-016, requires `## Update Triggers`, creates the active milestone under `--fix`, removes deterministic generic milestone `Related Notes` sections, and treats D-010 as superseded legacy behavior.

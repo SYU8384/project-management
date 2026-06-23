@@ -29,4 +29,5 @@ export default [
   "1.13.2-inline-milestone-evidence-links.mjs",
   "1.14.0-inbox-lane.mjs",
   "1.15.0-plan-related-links.mjs",
+  "1.16.0-planning-note-opening-shape.mjs",
 ];

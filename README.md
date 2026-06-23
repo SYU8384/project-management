@@ -126,7 +126,7 @@ Each project gets a Markdown folder with stable lanes:
 | `inbox/` | Raw owner/collaborator intake notes before owner triage. Not a backlog; digested items move to canonical lanes. |
 | `roadmap/` | Milestones, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
 | `roadmap/milestones/` | Agent-maintained phase-level milestone strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans, decisions, features, known issues, or docs. The active milestone is derived from `CURRENT_STATUS.md` `## Current Phase`. |
-| `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight, with plan-side `## Related` links back to the mirror. |
+| `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight, with plan-side `## Related` links near the top back to the mirror. |
 | `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. Type codes: `ADR / PRD / MKT / VND / POL / NEG / EXP`. |
 | `history/` | Human-readable chronological logs of completed work, organized by year-month. |
 | `archive/` | Superseded material replaced by current docs. |
@@ -200,6 +200,7 @@ History is written last because it records what changed after the durable docs h
 - **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md`.
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md` with TOC links that match real H2 sections and plan/decision/feature links inside each section.
+- **Planning notes open with context.** Obsidian/file title is the note title; plan bodies should not repeat it as a body H1. Start with useful content such as `## Summary`, then put `## Related` near the top for quick navigation.
 - **Live instructions route future agents.** README, current status, folder notes, and feature pages must point to current lanes and existing notes.
 - **Obsidian links follow the vault model.** Generated cross-note PM links use vault-relative targets derived from `vault_root`; same-note section links stay as `[[#Heading]]`.
 - **PM folders do not store secrets.** Keep account purpose and credential location in PM notes; keep plaintext credentials in external secret stores.
