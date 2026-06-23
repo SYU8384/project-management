@@ -90,7 +90,7 @@ The full per-access-mode behavior (how the portable `AGENTS.md` section resolves
 | ✅ Guard PM close-out | Checks whether meaningful local code changes in authoritative projects have matching current-state PM updates and a current-day history entry. |
 | 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
 | 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
-| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md` with real section links, and records typed decisions under `decisions/`. |
+| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, keeps active/proposed plans linked back to their exact mirror section, and records typed decisions under `decisions/`. |
 | 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
 | 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json`. |
 | 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
@@ -126,7 +126,7 @@ Each project gets a Markdown folder with stable lanes:
 | `inbox/` | Raw owner/collaborator intake notes before owner triage. Not a backlog; digested items move to canonical lanes. |
 | `roadmap/` | Milestones, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
 | `roadmap/milestones/` | Agent-maintained phase-level milestone strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans, decisions, features, known issues, or docs. The active milestone is derived from `CURRENT_STATUS.md` `## Current Phase`. |
-| `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight. |
+| `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight, with plan-side `## Related` links back to the mirror. |
 | `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. Type codes: `ADR / PRD / MKT / VND / POL / NEG / EXP`. |
 | `history/` | Human-readable chronological logs of completed work, organized by year-month. |
 | `archive/` | Superseded material replaced by current docs. |
@@ -167,7 +167,7 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner; `--fix` refreshes deterministic `last_reviewed` / `updated` dates when frontmatter is present. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator; `--fix` repairs deterministic frontmatter, page-type, history-shape, and archive-marker drift. |
 | [`scripts/check-inbox-conventions.mjs`](./scripts/check-inbox-conventions.mjs) | Inbox raw-intake validator for filename shape, lifecycle metadata, destination routing, and placeholder-name handling. |
-| [`scripts/check-roadmap-conventions.mjs`](./scripts/check-roadmap-conventions.mjs) | Content-level roadmap convention validator for done-pending, ideas, known-issues, milestone notes, and human-readable note shape, including the human archive-confirmation gate and `--fix` archive close-out for deterministic completed planning mirrors. |
+| [`scripts/check-roadmap-conventions.mjs`](./scripts/check-roadmap-conventions.mjs) | Content-level roadmap convention validator for done-pending, ideas, known-issues, milestone notes, plan-side mirror traceability, and human-readable note shape, including the human archive-confirmation gate and `--fix` archive close-out for deterministic completed planning mirrors. |
 | [`scripts/check-content-semantics.mjs`](./scripts/check-content-semantics.mjs) | Semantic content validator for placeholders, dead links, plan status markers, and theoretical-risk wording. |
 | [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge; `--fix` repairs sections/status placement while leaving `TBD` prose for review. |
 | [`scripts/check-live-routing.mjs`](./scripts/check-live-routing.mjs) | Live routing hygiene validator for retired lane references and deterministic decision-link repair. |
@@ -175,7 +175,7 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
-| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, and vault-relative Obsidian link normalization. |
+| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, vault-relative Obsidian link normalization, inbox lane creation, and plan-side mirror traceability. |
 | [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
 | [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
 | [`scripts/lib/frontmatter-fixers.mjs`](./scripts/lib/frontmatter-fixers.mjs) | Shared deterministic PM frontmatter repairs used by reconcile. |

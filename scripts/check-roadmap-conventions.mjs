@@ -20,13 +20,16 @@
  *     `Deferred`, `Update Triggers`, `Navigation`) and the active phase
  *     has an agent-maintained milestone note. D-016 deprecates generic
  *     `Related Notes` link dumps in favor of inline evidence links.
+ *   - D-018: active/proposed planning notes link back to their exact
+ *     `roadmap/done-pending.md#<section>` mirror from `## Related`.
  *   - Planning mirrors in `roadmap/done-pending.md` carry a human
  *     archive-confirmation checkbox. Completed mirrors fail in report-only
  *     mode and auto-archive under `--fix` only after that checkbox is done.
  *
  * Run with `--fix` to auto-apply the deterministic fixes (D-008
  * emoji insertion, D-009 empty-`## Fixed` removal, D-007 H2 rename,
- * D-012 TOC/link repair, missing idea Summary insertion, missing human
+ * D-012 TOC/link repair, D-018 plan-side mirror traceability repair,
+ * missing idea Summary insertion, missing human
  * archive-confirmation insertion, and completed-mirror archive close-out
  * when the linked plan target is unique).
  * The auto-fixer cannot pick project-specific domain/lane names or infer
@@ -72,6 +75,7 @@ import {
   findArchiveReadyDonePendingSections,
   findPlanningMirrorsMissingHumanArchiveConfirmation,
   ensureHumanArchiveConfirmation,
+  ensurePlanRelatedLinks,
   planArchiveReadyDonePendingSections,
   removeDonePendingSections,
 } from "./lib/roadmap-fixers.mjs";
@@ -155,6 +159,12 @@ function collectMarkdownTargets(root) {
   }
   walk(root);
   return targets;
+}
+
+function planningNoteStatus(content) {
+  const split = splitFrontmatter(content);
+  if (!split) return null;
+  return frontmatterValue(split.frontmatter, "status");
 }
 
 function writeIfChanged(path, original, updated, rel) {
@@ -513,6 +523,7 @@ function runFor(target) {
   const milestonesDir = join(target.vault, "roadmap/milestones");
   const milestonesIndexPath = join(milestonesDir, "milestones.md");
   const donePendingPath = join(target.vault, "roadmap/done-pending.md");
+  let donePendingForPlanTraceability = null;
 
   // ---- D-008: ideas.md status colors ----
   const ideasContent = readIfExists(ideasPath);
@@ -694,6 +705,38 @@ function runFor(target) {
     for (const r of relevantLinks.manualReview) manualReview.push(r);
     for (const r of confirmation.manualReview) manualReview.push(r);
     for (const r of toc.manualReview) manualReview.push(r);
+    donePendingForPlanTraceability = working;
+  }
+
+  // ---- D-018: planning notes link back to their done-pending mirror ----
+  if (donePendingForPlanTraceability !== null) {
+    const planRels = markdownTargets
+      .filter((rel) => rel.startsWith("roadmap/plans/") && rel !== "roadmap/plans/plans")
+      .sort();
+    for (const rel of planRels) {
+      const abs = join(target.vault, `${rel}.md`);
+      const content = readIfExists(abs);
+      if (content === null) continue;
+      const status = planningNoteStatus(content);
+      if (status !== "active" && status !== "proposed") continue;
+
+      const trace = ensurePlanRelatedLinks(content, {
+        planRel: rel,
+        donePendingContent: donePendingForPlanTraceability,
+        linkOptions,
+      });
+      const working = CLI.fix && trace.updated !== content
+        ? touchFrontmatter(trace.updated, todayIsoDate())
+        : trace.updated;
+      if (CLI.fix) writeIfChanged(abs, content, working, rel);
+      if (trace.changes.length > 0 && !CLI.fix) {
+        for (const c of trace.changes) issues.push(`D-018 ${c}`);
+      }
+      for (const r of trace.manualReview) {
+        manualReview.push(r);
+        issues.push(`D-018 ${r}`);
+      }
+    }
   }
 
   // Report
@@ -701,7 +744,7 @@ function runFor(target) {
   console.log(`**Status:** ${issues.length === 0 ? "PASS" : "FAIL"}`);
   console.log("");
   if (issues.length === 0) {
-    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-012 / D-015 / D-016) hold for the project's roadmap files.");
+    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018) hold for the project's roadmap files.");
   } else {
     for (const issue of issues) console.log(`- ${issue}`);
   }

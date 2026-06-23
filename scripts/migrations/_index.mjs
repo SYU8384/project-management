@@ -28,4 +28,5 @@ export default [
   "1.13.1-agent-maintained-milestones.mjs",
   "1.13.2-inline-milestone-evidence-links.mjs",
   "1.14.0-inbox-lane.mjs",
+  "1.15.0-plan-related-links.mjs",
 ];

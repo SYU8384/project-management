@@ -2,9 +2,9 @@
  * lib/roadmap-fixers.mjs
  *
  * Auto-fixer functions for roadmap content conventions
- * (D-007 / D-008 / D-009 / D-012 / D-015 / D-016). Imported by both the
- * `check-roadmap-conventions.mjs` validator (for `--fix` mode) and the
- * `1.7.0-roadmap-content-conventions.mjs` migration (for `apply()`).
+ * (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018). Imported by both the
+ * `check-roadmap-conventions.mjs` validator (for `--fix` mode) and roadmap
+ * content migrations (for `apply()`).
  *
  * Design: each fixer is a pure function that takes the file content (and
  * any needed context) and returns `{ updated, changes, manualReview }`.
@@ -18,7 +18,7 @@
 
 import { MILESTONE_REQUIRED_SECTIONS } from "./convention.mjs";
 import { milestoneRelatedNotesState } from "./milestones.mjs";
-import { pmWikiLink } from "./obsidian-links.mjs";
+import { pmRelToVaultTarget, pmWikiLink, wikiLink } from "./obsidian-links.mjs";
 
 const STATUS_EMOJI = Object.freeze({
   Brainstorming: "🟣",
@@ -185,6 +185,151 @@ function h2Sections(content) {
       end: bodyEnd,
     };
   });
+}
+
+function h2SectionByHeading(content, heading) {
+  return h2Sections(content).find((section) => section.heading === heading) ?? null;
+}
+
+export function planMirrorHeadingFromRel(planRel) {
+  return basenameNoExt(planRel)
+    .replace(/^\d{4}-\d{2}-\d{2}[_-]?/, "")
+    .replace(/_/g, "-");
+}
+
+function donePendingMirrorLink(heading, options = {}) {
+  return wikiLink(
+    pmRelToVaultTarget("roadmap/done-pending", options),
+    `done-pending#${heading}`,
+    heading
+  );
+}
+
+function collectRelevantLinesFromMirror(sectionBody) {
+  const out = new Map();
+  for (const rawLine of String(sectionBody ?? "").split("\n")) {
+    const match = rawLine.match(/^\s*(?:-\s*)?Relevant\s+(decisions?|features?|feature|systems?|system|docs?|doc)\s*:\s*(.+?)\s*$/i);
+    if (!match) continue;
+    const rawKind = match[1].toLowerCase();
+    const kind = rawKind.startsWith("decision")
+      ? "decisions"
+      : rawKind.startsWith("feature")
+        ? "features"
+        : rawKind.startsWith("system")
+          ? "system"
+          : "docs";
+    const value = match[2].trim();
+    if (isNoneValue(value)) continue;
+    out.set(kind, `Relevant ${kind}: ${value}`);
+  }
+  return [...out.values()];
+}
+
+function wikiBodies(value) {
+  return [...String(value ?? "").matchAll(/\[\[([^\]]+)\]\]/g)].map((match) => match[1]);
+}
+
+function mergeRelatedLine(existingLine, requiredLine) {
+  const required = requiredLine.match(/^([^:]+):\s*(.+)$/);
+  if (!required) return existingLine;
+  const requiredValue = required[2].trim();
+  if (existingLine.includes(requiredValue)) return existingLine;
+
+  const existingTargets = new Set(wikiBodies(existingLine));
+  const missingLinks = [...String(requiredValue).matchAll(/\[\[[^\]]+\]\]/g)]
+    .map((match) => match[0])
+    .filter((link) => {
+      const body = link.slice(2, -2);
+      return !existingTargets.has(body);
+    });
+
+  if (missingLinks.length === 0) return existingLine;
+  const separator = existingLine.trimEnd().endsWith(":") ? " " : ", ";
+  return `${existingLine.trimEnd()}${separator}${missingLinks.join(", ")}`;
+}
+
+function planRelatedReplacement(existingBody, requiredLines) {
+  const lines = String(existingBody ?? "").replace(/^\n+/, "").replace(/\n+$/, "").split("\n");
+  const next = [];
+  const seen = new Set();
+  let changed = false;
+
+  for (const line of lines) {
+    const donePending = line.match(/^\s*(?:-\s*)?Done-pending mirror\s*:/i);
+    if (donePending) {
+      const replacement = requiredLines[0];
+      next.push(replacement);
+      seen.add("Done-pending mirror");
+      if (line.trim() !== replacement) changed = true;
+      continue;
+    }
+
+    const relevant = line.match(/^\s*(?:-\s*)?Relevant\s+(decisions|features|system|docs)\s*:/i);
+    if (relevant) {
+      const key = `Relevant ${relevant[1].toLowerCase()}`;
+      const required = requiredLines.find((candidate) => candidate.toLowerCase().startsWith(`${key.toLowerCase()}:`));
+      if (required) {
+        const merged = mergeRelatedLine(line, required);
+        next.push(merged);
+        seen.add(key);
+        if (merged !== line) changed = true;
+      } else {
+        next.push(line);
+      }
+      continue;
+    }
+
+    next.push(line);
+  }
+
+  if (next.length === 1 && next[0] === "") next.length = 0;
+  for (const required of requiredLines) {
+    const key = required.startsWith("Done-pending mirror:")
+      ? "Done-pending mirror"
+      : required.match(/^(Relevant\s+\w+):/)?.[1] ?? required;
+    if (!seen.has(key)) {
+      next.push(required);
+      changed = true;
+    }
+  }
+
+  return { body: next.join("\n").trimEnd(), changed };
+}
+
+export function ensurePlanRelatedLinks(planContent, { planRel, donePendingContent, linkOptions = {} } = {}) {
+  const changes = [];
+  const manualReview = [];
+  const heading = planMirrorHeadingFromRel(planRel);
+  const mirror = h2SectionByHeading(donePendingContent, heading);
+  if (!mirror) {
+    manualReview.push(`${planRel}: missing matching \`roadmap/done-pending.md#${heading}\` mirror section`);
+    return { updated: planContent, changes, manualReview };
+  }
+
+  const requiredLines = [
+    `Done-pending mirror: ${donePendingMirrorLink(heading, linkOptions)}`,
+    ...collectRelevantLinesFromMirror(mirror.body),
+  ];
+  const related = h2SectionByHeading(planContent, "Related");
+  if (related) {
+    const replacement = planRelatedReplacement(related.body, requiredLines);
+    if (!replacement.changed) return { updated: planContent, changes, manualReview };
+    const updated = `${planContent.slice(0, related.start)}## Related\n\n${replacement.body}\n\n${planContent.slice(related.end).replace(/^\n+/, "")}`.replace(/\n{3,}/g, "\n\n");
+    changes.push(`${planRel}: updated \`## Related\` with done-pending mirror traceability`);
+    return { updated, changes, manualReview };
+  }
+
+  const relatedBlock = `## Related\n\n${requiredLines.join("\n")}\n\n`;
+  const navigation = planContent.match(/^##\s+Navigation\s*$/m);
+  if (navigation) {
+    const before = planContent.slice(0, navigation.index).replace(/\n+$/, "\n\n");
+    const after = planContent.slice(navigation.index);
+    changes.push(`${planRel}: added \`## Related\` with done-pending mirror traceability`);
+    return { updated: `${before}${relatedBlock}${after}`.replace(/\n{3,}/g, "\n\n"), changes, manualReview };
+  }
+
+  changes.push(`${planRel}: appended \`## Related\` with done-pending mirror traceability`);
+  return { updated: `${planContent.replace(/\n+$/, "\n\n")}${relatedBlock}`.replace(/\n{3,}/g, "\n\n"), changes, manualReview };
 }
 
 function hasPlanningNote(body) {

@@ -46,6 +46,7 @@ History entries needed:
 
 Planning notes affected:
 - [ ] roadmap/plans/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
+- [ ] roadmap/plans/<date>_slug.md — `## Related` links exact done-pending mirror and copied relevant decision/feature/system/docs links
 - [ ] roadmap/plans/<date>_slug.md → move to archive/ if fully shipped: ...
 
 Decisions affected:

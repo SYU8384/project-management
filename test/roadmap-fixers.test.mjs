@@ -17,11 +17,14 @@ import {
   HUMAN_ARCHIVE_CONFIRMATION_LINE,
   HUMAN_ARCHIVE_CONFIRMATION_TEXT,
   planArchiveReadyDonePendingSections,
+  ensurePlanRelatedLinks,
+  planMirrorHeadingFromRel,
 } from "../scripts/lib/roadmap-fixers.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
 const ROADMAP_SCRIPT = join(SKILL_DIR, "scripts", "check-roadmap-conventions.mjs");
+const MIGRATE_SCRIPT = join(SKILL_DIR, "scripts", "migrate.mjs");
 
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -52,6 +55,114 @@ Planning note: 2026-06-14_inbox-card-cleanup-and-realtime
   assert.equal(result.updated.includes("[[#2026-06-14_inbox-card-cleanup-and-realtime]]"), false);
   assert.match(result.updated, /This file explains how planning mirrors and general done\/pending items coexist\./);
   assert.match(result.updated, /- \[\[#Navigation\]\]/);
+});
+
+test("planMirrorHeadingFromRel derives slug-only done-pending headings", () => {
+  assert.equal(
+    planMirrorHeadingFromRel("roadmap/plans/2026-06-23_inbox-intake-lane"),
+    "inbox-intake-lane"
+  );
+  assert.equal(
+    planMirrorHeadingFromRel("roadmap/plans/2026-06-23_email_connector_architecture"),
+    "email-connector-architecture"
+  );
+});
+
+test("ensurePlanRelatedLinks adds done-pending mirror and relevant links", () => {
+  const plan = `---
+title: plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+# traceability-plan
+
+## Goal
+
+Ship the traceability rule.
+
+## Navigation
+`;
+  const donePending = `# done-pending
+
+## traceability-plan
+
+Planning note: [[Projects/Example/roadmap/plans/2026-06-23_traceability-plan|2026-06-23_traceability-plan]]
+
+- [ ] PENDING: Implement.
+
+Relevant decisions: [[Projects/Example/decisions/D-018_POL_bidirectional-plan-traceability|D-018]]
+Relevant features: [[Projects/Example/features/validation-and-repair|validation-and-repair]]
+Relevant system: [[Projects/Example/system/overview|overview]]
+
+## Navigation
+`;
+  const result = ensurePlanRelatedLinks(plan, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+    donePendingContent: donePending,
+    linkOptions: { linkRoot: "Projects/Example" },
+  });
+
+  assert.equal(result.manualReview.length, 0);
+  assert.match(result.updated, /## Related\n\nDone-pending mirror: \[\[Projects\/Example\/roadmap\/done-pending#traceability-plan\|done-pending#traceability-plan\]\]/);
+  assert.match(result.updated, /Relevant decisions: \[\[Projects\/Example\/decisions\/D-018_POL_bidirectional-plan-traceability\|D-018\]\]/);
+  assert.match(result.updated, /Relevant features: \[\[Projects\/Example\/features\/validation-and-repair\|validation-and-repair\]\]/);
+  assert.match(result.updated, /Relevant system: \[\[Projects\/Example\/system\/overview\|overview\]\]/);
+  assert.match(result.updated, /## Related[\s\S]+## Navigation/);
+
+  const again = ensurePlanRelatedLinks(result.updated, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+    donePendingContent: donePending,
+    linkOptions: { linkRoot: "Projects/Example" },
+  });
+  assert.equal(again.changes.length, 0);
+  assert.equal(again.updated, result.updated);
+});
+
+test("ensurePlanRelatedLinks preserves existing related prose and appends missing links", () => {
+  const plan = `# traceability-plan
+
+## Related
+
+Context note stays here.
+Relevant decisions: [[Projects/Example/decisions/D-001_ADR_existing|D-001]]
+
+## Navigation
+`;
+  const donePending = `# done-pending
+
+## traceability-plan
+
+Planning note: [[Projects/Example/roadmap/plans/2026-06-23_traceability-plan|2026-06-23_traceability-plan]]
+
+Relevant decisions: [[Projects/Example/decisions/D-018_POL_bidirectional-plan-traceability|D-018]]
+Relevant docs: [[Projects/Example/docs/Developer Guide/traceability|traceability]]
+
+## Navigation
+`;
+  const result = ensurePlanRelatedLinks(plan, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+    donePendingContent: donePending,
+    linkOptions: { linkRoot: "Projects/Example" },
+  });
+
+  assert.match(result.updated, /Context note stays here\./);
+  assert.match(result.updated, /D-001.*D-018/);
+  assert.match(result.updated, /Relevant docs: \[\[Projects\/Example\/docs\/Developer Guide\/traceability\|traceability\]\]/);
+});
+
+test("ensurePlanRelatedLinks reports missing done-pending mirror without inventing content", () => {
+  const plan = "# missing-mirror\n\n## Navigation\n";
+  const donePending = "# done-pending\n\n## other-plan\n";
+  const result = ensurePlanRelatedLinks(plan, {
+    planRel: "roadmap/plans/2026-06-23_missing-mirror",
+    donePendingContent: donePending,
+  });
+  assert.equal(result.updated, plan);
+  assert.match(result.manualReview.join("\n"), /missing matching `roadmap\/done-pending.md#missing-mirror`/);
 });
 
 test("findArchiveReadyDonePendingSections only flags completed planning mirrors", () => {
@@ -249,6 +360,209 @@ Planning note: [[roadmap/plans/2026-06-01_completed-plan|2026-06-01_completed-pl
     assert.equal(readFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), "utf8").includes("# completed-plan"), true);
   } finally {
     rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+test("check-roadmap-conventions --fix adds plan related traceability", () => {
+  const pm = mkdtempSync(join(tmpdir(), "pm-plan-traceability-"));
+  try {
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), `---
+title: traceability-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+# traceability-plan
+
+## Goal
+
+Ship traceability.
+
+## Navigation
+`);
+    writeFileSync(join(pm, "roadmap", "done-pending.md"), `# done-pending
+
+## traceability-plan
+
+Planning note: [[roadmap/plans/2026-06-23_traceability-plan|2026-06-23_traceability-plan]]
+
+- [ ] PENDING: Implement.
+- [ ] PENDING: ${HUMAN_ARCHIVE_CONFIRMATION_TEXT}
+
+Relevant decisions: [[decisions/D-018_POL_bidirectional-plan-traceability|D-018]]
+
+## Navigation
+`);
+
+    const before = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(before.status, 1, before.stdout + before.stderr);
+    assert.match(before.stdout, /D-018/);
+
+    const fixed = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm, "--fix"], { encoding: "utf8" });
+    assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+
+    const plan = readFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), "utf8");
+    assert.match(plan, /## Related/);
+    assert.match(plan, /Done-pending mirror: \[\[roadmap\/done-pending#traceability-plan\|done-pending#traceability-plan\]\]/);
+    assert.match(plan, /Relevant decisions: \[\[decisions\/D-018_POL_bidirectional-plan-traceability\|D-018\]\]/);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+test("check-roadmap-conventions ignores shipped planning notes for traceability", () => {
+  const pm = mkdtempSync(join(tmpdir(), "pm-plan-traceability-shipped-"));
+  try {
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_shipped-plan.md"), `---
+title: shipped-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: shipped
+owner: PM
+---
+# shipped-plan
+`);
+    writeFileSync(join(pm, "roadmap", "done-pending.md"), `# done-pending
+
+<!-- vault-maintain:toc:start -->
+## Contents
+
+- [[#Navigation]]
+<!-- vault-maintain:toc:end -->
+
+## Navigation
+`);
+
+    const result = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.doesNotMatch(result.stdout, /missing matching `roadmap\/done-pending/);
+    assert.doesNotMatch(result.stdout, /with done-pending mirror traceability/);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+test("check-roadmap-conventions reports active planning notes with missing mirrors", () => {
+  const pm = mkdtempSync(join(tmpdir(), "pm-plan-traceability-missing-"));
+  try {
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_missing-mirror.md"), `---
+title: missing-mirror
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: proposed
+owner: PM
+---
+# missing-mirror
+`);
+    writeFileSync(join(pm, "roadmap", "done-pending.md"), `# done-pending
+
+## Navigation
+`);
+
+    const result = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm, "--fix"], { encoding: "utf8" });
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stdout, /missing matching `roadmap\/done-pending.md#missing-mirror`/);
+    const plan = readFileSync(join(pm, "roadmap", "plans", "2026-06-23_missing-mirror.md"), "utf8");
+    assert.doesNotMatch(plan, /## Related/);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+test("1.15.0 migration repairs active plan related links without rewriting body", () => {
+  const vault = mkdtempSync(join(tmpdir(), "pm-plan-traceability-vault-"));
+  const pm = join(vault, "Projects", "Example");
+  try {
+    mkdirSync(join(vault, ".obsidian"), { recursive: true });
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), `---
+title: traceability-plan
+created: 2026-06-23
+updated: 2026-06-23
+last_reviewed: 2026-06-23
+pageType: planning
+status: active
+owner: PM
+---
+# traceability-plan
+
+## Goal
+
+Original body stays here.
+
+## Navigation
+`);
+    writeFileSync(join(pm, "roadmap", "done-pending.md"), `# done-pending
+
+## traceability-plan
+
+Planning note: [[Projects/Example/roadmap/plans/2026-06-23_traceability-plan|2026-06-23_traceability-plan]]
+
+- [ ] PENDING: Implement.
+- [ ] PENDING: ${HUMAN_ARCHIVE_CONFIRMATION_TEXT}
+
+Relevant decisions: [[Projects/Example/decisions/D-018_POL_bidirectional-plan-traceability|D-018]]
+Relevant docs: [[Projects/Example/docs/Developer Guide/traceability|traceability]]
+
+## Navigation
+`);
+    const config = join(vault, "projects.json");
+    writeFileSync(config, JSON.stringify({
+      vault_root: vault,
+      skill_dir: SKILL_DIR,
+      projects: {
+        Example: {
+          code_repo: null,
+          pm_folder: pm,
+          phase: "beta",
+          notes: "test",
+          access: "authoritative",
+        },
+      },
+    }, null, 2));
+
+    const result = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.15.0-plan-related-links",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+
+    const plan = readFileSync(join(pm, "roadmap", "plans", "2026-06-23_traceability-plan.md"), "utf8");
+    assert.match(plan, /Original body stays here\./);
+    assert.match(plan, /Done-pending mirror: \[\[Projects\/Example\/roadmap\/done-pending#traceability-plan\|done-pending#traceability-plan\]\]/);
+    assert.match(plan, /Relevant decisions: \[\[Projects\/Example\/decisions\/D-018_POL_bidirectional-plan-traceability\|D-018\]\]/);
+    assert.match(plan, /Relevant docs: \[\[Projects\/Example\/docs\/Developer Guide\/traceability\|traceability\]\]/);
+
+    const second = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.15.0-plan-related-links",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.match(second.stdout, /No applicable migrations/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
   }
 });
 
