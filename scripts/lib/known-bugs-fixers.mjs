@@ -73,68 +73,51 @@ function parseFields(entryText) {
   return { fields, fieldOrder };
 }
 
+function h2Blocks(content) {
+  const matches = [...content.matchAll(/^## (?!#)(.+?)\s*$/gm)];
+  return matches.map((match, index) => {
+    const next = matches[index + 1];
+    return {
+      name: match[1].trim(),
+      start: match.index,
+      end: next ? next.index : content.length,
+      text: content.slice(match.index, next ? next.index : content.length),
+    };
+  });
+}
+
+function h3Entries(block) {
+  const matches = [...block.text.matchAll(/^### (?!#)(.+?)\s*$/gm)];
+  return matches.map((match, index) => {
+    const next = matches[index + 1];
+    const start = block.start + match.index;
+    const end = block.start + (next ? next.index : block.text.length);
+    return {
+      title: match[1].trim(),
+      start,
+      end,
+      text: block.text.slice(match.index, next ? next.index : block.text.length),
+    };
+  });
+}
+
+function sectionForStatus(status) {
+  const normalized = String(status ?? "").trim().toLowerCase().split(/\s+/)[0];
+  if (normalized === "active") return "Active Bugs";
+  if (normalized === "fixed") return "Fixed Bugs";
+  if (normalized === "deferred" || normalized === "monitoring") return "Deferred / Monitoring";
+  return null;
+}
+
+function entryStatus(entryText) {
+  return entryText.match(/^\*\*Status:\*\*\s*(.+?)\s*$/mi)?.[1]?.trim() ?? null;
+}
+
 function isTopLevelHeading(linkText) {
   for (const section of TOP_LEVEL_SECTIONS) {
     if (linkText === section || linkText.startsWith(section + " ")) return true;
   }
   return false;
-}
-
-export function ensureHeadingsOnOwnLines(content) {
-  const changes = [];
-  const lines = content.split("\n");
-  const out = [];
-  let skip = false;
-  for (let i = 0; i < lines.length; i++) {
-    if (skip) {
-      skip = false;
-      continue;
-    }
-    const line = lines[i];
-    const next = lines[i + 1];
-    if (/^#$/.test(line) && next && /^## /.test(next)) {
-      out.push("#" + next);
-      skip = true;
-      changes.push("repaired split H3 heading");
-      continue;
-    }
-    if (/^#$/.test(line) && next && /^### /.test(next)) {
-      out.push(next);
-      skip = true;
-      changes.push("repaired split H3 heading");
-      continue;
-    }
-    if (/^## /.test(line) || /^### /.test(line)) {
-      const prev = out[out.length - 1] ?? "";
-      const prevTrim = prev.trim();
-      const isPrevHeading = /^## /.test(prev) || /^### /.test(prev);
-      const isPrevField = /^\*\*[^:*]+:\*\*/.test(prev);
-      const isPrevList = /^- /.test(prev);
-      const isPrevFrontmatter = /^---/.test(prev);
-      const isPrevTocMarker = /<!-- vault-maintain:toc/.test(prev);
-      const isPrevEmpty = prevTrim === "";
-      if (isPrevEmpty || isPrevHeading || isPrevField || isPrevList || isPrevFrontmatter || isPrevTocMarker) {
-        out.push(line);
-      } else {
-        out[out.length - 1] = prev + line;
-        changes.push("merged split heading");
-      }
-    } else {
-      out.push(line);
-    }
-  }
-  let updated = out.join("\n");
-  const step2 = updated.replace(/(\*\*[^:*]+:\*\*.*?)(##|###) /g, (match, field, marker) => {
-    changes.push(`moved ${marker} heading to its own line`);
-    return `${field}\n${marker} `;
-  });
-  if (step2 !== updated) updated = step2;
-  const step3 = updated.replace(/([.!?]\s*)(##|###) /g, (match, prefix, marker) => {
-    changes.push(`moved ${marker} heading to its own line`);
-    return `${prefix}\n${marker} `;
-  });
-  if (step3 !== updated) updated = step3;
-  return { updated, changes, manualReview: [] };
 }
 
 export function removeH3LinksFromContents(content) {
@@ -172,6 +155,76 @@ export function normalizePlaceholders(content) {
     return cleaned ? `TBD — ${cleaned}` : "TBD";
   });
   return { updated, changes, manualReview };
+}
+
+export function ensureKnownBugSections(content) {
+  const changes = [];
+  let updated = content;
+  for (const section of Object.keys(SECTION_FIELDS)) {
+    if (new RegExp(`^##\\s+${escapeRegExp(section)}\\s*$`, "m").test(updated)) continue;
+    const navigation = updated.match(/^## Navigation\s*$/m);
+    const insertAt = navigation ? navigation.index : updated.length;
+    const before = updated.slice(0, insertAt).replace(/\n+$/, "\n\n");
+    const after = updated.slice(insertAt).replace(/^\n+/, "\n");
+    updated = `${before}## ${section}\n\n*(no entries)*\n\n${after}`.replace(/\n{3,}/g, "\n\n");
+    changes.push(`added missing ## ${section} section`);
+  }
+  return { updated, changes, manualReview: [] };
+}
+
+export function moveEntriesToStatusSections(content) {
+  const changes = [];
+  let updated = content;
+  let moved = true;
+  let guard = 0;
+  while (moved && guard < 100) {
+    moved = false;
+    guard += 1;
+    const blocks = h2Blocks(updated);
+    for (const block of blocks) {
+      if (!SECTION_FIELDS[block.name] || block.name === "Recurring Root-Cause Patterns") continue;
+      const entries = h3Entries(block);
+      for (const entry of entries) {
+        const destName = sectionForStatus(entryStatus(entry.text));
+        if (!destName || destName === block.name) continue;
+        const dest = h2Blocks(updated).find((candidate) => candidate.name === destName);
+        if (!dest) continue;
+        const entryText = entry.text.trim();
+        const without = `${updated.slice(0, entry.start).replace(/\n+$/, "\n\n")}${updated.slice(entry.end).replace(/^\n+/, "\n")}`.replace(/\n{3,}/g, "\n\n");
+        const refreshedDest = h2Blocks(without).find((candidate) => candidate.name === destName);
+        if (!refreshedDest) continue;
+        const destBody = refreshedDest.text.replace(/^## .+?\s*\n/, "").trim();
+        const placeholderOnly = destBody === "*(no entries)*";
+        const insertAt = refreshedDest.end;
+        const before = without.slice(0, insertAt).replace(/\n+$/, placeholderOnly ? "\n\n" : "\n\n");
+        const after = without.slice(insertAt).replace(/^\n+/, "\n");
+        const cleanedBefore = placeholderOnly
+          ? before.replace(/\n\*\(no entries\)\*\s*$/m, "\n")
+          : before;
+        updated = `${cleanedBefore}${entryText}\n\n${after}`.replace(/\n{3,}/g, "\n\n");
+        changes.push(`moved ${entry.title} from ${block.name} to ${destName}`);
+        moved = true;
+        break;
+      }
+      if (moved) break;
+    }
+  }
+  return { updated, changes, manualReview: [] };
+}
+
+export function syncKnownBugsContents(content) {
+  const changes = [];
+  const blocks = h2Blocks(content);
+  const contents = blocks.find((block) => block.name === "Contents");
+  if (!contents) return { updated: content, changes, manualReview: [] };
+  const headings = blocks
+    .map((block) => block.name)
+    .filter((name) => name !== "Contents" && TOP_LEVEL_SECTIONS.has(name));
+  const body = headings.map((heading) => `- [[#${heading}]]`).join("\n");
+  const replacement = `## Contents\n\n${body}\n\n`;
+  const updated = `${content.slice(0, contents.start)}${replacement}${content.slice(contents.end).replace(/^\n+/, "")}`.replace(/\n{3,}/g, "\n\n");
+  if (updated !== content) changes.push("regenerated Contents top-level links");
+  return { updated, changes, manualReview: [] };
 }
 
 export function ensureRequiredFields(content) {

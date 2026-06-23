@@ -6,10 +6,12 @@
  * folder + file structure is in place. Emits a pass/fail report.
  *
  * Required:
- *   - Folders: roadmap/, system/, history/, archive/, docs/, features/
+ *   - Folders: roadmap/, system/, history/, inbox/, archive/, docs/, features/
  *   - Root files: README.md, PRODUCT.md, <Project>.md, CURRENT_STATUS.md
- *   - Roadmap standard notes: mvp-priorities.md, known-issues.md,
- *     done-pending.md, ideas.md
+ *   - Roadmap standard notes: known-issues.md, done-pending.md, ideas.md
+ *   - Milestone lane: roadmap/milestones/milestones.md plus at least one
+ *     milestone note such as mvp.md, alpha.md, beta.md, or launch.md
+ *     with the D-015/D-016 sections, including `## Update Triggers`
  *   - System index: system/system.md (or at least one system/*.md)
  *   - Developer bug knowledge base: docs/Developer Guide/known-bugs.md
  *   - Archive index: archive/archive.md
@@ -56,6 +58,7 @@ import {
   REQUIRED_ROADMAP_FILES,
   REQUIRED_INDEX_FILES,
   ROADMAP_REQUIRED_SECTIONS,
+  MILESTONE_REQUIRED_SECTIONS,
   docsGuideDirMap,
   isCanonicalTopLevelLane,
 } from "./lib/convention.mjs";
@@ -510,10 +513,10 @@ function checkFolderNoteBodyBloat() {
 
 // Unexpected top-level folder guard. Top-level folders in a PM vault
 // must come from the canonical PM lane set (`archive/`, `decisions/`,
-// `docs/`, `features/`, `history/`, `roadmap/`, `system/`) plus the
-// optional `meetings/` lane. Hidden dot-folders are ignored. Adding a
-// new top-level folder requires updating `lib/convention.mjs` and
-// `templates/folder-note.md` first.
+// `docs/`, `features/`, `history/`, `inbox/`, `roadmap/`, `system/`)
+// plus the optional `meetings/` lane. Hidden dot-folders are ignored.
+// Adding a new top-level folder requires updating `lib/convention.mjs`
+// and `templates/folder-note.md` first.
 function checkUnexpectedFolders() {
   if (!existsSync(vaultRoot)) return;
   for (const entry of readdirSync(vaultRoot, { withFileTypes: true })) {
@@ -620,6 +623,25 @@ function checkRoadmapShape() {
     if (!isFile(rel)) continue;
     const body = stripFrontmatter(readFileSync(join(vaultRoot, rel), "utf8"));
     for (const section of requiredSections) {
+      if (!hasH2(body, section)) {
+        findings.roadmapShape.violations.push({ path: rel, reason: `missing ## ${section}` });
+      }
+    }
+  }
+
+  if (!isDir("roadmap/milestones")) return;
+  const milestoneNotes = listMarkdownFilesUnder("roadmap/milestones")
+    .filter((rel) => rel !== "roadmap/milestones/milestones.md");
+  if (milestoneNotes.length === 0) {
+    findings.roadmapShape.violations.push({
+      path: "roadmap/milestones/",
+      reason: "missing at least one milestone note such as mvp.md, alpha.md, beta.md, or launch.md",
+    });
+    return;
+  }
+  for (const rel of milestoneNotes) {
+    const body = stripFrontmatter(readFileSync(join(vaultRoot, rel), "utf8"));
+    for (const section of MILESTONE_REQUIRED_SECTIONS) {
       if (!hasH2(body, section)) {
         findings.roadmapShape.violations.push({ path: rel, reason: `missing ## ${section}` });
       }
@@ -815,7 +837,7 @@ function emit() {
   if (findings.unexpectedFolders.length > 0) {
     lines.push("## Unexpected Top-Level Folders");
     lines.push("");
-    lines.push("Top-level folders in a PM vault must be from the canonical lane set: `archive/`, `decisions/`, `docs/`, `features/`, `history/`, `roadmap/`, `system/` (and the optional `meetings/` lane). Hidden dot-folders are ignored. To add a new top-level folder, the maintainer must approve and update `scripts/lib/convention.mjs` and `templates/folder-note.md`.");
+    lines.push("Top-level folders in a PM vault must be from the canonical lane set: `archive/`, `decisions/`, `docs/`, `features/`, `history/`, `inbox/`, `roadmap/`, `system/` (and the optional `meetings/` lane). Hidden dot-folders are ignored. To add a new top-level folder, the maintainer must approve and update `scripts/lib/convention.mjs` and `templates/folder-note.md`.");
     lines.push("");
     for (const v of findings.unexpectedFolders) {
       lines.push(`- \`${v.path}\`: ${v.reason}. Move content into an existing lane or add a new lane via the canonical lane set.`);
@@ -859,7 +881,7 @@ function emit() {
   if (findings.roadmapShape.violations.length > 0) {
     lines.push("## Roadmap Shape Violations");
     lines.push("");
-    lines.push("Standard roadmap notes must follow their templates: ideas, known issues, MVP priorities, and done/pending each have required scan sections.");
+    lines.push("Standard roadmap notes must follow their templates: ideas, known issues, done/pending, and milestone notes each have required scan sections.");
     lines.push("");
     for (const v of findings.roadmapShape.violations) {
       lines.push(`- \`${v.path}\`: ${v.reason}`);

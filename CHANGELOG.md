@@ -9,15 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `inbox/` as a required canonical PM-folder lane for raw owner/collaborator intake notes before owner triage, including `inbox/inbox.md` conventions and `templates/inbox-note.md`.
+- `scripts/check-inbox-conventions.mjs`: validates inbox note filename shape, required lifecycle frontmatter, status/resolution consistency, destination routing, and `NAME_PLACEHOLDER` handling. `--fix` fills deterministic metadata from the filename/date without inventing destinations or note bodies.
+- `scripts/migrations/1.14.0-inbox-lane.mjs`: creates missing inbox lane files and normalizes existing canonical inbox notes while preserving their bodies.
+- Inbox note coverage in bootstrap scaffolds, validator registration, convention model tests, migration tests, generated AGENTS guidance, PR impact templates, OpenClaw instructions, and public PM docs.
+- `roadmap/milestones/` as the phase-level roadmap lane, with `roadmap/milestones/milestones.md`, generated milestone notes, and `templates/milestone.md`.
+- `scripts/migrations/1.13.0-roadmap-milestones.mjs`: moves legacy `roadmap/mvp-priorities.md` into `roadmap/milestones/mvp.md`, creates the milestones index, and rewrites live links while leaving `history/` and `archive/` unchanged.
+- `scripts/migrations/1.13.1-agent-maintained-milestones.mjs`: adds `## Update Triggers` to existing milestone notes, creates the active milestone if missing, and refreshes the milestones index without touching `history/` or `archive/`.
+- `scripts/migrations/1.13.2-inline-milestone-evidence-links.mjs`: removes empty or generic milestone `## Related Notes` link dumps and reports specific related-note content for manual inline integration without touching `history/` or `archive/`.
+- Shared milestone helpers for phase-to-slug mapping, active milestone resolution from `CURRENT_STATUS.md` / `projects.json`, milestone note discovery, deterministic `## Update Triggers` insertion, deprecated `## Related Notes` detection/removal, and generated milestone/index content.
+- Current-status freshness checks that require `CURRENT_STATUS.md` to be refreshed when priority-bearing PM lanes change during authoritative close-out.
+- Active-milestone freshness checks that require the active or explicitly linked `roadmap/milestones/*.md` note to be refreshed when priority-bearing PM lanes change during authoritative close-out.
 - `scripts/check-pm-closeout.mjs`: non-mutating coding-session guard that resolves local PM access, inspects git worktree changes, and verifies authoritative projects have current-state PM updates plus the current-day history log before final response.
 - `scripts/lib/check-pm-migrations.mjs`: helper for expanding config-wide reconcile into focused per-project migration invocations.
+- `check-roadmap-conventions.mjs`: automatic `--fix` archive close-out for completed `roadmap/done-pending.md` planning mirrors when the linked plan target is deterministic and human archive confirmation is checked.
+- `roadmap/done-pending.md` planning mirrors now require a human archive-confirmation checkbox before deterministic archive close-out can run.
+- `scripts/lib/frontmatter-fixers.mjs`: shared deterministic PM frontmatter repair for duplicate YAML blocks, missing metadata, history `kind`, stale review dates, and archive markers.
 - Tests for close-out project matching, access-mode behavior, no-change pass, missing-PM failure, successful PM evidence, explicit no-impact reasons, and changed-file PM lane suggestions.
 - Tests for all-project reconcile migration target expansion and migration argument construction.
+- Tests for archive-ready done-pending mirror detection, human archive-confirmation insertion, deterministic `--fix` archive close-out, and unsafe archive refusal.
+- Tests for deterministic frontmatter/stale-doc repair and known-bugs section/status placement repair.
 
 ### Changed
 
+- The canonical folder model, README route tables, folder templates, and PM close-out guidance now treat `inbox/` as required and reserve it for raw intake only, not backlog management.
+- Working version bumped to `1.14.0` for the canonical inbox lane release candidate.
+- Bootstrap now creates the milestone roadmap folder and an initial milestone note from the configured phase instead of creating `roadmap/mvp-priorities.md`.
+- Roadmap convention validation now enforces milestone-note sections from D-015/D-016, requires `## Update Triggers`, creates the active milestone under `--fix`, removes deterministic generic milestone `Related Notes` sections, and treats D-010 as superseded legacy behavior.
+- Milestone notes now place specific plan, done-pending, decision, feature, known-issue, and docs links inline inside the priority, major step, exit criterion, or deferred item they support instead of maintaining a generic `## Related Notes` section.
+- `SKILL.md`, `REFERENCE.md`, README files, generated AGENTS instructions, OpenClaw instructions, and templates now require agents to review/update `CURRENT_STATUS.md` and the active or explicitly linked milestone after relevant priority, blocker, risk, win, plan, issue, decision, feature, phase, or milestone changes and before history.
 - `AGENTS.md`, `templates/AGENTS_PM_SECTION.md`, `SKILL.md`, `REFERENCE.md`, README, generated README scaffolds, and OpenClaw instructions now document the PM close-out guard and explicit no-impact path.
 - `SKILL.md`, `README.md`, `REFERENCE.md`, OpenClaw instructions, and PM trigger docs now distinguish singular `reconcile this project` from plural/update wording that reconciles every registered project with no `--project` filter.
+- `check-roadmap-conventions.mjs --fix` now adds missing human archive-confirmation checkboxes to planning mirrors, and only then moves deterministic completed planning mirrors out of active roadmap lanes when every checkbox, including the confirmation checkbox, is checked.
+- Reconcile now auto-fixes deterministic PM metadata drift: `check-pm-consistency.mjs --fix` fills missing frontmatter fields and repairs history shape, `check-stale-docs.mjs --fix` refreshes `last_reviewed`, and `check-known-bugs-shape.mjs --fix` creates missing known-bugs sections and moves entries by explicit status while leaving `TBD` prose as manual review.
 
 ### Fixed
 

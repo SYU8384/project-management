@@ -28,6 +28,11 @@ function writeLedger(folder, applied) {
   writeFileSync(join(folder, ".pm", "migrations.json"), JSON.stringify(ledger, null, 2));
 }
 
+function writeInboxLane(folder) {
+  mkdirSync(join(folder, "inbox"), { recursive: true });
+  writeFileSync(join(folder, "inbox", "inbox.md"), "# inbox\n");
+}
+
 test("migration-debt section is empty when migration is in the ledger", () => {
   const pm = makeMinimalPmFolder();
   writeLedger(pm, ["1.0.2-v0-content-rewrite", "1.8.0-content-semantic-fixes"]);
@@ -57,6 +62,7 @@ test("migration-debt section is empty when migration is in the ledger", () => {
 test("migration-debt section is omitted entirely when nothing matches", () => {
   const pm = makeMinimalPmFolder();
   writeLedger(pm, ["1.0.0-lane-restructure"]);   // unrelated migration
+  writeInboxLane(pm);
   try {
     const result = spawnSync(process.execPath, [SCRIPT, pm], { encoding: "utf8" });
     const out = result.stdout + result.stderr;

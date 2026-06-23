@@ -15,6 +15,8 @@ import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import { expectedPageTypeForPath, isFolderNotePath } from "./lib/convention.mjs";
 import { parseFrontmatter, markdownStem, wikiLinks } from "./lib/markdown.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
+import { normalizePmFrontmatter } from "./lib/frontmatter-fixers.mjs";
+import { activeMilestoneInfo, phaseFromCurrentStatusContent } from "./lib/milestones.mjs";
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -29,6 +31,7 @@ function parseArgs(argv) {
 }
 
 const CLI = parseArgs(process.argv);
+const today = new Date().toISOString().slice(0, 10);
 
 function loadConfigPath() {
   if (CLI.vault) return null;
@@ -116,6 +119,26 @@ function checkTarget(targets, normalizedTarget) {
   return targets.has(normalizedTarget);
 }
 
+function isIsoDate(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function maxFrontmatterDate(fm) {
+  const dates = [fm?.updated, fm?.last_reviewed].filter(isIsoDate).sort();
+  return dates.at(-1) ?? null;
+}
+
+function isPriorityBearingRel(rel) {
+  return (
+    rel === "roadmap/done-pending.md" ||
+    rel === "roadmap/known-issues.md" ||
+    rel.startsWith("roadmap/plans/") ||
+    rel.startsWith("roadmap/milestones/") ||
+    rel.startsWith("decisions/") ||
+    rel.startsWith("features/")
+  );
+}
+
 function runFor(target) {
   const project = target.project ?? basename(target.vault);
   const skipSet = loadPmSkip(target.vault);
@@ -137,17 +160,31 @@ function runFor(target) {
   }
   const targets = new Set(files.map((abs) => relative(target.vault, abs).split("\\").join("/").replace(/\.md$/, "")));
   const issues = [];
+  const frontmatterByRel = new Map();
   const donePendingPath = join(target.vault, "roadmap/done-pending.md");
   const donePending = existsSync(donePendingPath) ? readFileSync(donePendingPath, "utf8") : "";
 
   for (const abs of files) {
     const rel = relative(target.vault, abs).split("\\").join("/");
-    const content = readFileSync(abs, "utf8");
+    let content = readFileSync(abs, "utf8");
+    if (CLI.fix) {
+      const fixed = normalizePmFrontmatter(content, { rel, project, date: today });
+      if (fixed.changes.length > 0 && fixed.updated !== content) {
+        try {
+          writeFileSync(abs, fixed.updated);
+          content = fixed.updated;
+          process.stdout.write(`fixed: ${rel}: ${fixed.changes.join(", ")}\n`);
+        } catch (err) {
+          process.stderr.write(`--fix failed for ${rel}: ${err.message}\n`);
+        }
+      }
+    }
     const fm = parseFrontmatter(content);
     if (!fm) {
       issues.push(`${rel}: missing frontmatter`);
       continue;
     }
+    frontmatterByRel.set(rel, fm);
     for (const key of ["title", "created", "updated", "last_reviewed", "pageType"]) {
       if (!fm[key]) issues.push(`${rel}: missing ${key}`);
     }
@@ -219,15 +256,11 @@ function runFor(target) {
     // user edited the value in one place but not the other; the fix
     // is `bootstrap-pm.mjs --sync`.
     if ((rel === "CURRENT_STATUS.md" || rel === "PRODUCT.md") && expectedPhase) {
-      const m = content.match(/^## Current Phase\s*$/m);
-      if (m) {
-        const start = m.index + m[0].length;
-        const rest = content.slice(start);
-        const nextH2 = rest.match(/\n## /);
-        const body = rest.slice(0, nextH2 ? nextH2.index : rest.length).trim();
-        if (body && body !== expectedPhase) {
+      const phaseBody = phaseFromCurrentStatusContent(content);
+      if (phaseBody) {
+        if (phaseBody !== expectedPhase) {
           issues.push(
-            `${rel}: ## Current Phase body is "${body}" but projects.json has phase "${expectedPhase}". Run \`bootstrap-pm.mjs --project <name> --sync\` to fix.`
+            `${rel}: ## Current Phase body is "${phaseBody}" but projects.json has phase "${expectedPhase}". Run \`bootstrap-pm.mjs --project <name> --sync\` to fix.`
           );
         }
       }
@@ -253,6 +286,49 @@ function runFor(target) {
     for (const link of wikiLinks(content)) {
       const normalized = resolveLinkTarget(link, project, projectPath);
       if (!checkTarget(targets, normalized)) issues.push(`${rel}: unresolved link [[${link}]]`);
+    }
+  }
+
+  const currentStatusDate = maxFrontmatterDate(frontmatterByRel.get("CURRENT_STATUS.md"));
+  for (const [rel, fm] of frontmatterByRel.entries()) {
+    if (!isPriorityBearingRel(rel)) continue;
+    const priorityDate = maxFrontmatterDate(fm);
+    if (!priorityDate) continue;
+    if (!currentStatusDate) {
+      issues.push(`CURRENT_STATUS.md: cannot compare freshness because updated/last_reviewed is missing or invalid`);
+      break;
+    }
+    if (priorityDate > currentStatusDate) {
+      issues.push(
+        `CURRENT_STATUS.md: stale relative to ${rel} (${priorityDate}); refresh current priorities/blockers/risks before history`
+      );
+    }
+  }
+
+  const activeMilestone = activeMilestoneInfo({
+    pmFolder: target.vault,
+    project,
+    configPath: target.configPath ?? configPath,
+    fallbackPhase: expectedPhase,
+  });
+  if (activeMilestone) {
+    const activeFm = frontmatterByRel.get(activeMilestone.rel);
+    const activeDate = maxFrontmatterDate(activeFm);
+    if (!existsSync(activeMilestone.abs)) {
+      issues.push(`${activeMilestone.rel}: active milestone for phase "${activeMilestone.phase}" is missing`);
+    } else if (!activeDate) {
+      issues.push(`${activeMilestone.rel}: cannot compare freshness because updated/last_reviewed is missing or invalid`);
+    } else {
+      for (const [rel, fm] of frontmatterByRel.entries()) {
+        if (!isPriorityBearingRel(rel) || rel === activeMilestone.rel) continue;
+        const priorityDate = maxFrontmatterDate(fm);
+        if (!priorityDate) continue;
+        if (priorityDate > activeDate) {
+          issues.push(
+            `${activeMilestone.rel}: stale relative to ${rel} (${priorityDate}); review/update active milestone before history`
+          );
+        }
+      }
     }
   }
 

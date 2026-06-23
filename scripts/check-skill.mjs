@@ -35,6 +35,8 @@ const PUBLIC_DOCS = [
   "templates/CURRENT_STATUS.md",
   "templates/done-pending.md",
   "templates/feature.md",
+  "templates/inbox-note.md",
+  "templates/milestone.md",
   "templates/planning.md",
 ];
 
@@ -84,6 +86,7 @@ const ALLOWED_PLACEHOLDERS = new Set([
   "<Issue 1>",
   "<Issue 2>",
   "<Lane>",
+  "<milestone>",
   "<NewGuide>",
   "<Priority 1>",
   "<Priority 2>",

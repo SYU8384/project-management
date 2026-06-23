@@ -14,7 +14,7 @@ test("access model remains the strict two-value model", () => {
 });
 
 test("required PM lanes are centralized", () => {
-  assert.deepEqual(REQUIRED_DIRS, ["roadmap", "system", "history", "archive", "docs", "features"]);
+  assert.deepEqual(REQUIRED_DIRS, ["roadmap", "roadmap/milestones", "system", "history", "inbox", "archive", "docs", "features"]);
 });
 
 test("folder-note detection handles root and nested indexes", () => {
@@ -28,12 +28,18 @@ test("page type inference follows canonical lanes", () => {
   assert.equal(expectedPageTypeForPath("decisions/D-011_ADR_model.md", "Project Management"), "decision");
   assert.equal(expectedPageTypeForPath("features/validation-and-repair.md", "Project Management"), "feature");
   assert.equal(expectedPageTypeForPath("docs/User Guide/getting-started.md", "Project Management"), "note");
+  assert.equal(expectedPageTypeForPath("inbox/2026-06-23_NAME_PLACEHOLDER_raw-idea.md", "Project Management"), "note");
+  assert.equal(expectedPageTypeForPath("inbox/inbox.md", "Project Management"), "index");
   assert.equal(expectedPageTypeForPath("roadmap/roadmap.md", "Project Management"), "index");
+  assert.equal(expectedPageTypeForPath("roadmap/milestones/milestones.md", "Project Management"), "index");
+  assert.equal(expectedPageTypeForPath("roadmap/milestones/alpha.md", "Project Management"), "roadmap");
 });
 
 test("route table exposes expected lanes for README generation/checking", () => {
   const lanes = routeRows().map(([lane]) => lane);
   assert.ok(lanes.includes("system/"));
+  assert.ok(lanes.includes("inbox/"));
+  assert.ok(lanes.includes("roadmap/milestones/"));
   assert.ok(lanes.includes("roadmap/plans/"));
   assert.ok(lanes.includes("decisions/"));
 });

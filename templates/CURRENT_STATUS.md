@@ -14,11 +14,13 @@ owner: PM
 ---
 # <Project Name> Current Status
 
-> **First thing a new agent should read.** This is a weekly snapshot of where <Project> is now. For durable architecture, see `system/`. For user-facing capabilities, see `features/`. For concrete plans in flight, see `roadmap/plans/`. For pending work, see `roadmap/done-pending.md`. For decisions, see `decisions/`. For user/admin/dev docs, see `docs/`. For completed work, see `history/`. For superseded material, see `archive/`.
+> **First thing a new agent should read.** This is the current snapshot of where <Project> is now. Refresh it before history whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, or milestone state change. The active milestone is derived from `## Current Phase`; create or update the matching `roadmap/milestones/<phase>.md` note before history when phase, priority, plan, decision, feature, issue, blocker, or risk state changes. For raw intake, see `inbox/`. For durable architecture, see `system/`. For user-facing capabilities, see `features/`. For milestone framing, see `roadmap/milestones/`. For concrete plans in flight, see `roadmap/plans/`. For pending work, see `roadmap/done-pending.md`. For decisions, see `decisions/`. For user/admin/dev docs, see `docs/`. For completed work, see `history/`. For superseded material, see `archive/`.
 
 ## Current Phase
 
 **Alpha / Beta / Stable (private).** <one-paragraph description of where the project is today and who's using it>
+
+Active milestone: [[<ProjectPath>/roadmap/milestones/<milestone>|<milestone>]]
 
 ## Top Priorities
 

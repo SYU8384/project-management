@@ -7,9 +7,6 @@
  *   A. D-009: `roadmap/known-issues.md` `## Active` has at least one
  *      `### <Domain>` H3 grouping when it has multiple items.
  *      `--fix` introduces a `### Pending Triage` H3 placeholder.
- *   A. D-010: `roadmap/mvp-priorities.md` `## MVP Priorities` has at
- *      least one `### <Lane>` H3 grouping when it has items. `--fix`
- *      introduces a `### All Priorities` H3 placeholder.
  *   B. Dead wikilinks: `[[X]]` whose target file does not exist. `--fix`
  *      strips the brackets (preserving the display text). `--fix-strict`
  *      is a no-op; the validator surfaces MANUAL REVIEW.
@@ -32,7 +29,6 @@ import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import { wikiLinks } from "./lib/markdown.mjs";
 import {
   introduceActivePlaceholder,
-  introduceMvpPrioritiesPlaceholder,
   stripDeadWikiLinks,
   syncPlanStatusFromBodyMarker,
   flagTheoreticalRiskWording,
@@ -155,9 +151,6 @@ function runFor(target) {
   const manualReview = [];
 
   const knownIssuesPath = join(target.vault, "roadmap/known-issues.md");
-  const mvpPath = join(target.vault, "roadmap/mvp-priorities.md");
-  const plansDir = join(target.vault, "roadmap/plans");
-
   // ---- A.1: D-009 `## Active` placeholder ----
   const knownIssues = readIfExists(knownIssuesPath);
   if (knownIssues !== null) {
@@ -172,16 +165,6 @@ function runFor(target) {
     }
     if (r2.changes.length > 0 && !CLI.fix) {
       for (const c of r2.changes) issues.push(`roadmap/known-issues.md: D ${c}`);
-    }
-  }
-
-  // ---- A.2: D-010 `## MVP Priorities` placeholder ----
-  const mvpContent = readIfExists(mvpPath);
-  if (mvpContent !== null) {
-    const r = introduceMvpPrioritiesPlaceholder(mvpContent);
-    if (CLI.fix) writeIfChanged(mvpPath, mvpContent, r.updated, "roadmap/mvp-priorities.md (placeholder)");
-    if (r.changes.length > 0 && !CLI.fix) {
-      for (const c of r.changes) issues.push(`roadmap/mvp-priorities.md: A ${c}`);
     }
   }
 

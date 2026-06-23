@@ -59,7 +59,7 @@ The order below follows a new user's natural flow: **register your project first
 | Update all registered projects | `reconcile all projects` *(or* `reconcile existing projects` */* `reconcile outdated projects` */* `update projects with latest skill changes`*) | When the skill changed and registered projects may be stale. | Runs all registered projects with no `--project` filter: deterministic fixes, pending migrations, stale registered repo `AGENTS.md` repairs, then re-validation. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
 | Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
-| Check code-work PM close-out | run `check-pm-closeout.mjs` | Before a coding agent gives its final response after meaningful code work. | Verifies local access, worktree changes, current-state PM updates, and the current-day history log; allows explicit no-impact reasons. |
+| Check code-work PM close-out | run `check-pm-closeout.mjs` | Before a coding agent gives its final response after meaningful code work. | Verifies local access, worktree changes, current-state PM updates, milestone refreshes for priority-bearing work, and the current-day history log; allows explicit no-impact reasons. |
 | Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, active roadmap state, known issues, and recent history; produces a 1-paragraph summary pointing to the right files. |
 
 If you have code access but no PM folder at all, none of these apply — see **Access model** below.
@@ -116,14 +116,16 @@ Each project gets a Markdown folder with stable lanes:
 | Path | Purpose |
 |---|---|
 | `PRODUCT.md` | Product vision, target users, current product shape, principles, and boundaries. |
-| `CURRENT_STATUS.md` | Weekly snapshot: phase, priorities, blockers, recent wins, risks, and stale-doc state. |
+| `CURRENT_STATUS.md` | Current snapshot: phase, priorities, blockers, recent wins, risks, and stale-doc state. Refresh whenever priority-bearing roadmap, decision, feature, issue, or milestone state changes. |
 | `system/` | Current architecture, behavior, runtime, auth, database, integrations, and deployment. |
 | `docs/User Guide/` | End-user manual, FAQ, and product reference notes. |
 | `docs/Admin Guide/` | Live product operations: support, feedback, admin workflows, monitoring, statistics, jobs, access, incident response, and data repair. |
 | `docs/Developer Guide/` | Engineering workflows: local setup, codebase structure, APIs, schemas, migrations, prompts, tests, release mechanics, and `known-bugs.md`. |
 | `docs/Quick Commands/` | Copy-pasteable commands; longer explanations link back to Admin or Developer Guide. |
 | `features/` | Curated "tell me everything about this feature" pages that point into `system/`, `decisions/`, and `roadmap/plans/` docs. |
-| `roadmap/` | MVP priorities, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
+| `inbox/` | Raw owner/collaborator intake notes before owner triage. Not a backlog; digested items move to canonical lanes. |
+| `roadmap/` | Milestones, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
+| `roadmap/milestones/` | Agent-maintained phase-level milestone strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans, decisions, features, known issues, or docs. The active milestone is derived from `CURRENT_STATUS.md` `## Current Phase`. |
 | `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight. |
 | `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. Type codes: `ADR / PRD / MKT / VND / POL / NEG / EXP`. |
 | `history/` | Human-readable chronological logs of completed work, organized by year-month. |
@@ -162,11 +164,12 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator and `--fix` repair path for missing/stale PM sections. |
 | [`scripts/sync-agents-section.mjs`](./scripts/sync-agents-section.mjs) | Targeted AGENTS PM-section sync utility for re-rendering registered repos from the latest portable template. |
 | [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; emits `## Migration Debt` for registry migrations that still apply and are not in the project ledger. |
-| [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner. |
-| [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator. |
-| [`scripts/check-roadmap-conventions.mjs`](./scripts/check-roadmap-conventions.mjs) | Content-level roadmap convention validator for done-pending, ideas, known-issues, MVP priorities, and human-readable note shape. |
+| [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner; `--fix` refreshes deterministic `last_reviewed` / `updated` dates when frontmatter is present. |
+| [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator; `--fix` repairs deterministic frontmatter, page-type, history-shape, and archive-marker drift. |
+| [`scripts/check-inbox-conventions.mjs`](./scripts/check-inbox-conventions.mjs) | Inbox raw-intake validator for filename shape, lifecycle metadata, destination routing, and placeholder-name handling. |
+| [`scripts/check-roadmap-conventions.mjs`](./scripts/check-roadmap-conventions.mjs) | Content-level roadmap convention validator for done-pending, ideas, known-issues, milestone notes, and human-readable note shape, including the human archive-confirmation gate and `--fix` archive close-out for deterministic completed planning mirrors. |
 | [`scripts/check-content-semantics.mjs`](./scripts/check-content-semantics.mjs) | Semantic content validator for placeholders, dead links, plan status markers, and theoretical-risk wording. |
-| [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge. |
+| [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge; `--fix` repairs sections/status placement while leaving `TBD` prose for review. |
 | [`scripts/check-live-routing.mjs`](./scripts/check-live-routing.mjs) | Live routing hygiene validator for retired lane references and deterministic decision-link repair. |
 | [`scripts/check-obsidian-links.mjs`](./scripts/check-obsidian-links.mjs) | Obsidian rendered-link validator for malformed wiki syntax, missing targets/headings, marked TOCs, and PM-root-relative slash links. |
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
@@ -175,6 +178,7 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, and vault-relative Obsidian link normalization. |
 | [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
 | [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
+| [`scripts/lib/frontmatter-fixers.mjs`](./scripts/lib/frontmatter-fixers.mjs) | Shared deterministic PM frontmatter repairs used by reconcile. |
 | [`scripts/lib/obsidian-links.mjs`](./scripts/lib/obsidian-links.mjs) | Shared Obsidian link helpers for vault-relative targets, rendered-link scanning, marked TOCs, and deterministic link normalization. |
 | [`scripts/lib/findings.mjs`](./scripts/lib/findings.mjs) | Shared finding shape and report renderer for newer checks. |
 | [`scripts/lib/template-renderer.mjs`](./scripts/lib/template-renderer.mjs) | Template substitution and unresolved-placeholder detection. |
@@ -188,8 +192,11 @@ History is written last because it records what changed after the durable docs h
 ## 📐 Design Principles
 
 - **Current truth before history.** Update durable docs first; use history as the final human-readable chronological log.
+- **Milestones are live state.** Agents create and refresh the active `roadmap/milestones/<phase>.md` note before history whenever phase, priority, plan, decision, feature, known issue, blocker, or risk state changes.
+- **Milestone links are evidence, not a link dump.** Put specific plan, decision, feature, known-issue, or docs links inline inside the priority, major step, exit criterion, or deferred item they support; generic folder/index links belong in Navigation and folder notes.
 - **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
 - **Bugs become knowledge.** Active bug tracking stays in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
+- **Inbox is raw intake, not backlog.** `inbox/` captures owner/collaborator notes before triage; durable plans, ideas, decisions, issues, docs, and system truth move to their canonical lanes.
 - **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md`.
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md` with TOC links that match real H2 sections and plan/decision/feature links inside each section.
@@ -209,7 +216,7 @@ This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags
 - **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
 - **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
 - **Update an existing install:** re-run the same install command; existing clones fetch and fast-forward to the selected ref. If the checkout has local changes, pass `--force` to discard them.
-- **Force update:** `curl -fsSL .../install.sh | bash -s -- --force --yes` resets the skill directory to the selected ref and removes untracked files.
+- **Force update:** `curl -fsSL .../install.sh | bash -s -- --force --yes` resets the skill checkout to the selected ref and removes untracked files.
 
 **Check the installed version** without re-running the installer:
 

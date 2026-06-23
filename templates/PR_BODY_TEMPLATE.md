@@ -33,6 +33,9 @@ Features affected:
 - [ ] features/<feature>.md — Current Behavior, Known Issues, or Roadmap updated
 - [ ] features/features.md — new feature page added to index (if applicable)
 
+Inbox affected:
+- [ ] inbox/YYYY-MM-DD_<name>_<title>.md — raw intake note added, processed, or rejected: ...
+
 Roadmap affected:
 - [ ] roadmap/known-issues.md — bug/risk/blocker added, fixed, or changed status: ...
 - [ ] roadmap/ideas.md — idea/backlog/declined proposal added or changed status: ...

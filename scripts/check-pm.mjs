@@ -9,7 +9,7 @@
  *
  * With `--fix`, runs the full reconcile workflow:
  *   Phase 1: validators (report-only baseline; failures do not determine final exit)
- *   Phase 2: validator --fix (auto-create missing folder notes, rewrite pageType, repair AGENTS.md PM sections)
+ *   Phase 2: validator --fix (auto-create missing folder notes, repair deterministic metadata/content drift, repair AGENTS.md PM sections)
  *   Phase 3: pending migrations (from registry, idempotent, reads ledger)
  *   Phase 4: validators (final report; residual failures determine final exit)
  *

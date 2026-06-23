@@ -20,6 +20,7 @@ import { homedir } from "node:os";
 
 import { ACCESS_VALUES } from "./lib/convention.mjs";
 import { replaceSectionBody as replaceMarkdownSectionBody } from "./lib/markdown.mjs";
+import { milestoneNoteContent, milestoneSlugForPhase } from "./lib/milestones.mjs";
 import { findVaultRoot } from "./lib/paths.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
@@ -190,6 +191,8 @@ const month = monthOf(date);
 const notes = cli.notes || `${project} project.`;
 const access = cli.access;
 const linkRoot = projectPathFromVault(vaultRoot, pmFolder);
+const linkOptions = { pmFolder, vaultRoot };
+const initialMilestone = milestoneSlugForPhase(cli.phase);
 
 function ensureDir(abs) {
   if (existsSync(abs)) {
@@ -546,7 +549,9 @@ function scaffold() {
     "features",
     "history",
     `history/${month}`,
+    "inbox",
     "roadmap",
+    "roadmap/milestones",
     "roadmap/plans",
     "system",
   ];
@@ -557,9 +562,9 @@ function scaffold() {
     `${notes}\n\n## Start Here\n\n- [[${linkRoot}/README|README]] - PM folder routing map.\n- [[${linkRoot}/PRODUCT|PRODUCT]] - Product context.\n- [[${linkRoot}/CURRENT_STATUS|CURRENT_STATUS]] - Current snapshot.\n\n${nav([`${linkRoot}/README`, "README"])}`));
 
   writeCreateOnly(join(pmFolder, "README.md"), page(`${project} Project Docs`, "index",
-    `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`roadmap/\` | MVP priorities, known issues, done/pending, ideas, and scoped plans under \`roadmap/plans/\` |\n| \`roadmap/plans/\` | Concrete plans (mirrored into \`roadmap/done-pending.md\` when in flight) |\n| \`decisions/\` | Typed decision log (architecture, product, market, vendor, policy, rejection, experiment) |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules
+    `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`inbox/\` | Raw owner/collaborator intake notes before owner triage |\n| \`roadmap/\` | Milestones, known issues, done/pending, ideas, and scoped plans under \`roadmap/plans/\` |\n| \`roadmap/milestones/\` | Agent-maintained phase strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans/decisions/features/issues/docs |\n| \`roadmap/plans/\` | Concrete plans (mirrored into \`roadmap/done-pending.md\` when in flight) |\n| \`decisions/\` | Typed decision log (architecture, product, market, vendor, policy, rejection, experiment) |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules
 
-Update current-state docs first, then history. Update folder indexes whenever notes are added, moved, archived, or deleted. After meaningful code work in an authoritative repo, run \`check-pm-closeout.mjs\` if available, or explicitly record the no-impact reason.
+Update current-state docs first, then history. Review \`CURRENT_STATUS.md\` and the active \`roadmap/milestones/<phase>.md\` note whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, phase, or milestone state change. In milestone notes, link specific plans, decisions, features, known issues, or docs inline inside the priority, major step, exit criterion, or deferred item they support; do not maintain a generic \`## Related Notes\` link dump. Create the active milestone note if it is missing. Update folder indexes whenever notes are added, moved, archived, or deleted. After meaningful code work in an authoritative repo, run \`check-pm-closeout.mjs\` if available, or explicitly record the no-impact reason.
 
 > **Tip:** Expand this README using the full template at \`<skill_dir>/templates/README.md\` for additional sections (Folder Structure, Naming Conventions, Update Frequency, Conventions by Page Type).
 
@@ -569,7 +574,7 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
     `## Summary\n\n${notes}\n\n## Current Phase\n\n${cli.phase}\n\n## Product Notes\n\nUse this page for product vision, target users, current product shape, principles, boundaries, and future goals.\n\n${rootNav}`));
 
   writeCreateOnly(join(pmFolder, "CURRENT_STATUS.md"), page(`${project} Current Status`, "index",
-    `## Current Phase\n\n${cli.phase}\n\n## Top Priorities\n\n*(no items)*\n\n## Blocked\n\n*(no items)*\n\n## Recent Wins\n\n- Initial PM folder scaffold created on ${date}.\n\n## Major Risks\n\n*(no items)*\n\n## Stale Docs\n\nRun \`node ${rel(join(SKILL_DIR, "scripts/check-pm.mjs"))} --project ${project} --config ${rel(configPath)}\` for the latest validation report.\n\n${nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"])}`));
+    `> **Refresh trigger:** Update this note before history whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, phase, or milestone state change. Do not wait for a weekly review if project direction changed today. Review/update the active milestone before history at the same time.\n\n## Current Phase\n\n${cli.phase}\n\nActive milestone: [[${linkRoot}/roadmap/milestones/${initialMilestone}|${initialMilestone}]]\n\n## Top Priorities\n\n*(no items; link milestone notes or active plans here when priorities are known)*\n\n## Blocked\n\n*(no items)*\n\n## Recent Wins\n\n- Initial PM folder scaffold created on ${date}.\n\n## Major Risks\n\n*(no items)*\n\n## Stale Docs\n\nRun \`node ${rel(join(SKILL_DIR, "scripts/check-pm.mjs"))} --project ${project} --config ${rel(configPath)}\` for the latest validation report.\n\n${nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"])}`));
 
   writeCreateOnly(join(pmFolder, "archive/archive.md"), folderNote({
     title: "archive",
@@ -635,6 +640,17 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`]),
   }));
 
+  writeCreateOnly(join(pmFolder, "inbox/inbox.md"), folderNote({
+    title: "inbox",
+    intro: "Raw owner/collaborator intake notes for ideas, discussions, rough requests, and untriaged context.",
+    conventions: `- **Purpose:** capture raw notes only. The owner later digests them into \`roadmap/ideas.md\`, \`roadmap/plans/\`, \`roadmap/done-pending.md\`, \`decisions/\`, \`system/\`, \`features/\`, docs, or known issues.
+- **Filename:** \`YYYY-MM-DD_<name>_<title>.md\`. If no creator name is provided, agents must use \`NAME_PLACEHOLDER\` in the filename, title/H1, and \`author\`, then ask the user what name should replace it.
+- **Frontmatter:** inbox notes use \`pageType: note\`, \`status: unprocessed | processed | rejected\`, \`author\`, \`resolution\`, and \`destination\`.
+- **Routing state:** \`unprocessed\` requires \`resolution: pending\` and \`destination: none\`; \`processed\` requires a non-pending resolution; \`rejected\` uses \`resolution: no-action\` and \`destination: none\`.
+- **Indexing:** do not maintain a complete note register here. Per-note frontmatter is the source of processing state.`,
+    navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
+  }));
+
   writeCreateOnly(join(pmFolder, `history/${month}/${month}.md`), folderNote({
     title: month,
     intro: `History logs for ${month}.`,
@@ -647,7 +663,7 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "roadmap/plans/plans.md"), folderNote({
     title: "plans",
-    intro: "Concrete plans, implementation strategies, and design approaches. Active plans are mirrored in `roadmap/done-pending.md`; completed plans move to `archive/`. Significant decisions live in `decisions/` and are cited from the plan, not duplicated here.",
+    intro: "Concrete plans, implementation strategies, and design approaches. Active plans are mirrored in `roadmap/done-pending.md`; implemented plans move to `archive/` after the user verifies the work and approves archival. Significant decisions live in `decisions/` and are cited from the plan, not duplicated here.",
     conventions: `- **Filename:** \`YYYY-MM-DD_slug.md\` (date prefix from \`created:\` frontmatter). See \`templates/decision.md\` for decision filenames.
 - **H1:** the slug only (no number, no date prefix).
 - **Status:** five values, all from the planning lifecycle:
@@ -659,7 +675,7 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
 - **Archived field:** when a planning file moves to \`archive/\`, set \`archived: <date>\` in the frontmatter (the date of the move). The \`status\` field is **not** changed: a shipped-then-archived plan keeps \`status: shipped\`; a rejected-then-archived plan keeps \`status: rejected\`; a superseded-then-archived plan keeps \`status: superseded\`. \`archived:\` is the file-location marker; \`status:\` is the lifecycle marker. They are orthogonal.
 - **Archive rename:** when retiring, rename to \`archive/<slug>-archived.md\` — drop the date prefix, preserve the slug, append \`-archived\`. This rename is mandatory.
 - **Owner:** typically \`PM\`. Use \`Platform team\` or \`Operator\` for plans owned by another team.
-- **Cross-link:** when a planning note is approved, add a slug-only \`## <slug>\` section to \`roadmap/done-pending.md\` with the date-prefixed planning note link. When it ships, distill durable current truth into \`system/\` and archive the file.
+- **Cross-link:** when a planning note is approved, add a slug-only \`## <slug>\` section to \`roadmap/done-pending.md\` with the date-prefixed planning note link and required human archive-confirmation checkbox. When it ships and the user approves archival, mark the confirmation checkbox done, distill durable current truth into \`system/\`, and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed \`decisions/D-NNN_<type>_<slug>.md\` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
 `,
     navigation: nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
@@ -673,19 +689,34 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "roadmap/roadmap.md"), folderNote({
     title: "roadmap",
-    intro: "MVP priorities, known issues, done/pending status, ideas, and scoped plans under `roadmap/plans/`.",
+    intro: "Milestones, known issues, done/pending status, ideas, and scoped plans under `roadmap/plans/`.",
+    subfolders: [
+      [`${linkRoot}/roadmap/milestones/milestones`, "milestones/", "Phase-level milestone strategy and priorities"],
+      [`${linkRoot}/roadmap/plans/plans`, "plans/", "Concrete plans not fully shipped yet"],
+    ],
     notes: [
-      [`${linkRoot}/roadmap/mvp-priorities`, "mvp-priorities", "MVP priority tracker"],
       [`${linkRoot}/roadmap/known-issues`, "known-issues", "Active bugs, risks, and blockers"],
       [`${linkRoot}/roadmap/done-pending`, "done-pending", "Planning mirrors and lightweight done/pending"],
       [`${linkRoot}/roadmap/ideas`, "ideas", "Idea register"],
-      [`${linkRoot}/roadmap/plans/plans`, "plans/", "Concrete plans not fully shipped yet"],
     ],
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`]),
   }));
 
-  writeCreateOnly(join(pmFolder, "roadmap/mvp-priorities.md"), page("mvp-priorities", "roadmap",
-    `## Contents\n\n- [[#Alpha Goal]]\n- [[#MVP Priorities]]\n- [[#Bootstrap]]\n- [[#Validations]]\n- [[#Migrations]]\n- [[#AGENTS.md integration]]\n- [[#CLI surface]]\n- [[#Documentation]]\n- [[#OpenClaw PM-agent integration]]\n- [[#Not Yet MVP]]\n- [[#Navigation]]\n\n## Alpha Goal\n\n${notes}\n\n## MVP Priorities\n\n### Bootstrap\n\n- [x] **DONE:** \`bootstrap-pm.mjs\` (and the \`pm-folder-bootstrap\` feature). Shipped v1.0.0. Idempotent scaffold; writes PM folder + \`AGENTS.md\` + \`projects.json\` entry.\n\n### Validations\n\n- [x] **DONE:** \`check-pm.mjs\` orchestrator + 4 focused validators (vault structure, stale docs, PM consistency, AGENTS.md integration). Shipped v1.0.0. Passes on a fresh scaffold.\n- [x] **DONE:** Reconcile workflow (validate + fix + migrate + re-validate in one trigger). Shipped v1.4.0. The \`reconcile this project\` phrase runs the orchestrator with \`--fix\`, applies pending migrations, and re-validates. Idempotent.\n\n### Migrations\n\n- [x] **DONE:** \`migrate.mjs\` runner + \`migrations/_index.mjs\` registry. Shipped v1.0.0. Per-project ledger at \`<pm_folder>/.pm/migrations.json\`; idempotent.\n\n### AGENTS.md integration\n\n- [x] **DONE:** \`check-agents.mjs\` + 2 AGENTS.md PM-section templates. Shipped v1.0.0. The convention is reachable from any coding agent via the project's \`AGENTS.md\`.\n\n### CLI surface\n\n- [x] **DONE:** \`install.sh\` curl-friendly installer with TTY-aware interactive menu. Shipped v1.4.0. No-TTY fallback to \`--target agents\`. The \`--ref\` and \`--channel\` flags support pinned installs and release channels.\n\n### Documentation\n\n- [x] **DONE:** Quick Start trigger table in \`README.md\`. Shipped v1.0.0; refined through v1.4.0. The table is ordered for new-user natural flow: setup → setup-as-collab → verify → reconcile → migrate → log.\n- [x] **DONE:** \`REFERENCE.md\` developer reference (validation and repair, migrations, setup intake, coding agent integration, contributor workflow, templates, bootstrap workflow, live management folder rule, project-specific configuration, pitfalls). Shipped v1.0.0; expanded through v1.4.1.\n\n### OpenClaw PM-agent integration\n\n- [x] **DONE:** \`openclaw-instruction.md\` copy-paste bootstrap prompt. Shipped v1.4.0. Wires an OpenClaw chat session into the skill.\n\n## Not Yet MVP\n\n- **More focused validators** — frontmatter \`pageType\` ↔ folder-name consistency, orphaned decisions, planning notes with no \`done-pending.md\` mirror, archive folder hygiene. *Not yet committed; tracked in \`roadmap/ideas.md\` "Brainstorming".*\n- **\`migrate --target <project>\` flag** — currently \`--pm-folder <path>\` is the primary interface. *Not yet implemented; tracked in \`roadmap/ideas.md\` "Brainstorming".*\n- **Self-skip rule for \`archive/archive.md\`** in the vault-structure validator. *Not yet implemented; tracked in \`roadmap/ideas.md\` "Brainstorming".*\n- **First real second user** — until at least one non-owner installs and uses the skill on a non-trivial project, the v1.x → v2.0 promotion is held back. *Tracked in \`CURRENT_STATUS.md\` "Top Priorities" item 3.*\n\n${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
+  writeCreateOnly(join(pmFolder, "roadmap/milestones/milestones.md"), folderNote({
+    title: "milestones",
+    intro: "Agent-maintained phase-level roadmap notes. Milestones frame goals, priorities, major steps, exit criteria, deferred scope, update triggers, and inline evidence links; concrete execution lives in `roadmap/plans/` and `roadmap/done-pending.md`.",
+    notes: [[`${linkRoot}/roadmap/milestones/${initialMilestone}`, initialMilestone, `Initial ${cli.phase} milestone`]],
+    navigation: nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/${project}`, `Back to ${project}`]),
+  }));
+
+  writeCreateOnly(join(pmFolder, `roadmap/milestones/${initialMilestone}.md`), milestoneNoteContent({
+    project,
+    slug: initialMilestone,
+    phase: cli.phase,
+    notes,
+    date,
+    linkOptions,
+  }));
 
   writeCreateOnly(join(pmFolder, "roadmap/known-issues.md"), page("known-issues", "roadmap",
     `Open bugs, risks, and blockers for ${project}.\n\n## Contents\n\n- [[#Active]]\n- [[#Migrations]]\n- [[#Validators]]\n- [[#AGENTS.md integration]]\n- [[#CLI surface]]\n- [[#Documentation]]\n- [[#Deferred]]\n- [[#Navigation]]\n\n## Active\n\nActive items are grouped by domain below. **Fixed items are migrated to \`docs/Developer Guide/known-bugs.md\`** (the engineering knowledge base) and removed from this file. A \`### <Domain>\` section that becomes fully fixed (no remaining active items) is archived to \`archive/known-issues-<domain>-archived.md\` per the planning-note archive convention. \`## Deferred\` items stay in this file until re-opened.\n\n### Migrations\n\n- [ ] **PENDING:** <one-line description of the bug/risk/blocker>. The migration gap. Tracked for v1.5.0.\n\n### Validators\n\n- [ ] **PENDING:** <one-line description of the validator gap>. The expected behavior. The actual behavior.\n\n### AGENTS.md integration\n\n- [ ] **PENDING:** <one-line description of the AGENTS.md gap>.\n\n### CLI surface\n\n*(no items)*\n\n### Documentation\n\n*(no items)*\n\n## Deferred\n\n### Validators\n\n- [ ] **DEFERRED:** <one-line description of the deferred validator item>.\n\n### CLI surface\n\n- [ ] **DEFERRED:** <one-line description of the deferred CLI item>.\n\n${nav([`${linkRoot}/roadmap/roadmap`, "Back to roadmap"], [`${linkRoot}/docs/Developer Guide/known-bugs`, "known-bugs"], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
@@ -699,7 +730,7 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
 This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from \`roadmap/plans/\`, with a DONE/PENDING checklist and relevant decisions/features/system/docs links; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order.
 
-Planning-note mirror H2 format: \`## <slug>\` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a \`Planning note:\` line linking to the plan, then a DONE/PENDING checklist, then \`Relevant decisions:\`, \`Relevant features:\`, and optional \`Relevant system:\` / \`Relevant docs:\` lines. Do not use \`Relevant ADRs:\`; decisions are the first-class lane.
+Planning-note mirror H2 format: \`## <slug>\` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a \`Planning note:\` line linking to the plan, then a DONE/PENDING checklist, then the required human archive-confirmation checkbox, then \`Relevant decisions:\`, \`Relevant features:\`, and optional \`Relevant system:\` / \`Relevant docs:\` lines. Do not use \`Relevant ADRs:\`; decisions are the first-class lane.
 
 ## example-plan-slug
 
@@ -708,6 +739,7 @@ Planning note: [[${linkRoot}/roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-
 - [x] DONE: <one-line description of what shipped>.
 - [ ] PENDING: <one-line description of what's still open>.
 - [ ] PENDING: <another pending item>.
+- [ ] PENDING: Human verification for archival: user has tested the implemented plan and explicitly approved archiving this section and linked plan.
 
 - Relevant decisions: [[${linkRoot}/decisions/D-NNN_<type>_<slug>]] *(or \`*(none)*\` if there are no related decisions yet)*
 - Relevant features: [[${linkRoot}/features/<feature-slug>]] *(or \`*(none)*\` if there are no related features yet)*

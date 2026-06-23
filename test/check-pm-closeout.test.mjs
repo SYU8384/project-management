@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -149,6 +149,91 @@ test("check-pm-closeout: current-state PM update plus current-day history passes
     assert.equal(result.status, 0, result.stderr + result.stdout);
     assert.match(result.stdout, /PM close-out evidence found/);
     assert.match(result.stdout, /system\/overview\.md/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("check-pm-closeout: priority-bearing PM changes require CURRENT_STATUS refresh", () => {
+  const dir = freshDir("pm-closeout-");
+  try {
+    const repo = join(dir, "code");
+    const pmFolder = join(dir, "pm");
+    initRepo(repo);
+    mkdirSync(join(pmFolder, "roadmap"), { recursive: true });
+    mkdirSync(pmFolder, { recursive: true });
+    const currentStatus = join(pmFolder, "CURRENT_STATUS.md");
+    const donePending = join(pmFolder, "roadmap", "done-pending.md");
+    writeFileSync(currentStatus, "# current\n");
+    writeFileSync(donePending, "# done-pending\n\n## Active\n\n- [ ] PENDING: work\n");
+    const historyPath = todayHistoryPath(pmFolder);
+    mkdirSync(dirname(historyPath), { recursive: true });
+    writeFileSync(historyPath, "# Today\n\n- Updated PM history.\n");
+    writeFileSync(join(repo, "src.txt"), "changed\n");
+
+    const oldTime = new Date("2026-06-20T00:00:00.000Z");
+    const newTime = new Date("2026-06-20T02:00:00.000Z");
+    utimesSync(currentStatus, oldTime, oldTime);
+    utimesSync(donePending, newTime, newTime);
+    utimesSync(historyPath, newTime, newTime);
+
+    const cfgPath = writeProjectsJson(dir, {
+      NeedsStatus: { code_repo: repo, pm_folder: pmFolder, access: "authoritative" },
+    });
+
+    const result = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    assert.equal(result.status, 1, result.stderr + result.stdout);
+    assert.match(result.stdout, /Priority-bearing PM files updated/);
+    assert.match(result.stdout, /CURRENT_STATUS\.md freshness: not updated since baseline/);
+    assert.match(result.stdout, /Priority-bearing PM files changed/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("check-pm-closeout: priority-bearing PM changes require active milestone refresh", () => {
+  const dir = freshDir("pm-closeout-");
+  try {
+    const repo = join(dir, "code");
+    const pmFolder = join(dir, "pm");
+    initRepo(repo);
+    mkdirSync(join(pmFolder, "roadmap", "milestones"), { recursive: true });
+    const currentStatus = join(pmFolder, "CURRENT_STATUS.md");
+    const donePending = join(pmFolder, "roadmap", "done-pending.md");
+    const milestone = join(pmFolder, "roadmap", "milestones", "beta.md");
+    writeFileSync(currentStatus, `# current
+
+## Current Phase
+
+beta
+`);
+    writeFileSync(donePending, "# done-pending\n\n## Active\n\n- [ ] PENDING: work\n");
+    writeFileSync(milestone, "# beta\n\n## Goal\n\nShip beta.\n");
+    const historyPath = todayHistoryPath(pmFolder);
+    mkdirSync(dirname(historyPath), { recursive: true });
+    writeFileSync(historyPath, "# Today\n\n- Updated PM history.\n");
+    writeFileSync(join(repo, "src.txt"), "changed\n");
+
+    const oldTime = new Date("2026-06-20T00:00:00.000Z");
+    const newTime = new Date("2026-06-20T02:00:00.000Z");
+    utimesSync(milestone, oldTime, oldTime);
+    utimesSync(currentStatus, newTime, newTime);
+    utimesSync(donePending, newTime, newTime);
+    utimesSync(historyPath, newTime, newTime);
+
+    const cfgPath = writeProjectsJson(dir, {
+      NeedsMilestone: { code_repo: repo, pm_folder: pmFolder, access: "authoritative", phase: "beta" },
+    });
+
+    const failing = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    assert.equal(failing.status, 1, failing.stderr + failing.stdout);
+    assert.match(failing.stdout, /Active milestone freshness: roadmap\/milestones\/beta\.md not updated since baseline/);
+    assert.match(failing.stdout, /refresh the active or explicitly linked `roadmap\/milestones\/\*\.md` note/);
+
+    utimesSync(milestone, newTime, newTime);
+    const passing = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    assert.equal(passing.status, 0, passing.stderr + passing.stdout);
+    assert.match(passing.stdout, /Priority-bearing PM changes also refreshed the active or explicitly linked milestone/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

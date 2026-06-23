@@ -2,7 +2,7 @@
  * lib/roadmap-fixers.mjs
  *
  * Auto-fixer functions for roadmap content conventions
- * (D-007 / D-008 / D-009 / D-010 / D-012). Imported by both the
+ * (D-007 / D-008 / D-009 / D-012 / D-015 / D-016). Imported by both the
  * `check-roadmap-conventions.mjs` validator (for `--fix` mode) and the
  * `1.7.0-roadmap-content-conventions.mjs` migration (for `apply()`).
  *
@@ -16,6 +16,8 @@
  * this property to be safe to re-apply.
  */
 
+import { MILESTONE_REQUIRED_SECTIONS } from "./convention.mjs";
+import { milestoneRelatedNotesState } from "./milestones.mjs";
 import { pmWikiLink } from "./obsidian-links.mjs";
 
 const STATUS_EMOJI = Object.freeze({
@@ -27,6 +29,9 @@ const STATUS_EMOJI = Object.freeze({
 });
 
 const STATUS_NAMES = Object.freeze(Object.keys(STATUS_EMOJI));
+export const HUMAN_ARCHIVE_CONFIRMATION_TEXT =
+  "Human verification for archival: user has tested the implemented plan and explicitly approved archiving this section and linked plan.";
+export const HUMAN_ARCHIVE_CONFIRMATION_LINE = `- [ ] PENDING: ${HUMAN_ARCHIVE_CONFIRMATION_TEXT}`;
 
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -165,6 +170,220 @@ function replaceH2Section(content, heading, replacement) {
   const before = content.slice(0, start).replace(/\n+$/, "\n\n");
   const after = content.slice(end).replace(/^\n+/, "\n\n");
   return `${before}${replacement}${after}`.replace(/\n{3,}/g, "\n\n");
+}
+
+function h2Sections(content) {
+  const matches = [...content.matchAll(/^##\s+(.+?)\s*$/gm)];
+  return matches.map((match, index) => {
+    const bodyStart = match.index + match[0].length;
+    const next = matches[index + 1];
+    const bodyEnd = next ? next.index : content.length;
+    return {
+      heading: match[1].trim(),
+      body: content.slice(bodyStart, bodyEnd),
+      start: match.index,
+      end: bodyEnd,
+    };
+  });
+}
+
+function hasPlanningNote(body) {
+  return Boolean(planningNoteTarget(body));
+}
+
+function humanArchiveConfirmationMatch(body) {
+  const escaped = escapeRegExp(HUMAN_ARCHIVE_CONFIRMATION_TEXT);
+  return body.match(new RegExp(`^\\s*-\\s*\\[([ xX])\\].*${escaped}\\s*$`, "m"));
+}
+
+function hasHumanArchiveConfirmation(body) {
+  return Boolean(humanArchiveConfirmationMatch(body));
+}
+
+function planningNoteTarget(body) {
+  const line = body.match(/^Planning note:\s*(.+?)\s*$/m)?.[1]?.trim();
+  if (!line) return null;
+  const wiki = line.match(/^\[\[([^\]]+)\]\]$/);
+  if (!wiki) {
+    return { status: "plain", raw: line };
+  }
+  const raw = wiki[1];
+  const pipe = raw.indexOf("|");
+  const target = pipe === -1 ? raw : raw.slice(0, pipe);
+  const hash = target.indexOf("#");
+  return {
+    status: "wiki",
+    raw,
+    target: normalizeRelPath(hash === -1 ? target : target.slice(0, hash)),
+  };
+}
+
+function resolvePlanningTarget(rawTarget, targets) {
+  const normalized = normalizeRelPath(rawTarget);
+  const planTargets = buildTargetIndex(targets).filter((target) => target.rel.startsWith("roadmap/plans/"));
+  if (!normalized) return { status: "missing", target: normalized };
+  if (normalized.startsWith("archive/") || normalized.includes("/archive/")) {
+    return { status: "already-archived", target: normalized };
+  }
+
+  let rel = null;
+  if (normalized.startsWith("roadmap/plans/")) {
+    rel = normalized;
+  } else {
+    const marker = "/roadmap/plans/";
+    const index = normalized.indexOf(marker);
+    if (index !== -1) rel = normalized.slice(index + 1);
+  }
+  if (rel) {
+    const matches = planTargets.filter((target) => target.rel === rel);
+    if (matches.length === 1) return { status: "found", rel };
+    return { status: "missing", target: normalized, rel };
+  }
+
+  if (!normalized.includes("/")) {
+    const matches = planTargets.filter((target) => target.base === normalized);
+    if (matches.length === 1) return { status: "found", rel: matches[0].rel };
+    if (matches.length > 1) return { status: "ambiguous", target: normalized, matches: matches.map((target) => target.rel) };
+  }
+
+  return { status: "missing", target: normalized };
+}
+
+function archiveRelForPlan(planRel) {
+  const stem = basenameNoExt(planRel);
+  const slug = stem.replace(/^\d{4}-\d{2}-\d{2}[_-]?/, "");
+  return `archive/${slug}-archived`;
+}
+
+export function findArchiveReadyDonePendingSections(content) {
+  const findings = [];
+  for (const section of h2Sections(content)) {
+    if (!hasPlanningNote(section.body)) continue;
+    if (!hasHumanArchiveConfirmation(section.body)) continue;
+    const checkboxMatches = [...section.body.matchAll(/^\s*-\s*\[([ xX])\]/gm)];
+    if (checkboxMatches.length === 0) continue;
+    const unchecked = checkboxMatches.some((match) => match[1] === " ");
+    if (unchecked) continue;
+    findings.push(section.heading);
+  }
+  return findings;
+}
+
+export function findPlanningMirrorsMissingHumanArchiveConfirmation(content) {
+  const findings = [];
+  for (const section of h2Sections(content)) {
+    if (!hasPlanningNote(section.body)) continue;
+    if (hasHumanArchiveConfirmation(section.body)) continue;
+    findings.push(section.heading);
+  }
+  return findings;
+}
+
+function insertHumanArchiveConfirmation(section) {
+  const body = section.body.replace(/^\n+/, "").replace(/\n+$/, "");
+  const lines = body.split("\n");
+  const relevantIndex = lines.findIndex((line) => /^\s*-\s*(?:\*\*)?Relevant\b/i.test(line));
+  let insertIndex = -1;
+
+  if (relevantIndex !== -1) {
+    insertIndex = relevantIndex;
+    while (insertIndex > 0 && lines[insertIndex - 1].trim() === "") {
+      insertIndex -= 1;
+    }
+  } else {
+    const checkboxIndexes = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*-\s*\[[ xX]\]/.test(lines[i])) checkboxIndexes.push(i);
+    }
+    if (checkboxIndexes.length > 0) {
+      insertIndex = checkboxIndexes[checkboxIndexes.length - 1] + 1;
+    } else {
+      const planningIndex = lines.findIndex((line) => /^Planning note:\s*/.test(line));
+      insertIndex = planningIndex === -1 ? lines.length : planningIndex + 1;
+    }
+  }
+
+  lines.splice(insertIndex, 0, HUMAN_ARCHIVE_CONFIRMATION_LINE);
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+}
+
+export function ensureHumanArchiveConfirmation(content) {
+  const changes = [];
+  let updated = content;
+  const sections = h2Sections(content)
+    .filter((section) => hasPlanningNote(section.body) && !hasHumanArchiveConfirmation(section.body))
+    .sort((a, b) => b.start - a.start);
+
+  for (const section of sections) {
+    const replacement = `## ${section.heading}\n\n${insertHumanArchiveConfirmation(section)}\n\n`;
+    updated = `${updated.slice(0, section.start)}${replacement}${updated.slice(section.end)}`.replace(/\n{3,}/g, "\n\n");
+    changes.push(`planning mirror \`## ${section.heading}\` missing human archive confirmation checkbox`);
+  }
+
+  return { updated, changes, manualReview: [] };
+}
+
+export function planArchiveReadyDonePendingSections(content, targets = []) {
+  const targetSet = new Set(targets.map(normalizeRelPath));
+  const archives = [];
+  const manualReview = [];
+
+  for (const section of h2Sections(content)) {
+    const note = planningNoteTarget(section.body);
+    if (!note) continue;
+    if (!hasHumanArchiveConfirmation(section.body)) continue;
+
+    const checkboxMatches = [...section.body.matchAll(/^\s*-\s*\[([ xX])\]/gm)];
+    if (checkboxMatches.length === 0) continue;
+    const unchecked = checkboxMatches.some((match) => match[1] === " ");
+    if (unchecked) continue;
+
+    if (note.status !== "wiki") {
+      manualReview.push(`completed planning mirror \`## ${section.heading}\` has a non-wiki Planning note; link the active plan before auto-archive`);
+      continue;
+    }
+
+    const resolved = resolvePlanningTarget(note.target, targets);
+    if (resolved.status === "already-archived") {
+      manualReview.push(`completed planning mirror \`## ${section.heading}\` already points outside roadmap/plans/: ${resolved.target}`);
+      continue;
+    }
+    if (resolved.status === "ambiguous") {
+      manualReview.push(`completed planning mirror \`## ${section.heading}\` planning note is ambiguous: ${resolved.matches.join(", ")}`);
+      continue;
+    }
+    if (resolved.status !== "found") {
+      manualReview.push(`completed planning mirror \`## ${section.heading}\` planning note has no existing roadmap/plans target: ${note.target}`);
+      continue;
+    }
+
+    const archiveRel = archiveRelForPlan(resolved.rel);
+    if (targetSet.has(archiveRel)) {
+      manualReview.push(`completed planning mirror \`## ${section.heading}\` archive target already exists: ${archiveRel}.md`);
+      continue;
+    }
+
+    archives.push({
+      heading: section.heading,
+      body: section.body,
+      start: section.start,
+      end: section.end,
+      planRel: resolved.rel,
+      archiveRel,
+    });
+  }
+
+  return { archives, manualReview };
+}
+
+export function removeDonePendingSections(content, sections) {
+  let updated = content;
+  for (const section of [...sections].sort((a, b) => b.start - a.start)) {
+    const before = updated.slice(0, section.start).replace(/\n+$/, "\n\n");
+    const after = updated.slice(section.end).replace(/^\n+/, "\n\n");
+    updated = `${before}${after}`.replace(/\n{3,}/g, "\n\n");
+  }
+  return updated;
 }
 
 /**
@@ -342,6 +561,32 @@ export function checkLaneGroupingInMvpPriorities(content) {
   if (items.length >= 1 && !hasLaneH3) {
     manualReview.push(
       `\`## MVP Priorities\` has ${items.length} item(s) but no \`### <Lane>\` H3 subsections. Group items under project-specific lane names. The auto-fixer cannot pick the right names.`
+    );
+  }
+  return { manualReview };
+}
+
+/**
+ * D-015/D-016: milestone notes in `roadmap/milestones/` have a predictable
+ * scan shape and no generic related-note link dump. The checker does not
+ * invent strategy, priorities, or inline evidence placement.
+ */
+export function checkMilestoneNoteShape(content, relPath) {
+  const manualReview = [];
+  const headings = new Set(h2Headings(content));
+  for (const section of MILESTONE_REQUIRED_SECTIONS) {
+    if (!headings.has(section)) {
+      manualReview.push(`${relPath}: missing \`## ${section}\``);
+    }
+  }
+  const relatedNotes = milestoneRelatedNotesState(content, relPath);
+  if (relatedNotes.hasSection) {
+    manualReview.push(
+      ...(
+        relatedNotes.removable
+          ? [`${relPath}: deprecated generic \`## Related Notes\` section should be removed; run \`check-roadmap-conventions --fix\` or delete the section.`]
+          : relatedNotes.manualReview
+      )
     );
   }
   return { manualReview };

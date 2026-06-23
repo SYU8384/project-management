@@ -48,20 +48,44 @@ export const IDEA_STATUSES = Object.freeze([
   "Declined",
 ]);
 
+export const INBOX_STATUSES = Object.freeze([
+  "unprocessed",
+  "processed",
+  "rejected",
+]);
+
+export const INBOX_RESOLUTIONS = Object.freeze([
+  "pending",
+  "idea",
+  "planning",
+  "done-pending",
+  "decision",
+  "feature",
+  "system",
+  "docs",
+  "known-issue",
+  "addressed-directly",
+  "no-action",
+  "multiple",
+]);
+
 export const TOP_LEVEL_LANES = Object.freeze([
   "archive",
   "decisions",
   "docs",
   "features",
   "history",
+  "inbox",
   "roadmap",
   "system",
 ]);
 
 export const REQUIRED_DIRS = Object.freeze([
   "roadmap",
+  "roadmap/milestones",
   "system",
   "history",
+  "inbox",
   "archive",
   "docs",
   "features",
@@ -101,7 +125,6 @@ export const REQUIRED_ROOT_FILES = Object.freeze([
 ]);
 
 export const REQUIRED_ROADMAP_FILES = Object.freeze([
-  "roadmap/mvp-priorities.md",
   "roadmap/known-issues.md",
   "roadmap/done-pending.md",
   "roadmap/ideas.md",
@@ -109,8 +132,10 @@ export const REQUIRED_ROADMAP_FILES = Object.freeze([
 
 export const REQUIRED_INDEX_FILES = Object.freeze([
   "system/system.md",
+  "inbox/inbox.md",
   "archive/archive.md",
   "history/history.md",
+  "roadmap/milestones/milestones.md",
   "docs/docs.md",
   ...DOCS_GUIDES.map((guide) => guide.index),
   "docs/Developer Guide/known-bugs.md",
@@ -135,19 +160,22 @@ export const ROADMAP_REQUIRED_SECTIONS = Object.freeze({
     "Deferred",
     "Navigation",
   ]),
-  "roadmap/mvp-priorities.md": Object.freeze([
-    "Contents",
-    "Alpha Goal",
-    "MVP Priorities",
-    "Not Yet MVP",
-    "Navigation",
-  ]),
   "roadmap/done-pending.md": Object.freeze([
     "Contents",
     "General Done/Pending Without Dedicated Planning Note",
     "Navigation",
   ]),
 });
+
+export const MILESTONE_REQUIRED_SECTIONS = Object.freeze([
+  "Goal",
+  "Priorities",
+  "Major Steps",
+  "Exit Criteria",
+  "Deferred",
+  "Update Triggers",
+  "Navigation",
+]);
 
 export const PAGE_TYPE_BY_PREFIX = Object.freeze([
   ["decisions/D-", "decision"],
@@ -156,6 +184,7 @@ export const PAGE_TYPE_BY_PREFIX = Object.freeze([
   ["features/", "feature"],
   ["system/", "system"],
   ["docs/", "note"],
+  ["inbox/", "note"],
   ["roadmap/", "roadmap"],
 ]);
 
@@ -175,6 +204,7 @@ export function expectedPageTypeForPath(relPath, projectName, existing = null) {
   if (isFolderNotePath(relPath, projectName)) return "index";
   if (["README.md", "PRODUCT.md", "CURRENT_STATUS.md"].includes(relPath)) return "index";
   if (relPath === "roadmap/roadmap.md") return "index";
+  if (relPath === "roadmap/milestones/milestones.md") return "index";
   if (relPath === "features/features.md") return "index";
   if (relPath === "system/system.md") return "index";
   for (const [prefix, pageType] of PAGE_TYPE_BY_PREFIX) {
@@ -201,7 +231,9 @@ export function routeRows() {
     ["docs/Developer Guide/", "Engineering workflows, implementation notes, and known bugs"],
     ["docs/Quick Commands/", "Copy-pasteable commands"],
     ["features/", "Per-feature context indexes"],
-    ["roadmap/", "MVP priorities, known issues, done/pending, ideas, and scoped plans under `roadmap/plans/`"],
+    ["inbox/", "Raw owner/collaborator intake notes for ideas, discussions, and rough requests before owner triage"],
+    ["roadmap/", "Milestones, known issues, done/pending, ideas, and scoped plans under `roadmap/plans/`"],
+    ["roadmap/milestones/", "Agent-maintained phase-level milestone strategy, priorities, major steps, exit criteria, update triggers, and links to decisions/plans/features"],
     ["roadmap/plans/", "Concrete plans (mirrored into `roadmap/done-pending.md` when in flight)"],
     ["decisions/", "Typed decision log (architecture, product, market, vendor, policy, rejection, experiment)"],
     ["history/", "Completed work logs"],

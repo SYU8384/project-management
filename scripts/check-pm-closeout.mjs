@@ -13,6 +13,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 
 import { isValidAccess } from "./lib/convention.mjs";
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
+import { activeMilestoneInfo } from "./lib/milestones.mjs";
 
 const USAGE = `Usage: node scripts/check-pm-closeout.mjs [options]
 
@@ -195,25 +196,83 @@ function isCurrentStatePmRel(relPath) {
   );
 }
 
+function isPriorityBearingPmRel(relPath) {
+  return (
+    relPath === "roadmap/done-pending.md" ||
+    relPath === "roadmap/known-issues.md" ||
+    relPath.startsWith("roadmap/plans/") ||
+    relPath.startsWith("roadmap/milestones/") ||
+    relPath.startsWith("decisions/") ||
+    relPath.startsWith("features/")
+  );
+}
+
 function recentlyModified(abs, baseline) {
   if (!existsSync(abs)) return false;
   return statSync(abs).mtimeMs >= baseline.getTime();
 }
 
-function findPmEvidence(pmFolder, baseline) {
-  const currentState = walkMarkdown(pmFolder)
+function milestoneRelFromWikiTarget(rawTarget) {
+  const target = String(rawTarget ?? "")
+    .split("|")[0]
+    .split("#")[0]
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\.md$/i, "");
+  const match = target.match(/(?:^|\/)roadmap\/milestones\/([^/]+)$/);
+  if (!match || match[1] === "milestones") return null;
+  return `roadmap/milestones/${match[1]}.md`;
+}
+
+function linkedMilestoneRels(pmFolder, relPaths) {
+  const out = new Set();
+  for (const relPath of relPaths) {
+    if (relPath.startsWith("roadmap/milestones/")) continue;
+    const abs = join(pmFolder, relPath);
+    if (!existsSync(abs)) continue;
+    const content = readFileSync(abs, "utf8");
+    for (const match of content.matchAll(/!?\[\[([^\]\n]+)\]\]/g)) {
+      const rel = milestoneRelFromWikiTarget(match[1]);
+      if (rel) out.add(rel);
+    }
+  }
+  return [...out].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
+}
+
+function findPmEvidence(pmFolder, baseline, { projectName = null, configPath = null } = {}) {
+  const modifiedCurrentState = walkMarkdown(pmFolder)
     .filter(isCurrentStatePmRel)
     .filter((relPath) => recentlyModified(join(pmFolder, relPath), baseline));
+  const priorityBearing = modifiedCurrentState.filter(isPriorityBearingPmRel);
+  const currentStatusUpdated = recentlyModified(join(pmFolder, "CURRENT_STATUS.md"), baseline);
+  const activeMilestone = activeMilestoneInfo({ pmFolder, project: projectName, configPath });
+  const activeMilestoneUpdated = activeMilestone
+    ? recentlyModified(activeMilestone.abs, baseline)
+    : false;
+  const linkedMilestones = linkedMilestoneRels(pmFolder, priorityBearing);
+  const linkedMilestonesUpdated = linkedMilestones.filter((relPath) =>
+    recentlyModified(join(pmFolder, relPath), baseline)
+  );
   const { yyyy, mm, dd } = todayParts();
   const historyRel = `history/${yyyy}-${mm}/history-${yyyy}-${mm}-${dd}.md`;
   const historyUpdated = recentlyModified(join(pmFolder, historyRel), baseline);
-  return { currentState, historyRel, historyUpdated };
+  return {
+    currentState: modifiedCurrentState,
+    priorityBearing,
+    currentStatusUpdated,
+    activeMilestone,
+    activeMilestoneUpdated,
+    linkedMilestones,
+    linkedMilestonesUpdated,
+    historyRel,
+    historyUpdated,
+  };
 }
 
 function suggestPmLanes(changes) {
   const suggestions = new Set();
   for (const { path } of changes) {
-    if (
+  if (
       path === "AGENTS.md" ||
       path === "templates/AGENTS_PM_SECTION.md" ||
       path === "templates/PR_BODY_TEMPLATE.md" ||
@@ -243,6 +302,7 @@ function suggestPmLanes(changes) {
     ) {
       suggestions.add("docs/User Guide/trigger-phrases.md");
       suggestions.add("README.md");
+      suggestions.add("CURRENT_STATUS.md");
     }
     if (path.startsWith("templates/")) {
       suggestions.add("features/pm-folder-bootstrap.md");
@@ -339,9 +399,13 @@ if (CLI.allowNoImpact) {
 }
 
 const baseline = parseBaseline();
-const evidence = findPmEvidence(pmFolder, baseline);
+const evidence = findPmEvidence(pmFolder, baseline, { projectName: project.name, configPath });
 const hasCurrentState = evidence.currentState.length > 0;
 const hasHistory = evidence.historyUpdated;
+const needsCurrentStatus = evidence.priorityBearing.length > 0;
+const hasCurrentStatus = evidence.currentStatusUpdated;
+const needsMilestone = evidence.priorityBearing.some((relPath) => !relPath.startsWith("roadmap/milestones/"));
+const hasMilestone = evidence.activeMilestoneUpdated || evidence.linkedMilestonesUpdated.length > 0;
 
 lines.push(`Baseline: ${baseline.toISOString()}`);
 lines.push("");
@@ -357,18 +421,49 @@ if (hasCurrentState) {
   lines.push("Current-state PM files updated: none found since baseline.");
 }
 lines.push(`Current-day history log: ${hasHistory ? evidence.historyRel : `${evidence.historyRel} not updated since baseline`}`);
+if (needsCurrentStatus) {
+  lines.push("Priority-bearing PM files updated:");
+  for (const relPath of evidence.priorityBearing.slice(0, 20)) lines.push(`- ${relPath}`);
+  if (evidence.priorityBearing.length > 20) lines.push(`- ... ${evidence.priorityBearing.length - 20} more`);
+  lines.push(`CURRENT_STATUS.md freshness: ${hasCurrentStatus ? "updated since baseline" : "not updated since baseline"}`);
+  if (needsMilestone) {
+    lines.push(
+      `Active milestone freshness: ${
+        evidence.activeMilestone
+          ? `${evidence.activeMilestone.rel} ${evidence.activeMilestoneUpdated ? "updated since baseline" : "not updated since baseline"}`
+          : "no active milestone resolved"
+      }`
+    );
+    if (evidence.linkedMilestones.length > 0) {
+      lines.push("Explicitly linked milestones:");
+      for (const relPath of evidence.linkedMilestones) {
+        lines.push(
+          `- ${relPath}${evidence.linkedMilestonesUpdated.includes(relPath) ? " (updated since baseline)" : ""}`
+        );
+      }
+    }
+  }
+}
 lines.push("");
 
-if (hasCurrentState && hasHistory) {
+if (hasCurrentState && hasHistory && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
   lines.push("**Status:** PASS");
   lines.push("");
   lines.push("PM close-out evidence found: current-state docs and current-day history were updated.");
+  if (needsCurrentStatus) lines.push("Priority-bearing PM changes also refreshed CURRENT_STATUS.md.");
+  if (needsMilestone) lines.push("Priority-bearing PM changes also refreshed the active or explicitly linked milestone.");
   console.log(lines.join("\n"));
   process.exit(0);
 }
 
 lines.push("**Status:** FAIL");
 lines.push("");
-lines.push("PM close-out required. Update affected current-state PM docs before history, or rerun with `--allow-no-impact \"<reason>\"` if this work truly has no PM impact.");
+if (needsCurrentStatus && !hasCurrentStatus) {
+  lines.push("PM close-out required. Priority-bearing PM files changed, so refresh `CURRENT_STATUS.md` before history.");
+} else if (needsMilestone && !hasMilestone) {
+  lines.push("PM close-out required. Priority-bearing PM files changed, so refresh the active or explicitly linked `roadmap/milestones/*.md` note before history.");
+} else {
+  lines.push("PM close-out required. Update affected current-state PM docs before history, or rerun with `--allow-no-impact \"<reason>\"` if this work truly has no PM impact.");
+}
 console.log(lines.join("\n"));
 process.exit(1);

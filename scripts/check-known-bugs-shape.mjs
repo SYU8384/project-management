@@ -4,7 +4,10 @@ import { basename, join, resolve } from "node:path";
 
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import {
+  ensureKnownBugSections,
+  moveEntriesToStatusSections,
   removeH3LinksFromContents,
+  syncKnownBugsContents,
   normalizePlaceholders,
   ensureRequiredFields,
   checkKnownBugsShape,
@@ -103,9 +106,21 @@ function runFor(target) {
   let content = original;
 
   if (CLI.fix) {
+    const sections = ensureKnownBugSections(content);
+    content = sections.updated;
+    for (const c of sections.changes) process.stdout.write(`fixed: ${relPath}: ${c}\n`);
+
+    const moved = moveEntriesToStatusSections(content);
+    content = moved.updated;
+    for (const c of moved.changes) process.stdout.write(`fixed: ${relPath}: ${c}\n`);
+
     const h3 = removeH3LinksFromContents(content);
     content = h3.updated;
     for (const c of h3.changes) process.stdout.write(`fixed: ${relPath}: ${c}\n`);
+
+    const toc = syncKnownBugsContents(content);
+    content = toc.updated;
+    for (const c of toc.changes) process.stdout.write(`fixed: ${relPath}: ${c}\n`);
 
     const ph = normalizePlaceholders(content);
     content = ph.updated;

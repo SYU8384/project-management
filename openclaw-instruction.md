@@ -202,10 +202,11 @@ Respect project access:
 Coding agents still update PM folders after code changes and should run `check-pm-closeout.mjs` before final response when the skill path is available. The OpenClaw PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless the user explicitly asks for coding work.
 
 Common routes:
+- Raw owner/collaborator intake goes to `inbox/YYYY-MM-DD_<name>_<title>.md`. If no creator name is provided, use `NAME_PLACEHOLDER` in the filename, title/H1, and `author`, then ask the user what name should replace it.
 - Ideas go to `roadmap/ideas.md`.
 - Active bugs, risks, and blockers go to `roadmap/known-issues.md`.
 - Engineering bug knowledge goes to `docs/Developer Guide/known-bugs.md`.
-- Priorities go to `roadmap/mvp-priorities.md`, `roadmap/done-pending.md`, and `CURRENT_STATUS.md`.
+- Phase-level priorities go to agent-maintained `roadmap/milestones/` notes, active execution mirrors go to `roadmap/done-pending.md`, and the current top-priority snapshot goes to `CURRENT_STATUS.md`. Derive the active milestone from `CURRENT_STATUS.md` `## Current Phase` (fallback: `projects.json` phase), create it if missing, and refresh it before history whenever phase, priority, plan, decision, feature, issue, blocker, or risk state changes. In milestone notes, link specific plans, done-pending sections, decisions, feature notes, known issues, or docs inline inside the priority, major step, exit criterion, or deferred item they support; do not maintain a generic `## Related Notes` link dump.
 - Completed meaningful PM work ends with a brief `history/YYYY-MM/history-YYYY-MM-DD.md` entry.
 
 Maintainer PR PM backfill:

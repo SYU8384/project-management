@@ -24,4 +24,8 @@ export default [
   "1.10.0-human-readable-pm-notes.mjs",
   "1.11.0-live-routing-and-feature-link-hygiene.mjs",
   "1.12.0-vault-relative-obsidian-links.mjs",
+  "1.13.0-roadmap-milestones.mjs",
+  "1.13.1-agent-maintained-milestones.mjs",
+  "1.13.2-inline-milestone-evidence-links.mjs",
+  "1.14.0-inbox-lane.mjs",
 ];

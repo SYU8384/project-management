@@ -6,11 +6,11 @@ tags:
   - decision
   - POL
 created: 2026-06-12
-updated: 2026-06-12
-last_reviewed: 2026-06-12
+updated: 2026-06-20
+last_reviewed: 2026-06-20
 pageType: decision
 decision_type: POL
-status: accepted
+status: superseded
 date: 2026-06-12
 supersedes: null
 owner: PM
@@ -19,7 +19,7 @@ owner: PM
 
 ## Status
 
-`accepted` (effective 2026-06-12, retroactive to the v1.4.1 conventions surfaced during the post-v1.4.1 audit).
+`superseded` by D-015 on 2026-06-20. The lane-grouped MVP note was useful while the project was proving its first usable flow, but the active convention is now milestone notes under `roadmap/milestones/`.
 
 ## Context
 

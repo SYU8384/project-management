@@ -40,12 +40,13 @@
  */
 
 import { existsSync } from "node:fs";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
+import { touchLastReviewed } from "./lib/frontmatter-fixers.mjs";
 
 const DEFAULT_STALE_DAYS = Number(process.env.STALE_DAYS ?? 30);
 const DEFAULT_VERY_STALE_DAYS = Number(process.env.VERY_STALE_DAYS ?? 90);
@@ -58,7 +59,7 @@ const STRICT_VERY_STALE_DAYS = 14;
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const out = { vault: null, config: null, project: null, strict: false };
+  const out = { vault: null, config: null, project: null, strict: false, fix: false };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--config" || args[i] === "-c") {
       out.config = args[++i];
@@ -66,6 +67,8 @@ function parseArgs(argv) {
       out.project = args[++i];
     } else if (args[i] === "--strict") {
       out.strict = true;
+    } else if (args[i] === "--fix") {
+      out.fix = true;
     } else if (!args[i].startsWith("-")) {
       out.vault = args[i];
     }
@@ -205,19 +208,32 @@ async function scan(filePath) {
     findings.missingFrontmatter.push({ path: rel, top });
     return;
   }
+  async function fixReviewed() {
+    if (!CLI.fix) return false;
+    const fixed = touchLastReviewed(content, today);
+    if (!fixed.changed) return false;
+    await writeFile(filePath, fixed.updated);
+    console.log(`fixed: ${rel} last_reviewed -> ${today}`);
+    findings.ok += 1;
+    return true;
+  }
   const lastReviewed = fm.last_reviewed;
   if (!lastReviewed) {
+    if (await fixReviewed()) return;
     findings.missingLastReviewed.push({ path: rel, top });
     return;
   }
   const age = daysBetween(lastReviewed, today);
   if (age == null) {
+    if (await fixReviewed()) return;
     findings.unparseableLastReviewed.push({ path: rel, top, lastReviewed });
     return;
   }
   if (age > effectiveVeryStaleDays) {
+    if (await fixReviewed()) return;
     findings.veryStale.push({ path: rel, top, age, lastReviewed });
   } else if (age > effectiveStaleDays) {
+    if (await fixReviewed()) return;
     findings.stale.push({ path: rel, top, age, lastReviewed });
   } else {
     findings.ok += 1;

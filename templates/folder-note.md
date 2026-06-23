@@ -40,7 +40,7 @@ Optional body additions (max 1 extra `##` section beyond the 3 standard
 ones — Subfolders, Notes, Navigation — before the
 check-vault-structure guard fails):
   - `## Conventions` — only for lanes with lane-specific rules
-    (e.g. `roadmap/plans/`, `features/`, `decisions/`). Use it to state
+    (e.g. `roadmap/plans/`, `features/`, `decisions/`, `inbox/`). Use it to state
     lane-local rules inline; keep it short (≤ 50 meaningful lines per
     the body-bloat guard).
     Include link-hygiene and secret-hygiene rules when the lane needs
@@ -53,8 +53,9 @@ check-vault-structure guard fails):
 Do NOT extend this folder note with substantive content. If the
 content you want to add needs more than a short index entry, create a
 new note under this folder (e.g. `system/<topic>.md`,
-`features/<feature>.md`, `docs/<Guide>/<topic>.md`) and link it from
-the `## Notes` list. The folder-note body-bloat guard in
+`features/<feature>.md`, `docs/<Guide>/<topic>.md`,
+`inbox/YYYY-MM-DD_<name>_<title>.md`) and link it from the `## Notes`
+list. The folder-note body-bloat guard in
 `check-vault-structure.mjs` enforces this.
 
 Conventions by page type live in `templates/README.md` under
