@@ -31,6 +31,7 @@ const validators = [
   { file: "check-known-bugs-shape.mjs",      label: "Known-bugs shape (D-011)" },
   { file: "check-live-routing.mjs",          label: "Live routing hygiene (D-013)" },
   { file: "check-obsidian-links.mjs",        label: "Obsidian links (D-014)" },
+  { file: "check-backticked-wikilinks.mjs",  label: "Backticked wikilinks" },
   { file: "check-agents.mjs",                label: "AGENTS.md integration" },
 ];
 
