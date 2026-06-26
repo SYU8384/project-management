@@ -181,7 +181,8 @@ Check whether the workspace `AGENTS.md` already has a `## Project Management Ski
 
 Use this section:
 
-```markdown
+````markdown
+<!-- pm-skill: skill_version=__VERSION__ pm_section_sha=__PM_SECTION_SHA__ managed_by=sync-openclaw-pm-section.mjs -->
 ## Project Management Skill
 
 Use the project-management skill for project memory, planning, prioritization, triage, and PM-folder upkeep.
@@ -195,9 +196,9 @@ Use this skill whenever the user asks to brainstorm, log ideas, triage issues, r
 
 Respect project access:
 - `authoritative`: edit the PM folder directly.
-- `read-only`: read the PM folder for context and suggest changes instead of editing.
+- `read-only`: read the PM folder, then fill the PR body's PM impact section; do not edit the PM folder.
 
-(Contributors with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.)
+(Contributors with no PM access at all are not registered in `projects.json`; the maintainer registers the project on the maintainer's side, and the contributor workflow is via PR body, not the skill.)
 
 Coding agents still update PM folders after code changes and should run `check-pm-closeout.mjs` before final response when the skill path is available. The OpenClaw PM role is brainstorming, idea capture, issue triage, priority review, roadmap hygiene, PM audits, and cross-project coordination. Do not make source-code changes unless the user explicitly asks for coding work.
 
@@ -218,9 +219,44 @@ Maintainer PR PM backfill:
 - Do not block a contributor solely because they lacked PM folder access.
 
 After PM-folder work, state exactly which project files were updated. If no files were updated, say that explicitly and why.
-```
+
+### Communication craft (chat-intake response shape)
+
+When the user asks the PM agent to record intake from a chat message (e.g. "记一下", "record this", "log these todos", "jot this down"), the user-visible reply is **≤ 4 bullets**:
+
+1. Where each item landed (canonical lane + plan/section reference).
+2. File changes (the new or modified PM files).
+3. One non-obvious nuance worth flagging.
+4. One clarifying question if genuinely needed.
+
+Do not restate the reasoning chain, alternatives considered, the cross-check report, the citation list, the convention rule being followed, or the full triage prose. Those belong in internal working memory and in the PM files themselves, not the chat reply. The `Owner Triage` section of the inbox note is the durable home for the detailed routing rationale.
+
+A reply that re-explains what the agent already did is noise to the user. Trust the inbox note and the roadmap mirror to carry the detail.
+
+This rule is platform-agnostic; per-platform formatting rules (no markdown tables on Discord, no headers on WhatsApp, etc.) still apply on top of it. The full source-of-truth rule is in `openclaw-instruction.md` section 9.
+````
 
 If approval is denied, leave the file unchanged and show the recommended section.
+
+### Re-sync from this template
+
+The `## Project Management Skill` block above is the source of truth for the corresponding section in any OpenClaw workspace `AGENTS.md` (e.g. `~/.openclaw/workspace-quill/AGENTS.md`). The first line of the embedded block carries a `<!-- pm-skill: skill_version=... pm_section_sha=... -->` stamp. The script `scripts/sync-openclaw-pm-section.mjs` reads this stamp and the version+sha from `VERSION`, then compares against whatever is currently in each workspace `AGENTS.md`.
+
+When the user says any of these phrases, the PM agent should run the sync:
+
+- `re-sync PM section`
+- `apply project-management skill updates`
+- `pull PM skill updates`
+- `update PM section from skill`
+
+The expected flow:
+
+1. `node <skill_dir>/scripts/sync-openclaw-pm-section.mjs --check` — see which workspaces drift.
+2. Show the diff to the user and ask for explicit confirmation.
+3. `node <skill_dir>/scripts/sync-openclaw-pm-section.mjs --apply` — apply. The script replaces the `## Project Management Skill` block in place; everything outside the block is preserved. Hand-edits *inside* the block are not preserved in v1 — the block is treated as fully managed. Show the diff in chat so the user can copy any lines they want to keep before applying.
+4. `node <skill_dir>/scripts/sync-openclaw-pm-section.mjs --bootstrap <workspace>/AGENTS.md` — first-time insert when the section is missing.
+
+The script does not auto-run at session start. Drift is detected only when one of the trigger phrases is used.
 
 ## 7. Run A Full Alignment Audit
 
@@ -270,7 +306,24 @@ For each registered project with a real `code_repo` path:
 
 Never edit source code as part of this setup unless the user separately asks for coding work.
 
-## 9. Validate And Report
+## 9. OpenClaw PM Intake Response Shape
+
+When the owner asks an OpenClaw PM agent to record intake from a chat message (e.g. "记一下", "record this", "log these todos", "jot this down"), the user-visible reply in the chat is **≤ 4 bullets**:
+
+1. Where each item landed (canonical lane + plan/section reference).
+2. File changes (the new or modified PM files).
+3. One non-obvious nuance worth flagging (e.g. a real failure mode the owner might not see, a cross-cutting risk, or a convention trap the items touched).
+4. One clarifying question if genuinely needed (e.g. unknown creator name, ambiguous scope, alternative routes that change downstream work).
+
+Do **not** restate the reasoning chain, the alternatives considered, the cross-check report, the citation list, the convention rule being followed, or the full triage prose. Those belong in internal working memory and in the PM files themselves, not the chat reply. The `Owner Triage` section of the inbox note is the durable home for the detailed routing rationale.
+
+A chat reply that re-explains what the agent already did is noise to the owner. Trust the inbox note and the roadmap mirror to carry the detail.
+
+This rule is platform-agnostic — it applies to any chat surface the PM agent operates on (Discord, WhatsApp, Slack, Teams, Telegram, WeChat, QQ, etc.). Per-platform formatting rules (e.g. no markdown tables on Discord, no headers on WhatsApp) still apply on top of this content rule; the rule only constrains *what* the reply says, not *how* it is rendered.
+
+The same rule is also embedded in the `## Project Management Skill` section template in section 6 as a `### Communication craft` sub-block. That copy is the one that gets version-stamped and synced to OpenClaw workspace `AGENTS.md` files via `scripts/sync-openclaw-pm-section.mjs`.
+
+## 10. Validate And Report
 
 For each available registered project, run:
 
