@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for all-project reconcile migration target expansion and migration argument construction.
 - Tests for archive-ready done-pending mirror detection, human archive-confirmation insertion, deterministic `--fix` archive close-out, and unsafe archive refusal.
 - Tests for deterministic frontmatter/stale-doc repair and known-bugs section/status placement repair.
+- `scripts/check-backticked-wikilinks.mjs`: validator for wikilinks wrapped in single-backtick inline code (e.g. `` `[[target]]` ``) that Obsidian does not render as clickable links. `--check` reports each finding with file:line:snippet; `--fix` strips the wrapping backticks when the span is just the wikilink. Intentional-syntax examples (e.g. `` `- [[#heading]]` ``) are flagged but not auto-fixed. Registered in `scripts/validators/_index.mjs` so `check-pm.mjs` runs it.
+- `scripts/sync-openclaw-pm-section.mjs`: OpenClaw workspace `## Project Management Skill` block sync utility with version+sha drift detection against the section-6 template in `openclaw-instruction.md`. Modes: `--check` (drift table), `--apply` (per-workspace y/N confirmation), `--bootstrap <path>` (first-time insert).
+- Trigger phrases (`re-sync PM section`, `apply project-management skill updates`, `pull PM skill updates`, `update PM section from skill`) documented in `openclaw-instruction.md` section 6 as the user-invoked signal for running the OpenClaw PM section sync.
 
 ### Changed
 
@@ -52,10 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SKILL.md`, `README.md`, `REFERENCE.md`, OpenClaw instructions, and PM trigger docs now distinguish singular `reconcile this project` from plural/update wording that reconciles every registered project with no `--project` filter.
 - `check-roadmap-conventions.mjs --fix` now adds missing human archive-confirmation checkboxes to planning mirrors, and only then moves deterministic completed planning mirrors out of active roadmap lanes when every checkbox, including the confirmation checkbox, is checked.
 - Reconcile now auto-fixes deterministic PM metadata drift: `check-pm-consistency.mjs --fix` fills missing frontmatter fields and repairs history shape, `check-stale-docs.mjs --fix` refreshes `last_reviewed`, and `check-known-bugs-shape.mjs --fix` creates missing known-bugs sections and moves entries by explicit status while leaving `TBD` prose as manual review.
+- Renamed `openclaw-instruction.md` section 9 from "OpenClaw PM Discord Response Shape" to "OpenClaw PM Intake Response Shape" and re-framed the rule as platform-agnostic intake-response craft. The same rule is now embedded as a `### Communication craft` sub-block in the section-6 template so it gets version-stamped and synced to OpenClaw workspace `AGENTS.md` files.
 
 ### Fixed
 
 - `scripts/check-pm.mjs --config <projects.json> --fix` now expands Phase 3 migrations per registered project instead of invoking `migrate.mjs` without a project target.
+- `scripts/check-pm-closeout.mjs`, `scripts/check-pm-consistency.mjs`, `scripts/check-pm.mjs`, and `scripts/check-skill.mjs` are now mode 755 (executable). No content change.
 
 ## [1.12.0] - 2026-06-14
 

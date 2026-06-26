@@ -51,4 +51,6 @@ pending, idea, planning, done-pending, decision, feature, system, docs,
 known-issue, addressed-directly, no-action, multiple.
 
 Destination is none or one or more vault-relative wikilinks.
+
+The `## Owner Triage` section above mirrors the frontmatter `status / resolution / destination` fields. Use the structured bullets shown above; narrative prose per item hides these fields from quick scanning and creates a body-vs-frontmatter drift that `check-inbox-conventions.mjs` cannot auto-fix. The frontmatter is the source of truth — the body bullets are for humans to read the routing in context.
 -->

@@ -59,6 +59,7 @@ The wrapper runs:
 - `node <skill_dir>/scripts/check-known-bugs-shape.mjs` — verifies `docs/Developer Guide/known-bugs.md` follows the D-011 engineering bug knowledge shape. `--fix` creates missing top-level sections, moves entries by explicit status, repairs Contents, and inserts missing fields as `TBD` without inventing prose.
 - `node <skill_dir>/scripts/check-live-routing.mjs` — verifies live notes outside `history/` and `archive/` use current `roadmap/plans/` and root `decisions/` lanes, not retired routing. Supports `--fix` for deterministic path/decision-link repairs.
 - `node <skill_dir>/scripts/check-obsidian-links.mjs` — verifies rendered Obsidian wikilinks against the vault model (D-014). Supports `--fix` for deterministic malformed-link closure, marked H2 TOC regeneration, and PM-root-relative slash-link conversion to vault-relative targets.
+- `node <skill_dir>/scripts/check-backticked-wikilinks.mjs` — detects wikilinks wrapped in single-backtick inline code (e.g. `` `[[target]]` ``). Obsidian does not render such wikilinks as clickable links — they appear as literal text. `check-obsidian-links.mjs` strips inline code before scanning, so this failure mode slips through. `--fix` strips the wrapping backticks when the span is just the wikilink; documented-syntax examples (where the span has extra text or markdown syntax, e.g. `` `- [[#heading]]` ``) are flagged but not auto-fixed.
 - `node <skill_dir>/scripts/check-agents.mjs` — verifies registered code repo `AGENTS.md` files have the expected `## PM folder` section for each project's `access` value
 
 Use `reconcile this project` for one resolved/current project. Use `reconcile all projects`, `reconcile existing projects`, `reconcile outdated projects`, or `update projects with latest skill changes` to run every registered project with no `--project` filter:
@@ -486,6 +487,10 @@ The four standard roadmap notes are active working notes, not folder notes, but 
 - `processed` requires a non-`pending` resolution. `destination` must be a vault-relative wikilink unless the resolution is `addressed-directly`, `no-action`, or `multiple`.
 - `rejected` means the owner explicitly declined the note; use `resolution: no-action` and `destination: none`.
 - When an agent creates an inbox note without a provided creator name, it must use `NAME_PLACEHOLDER` in the filename, title/H1, and `author`, then ask the user what name should replace it. The user can either provide the replacement or edit it manually.
+
+#### Common pitfalls
+
+- Body `Owner Triage` wikilinks without flipping `status / resolution / destination` frontmatter. The validator requires the frontmatter state — body prose that describes the routing is informational, not a substitute. After digesting an inbox note, always update the three frontmatter fields in the same edit that adds destination links to the body.
 
 ---
 
@@ -983,6 +988,24 @@ An OpenClaw PM agent using this bootstrap should:
    - `read-only` — read for context and suggest changes.
 6. Keep durable current-state docs, roadmap notes, and folder indexes synchronized before writing history.
 7. Avoid source-code edits unless the user explicitly asks it to code.
+
+### OpenClaw PM Section sync
+
+The `## Project Management Skill` block in each OpenClaw workspace `AGENTS.md` (e.g. `~/.openclaw/workspace-quill/AGENTS.md`) is sourced from the section-6 template in `openclaw-instruction.md`. The template carries a `<!-- pm-skill: skill_version=... pm_section_sha=... -->` stamp on the first line. `scripts/sync-openclaw-pm-section.mjs` reads the stamp and the version stamp from `VERSION`, then compares against whatever is currently in each workspace `AGENTS.md`.
+
+Trigger phrases (the PM agent runs the sync when the user says any of these):
+- `re-sync PM section`
+- `apply project-management skill updates`
+- `pull PM skill updates`
+- `update PM section from skill`
+
+Expected flow:
+1. `node <skill_dir>/scripts/sync-openclaw-pm-section.mjs --check` — see which workspaces drift.
+2. Show the diff to the user and ask for explicit confirmation.
+3. `node <skill_dir>/scripts/sync-openclaw-pm-section.mjs --apply` — apply. The script replaces the `## Project Management Skill` block in place; everything outside the block is preserved. Hand-edits *inside* the block are not preserved in v1 — the block is treated as fully managed. Show the diff in chat so the user can copy any lines they want to keep before applying.
+4. `node <skill_dir>/scripts/sync-openclaw-pm-section.mjs --bootstrap <workspace>/AGENTS.md` — first-time insert when the section is missing.
+
+The script does not auto-run at session start. Drift is detected only when one of the trigger phrases is used.
 
 ### Recommended trigger to tell users
 

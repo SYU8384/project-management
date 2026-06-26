@@ -172,6 +172,8 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge; `--fix` repairs sections/status placement while leaving `TBD` prose for review. |
 | [`scripts/check-live-routing.mjs`](./scripts/check-live-routing.mjs) | Live routing hygiene validator for retired lane references and deterministic decision-link repair. |
 | [`scripts/check-obsidian-links.mjs`](./scripts/check-obsidian-links.mjs) | Obsidian rendered-link validator for malformed wiki syntax, missing targets/headings, marked TOCs, and PM-root-relative slash links. |
+| [`scripts/check-backticked-wikilinks.mjs`](./scripts/check-backticked-wikilinks.mjs) | Backticked-wikilink validator for inline-code-wrapped links that Obsidian does not render as clickable; `--fix` strips the wrapping backticks when the span is just the wikilink. |
+| [`scripts/sync-openclaw-pm-section.mjs`](./scripts/sync-openclaw-pm-section.mjs) | OpenClaw workspace `## Project Management Skill` block sync utility with version+sha drift detection against the section-6 template in `openclaw-instruction.md`. |
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
