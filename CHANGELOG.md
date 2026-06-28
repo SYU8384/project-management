@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Note
 
 - v1.7.0 through v1.16.0 were documented in `CHANGELOG.md` with specific change sets but never received git tags. This release catches up the tag history at v1.17.0; the migration files named `1.X.0-...` continue to apply on any version below their `from:` field. A moving `v1` branch is created at v1.17.0 to restore `--channel v1` and the default install path (both previously broken because no `v1` ref existed on the remote).
+- **Upgrading from a `--ref v1.6.0` (or earlier) pin:** re-run the installer without the `--ref` flag. Pinned installs do not auto-update; the moving `v1` branch and the default install path do. See `README.md` "Versioning" → "Upgrading from a v1.6.0 (or earlier) pin" for the one-line command.
 
 ### Added
 

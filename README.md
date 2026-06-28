@@ -215,9 +215,11 @@ History is written last because it records what changed after the durable docs h
 
 This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
 
-- **Default install:** pulls `main` (bleeding edge). Use `--ref v1.0.0` to pin an exact release, or `--channel v1` to follow the latest `v1.x.x` release.
-- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.0.0` pins to an exact version.
-- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the latest `v1.x.x` release. The `main` channel resolves to `main` (bleeding edge).
+- **Default install:** pulls the moving `v1` branch, which points at the latest stable `v1.x.x` release (currently `v1.17.0`). Use `--channel main` to follow the bleeding edge of `main` instead.
+- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.6.0` pins to an exact release. To upgrade from a pin, re-run the installer without the `--ref` flag.
+- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the moving `v1` branch (latest stable). `curl -fsSL .../install.sh | bash -s -- --channel main` resolves to `main` (bleeding edge).
+- **The `v1` branch is a moving pointer.** It advances to each new `v1.x.x` release. Existing non-pinned installs fast-forward on the next update; pinned installs do not.
+- **Upgrading from a v1.6.0 (or earlier) pin:** if you previously installed with `--ref v1.6.0` (or any earlier tag), re-run `curl -fsSL .../install.sh | bash -s -- --target agents --yes` (drop the `--ref` flag) to advance to the latest `v1` channel.
 - **Update an existing install:** re-run the same install command; existing clones fetch and fast-forward to the selected ref. If the checkout has local changes, pass `--force` to discard them.
 - **Force update:** `curl -fsSL .../install.sh | bash -s -- --force --yes` resets the skill checkout to the selected ref and removes untracked files.
 

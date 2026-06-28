@@ -23,8 +23,8 @@ Options:
   --dest <dir>       Custom parent skills directory.
   --name <name>      Installed skill directory name. Default: project-management.
   --repo <url>       Git repo URL. Default: https://github.com/SYU8384/project-management.git
-  --ref <ref>        Branch or tag to install. Default: main (bleeding edge). Pin with e.g. v1.0.0.
-  --channel <name>   Release channel: main (bleeding edge) or v1 (latest v1.x.x release). Default: unset.
+  --ref <ref>        Branch or tag to install. Default: v1 (latest stable v1.x.x release). For bleeding edge, use --ref main or --channel main.
+  --channel <name>   Release channel: v1 (latest stable v1.x.x release) or main (bleeding edge). Default: unset.
   --update           Explicitly request update behavior. Existing installs update automatically.
   --force            On existing installs, discard local changes and untracked files before updating.
   --yes              Skip confirmation prompts.
