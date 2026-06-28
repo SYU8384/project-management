@@ -7,24 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-06-27
+
+### Note
+
+- v1.7.0 through v1.16.0 were documented in `CHANGELOG.md` with specific change sets but never received git tags. This release catches up the tag history at v1.17.0; the migration files named `1.X.0-...` continue to apply on any version below their `from:` field. A moving `v1` branch is created at v1.17.0 to restore `--channel v1` and the default install path (both previously broken because no `v1` ref existed on the remote).
+
+### Added
+
+- `decisions/D-020_POL_parent-workstream-supersede-lifecycle.md`: formalizes the parent-workstream supersede lifecycle — a planning note whose `roadmap/done-pending.md` mirror declares `**Superseded by [[<parent>]]**` must carry `status: superseded` in its own frontmatter at supersede time, while the archive move (with `status: superseded` preserved) is gated on the parent workstream's close-out + human verification. Status flip and archive are now distinct lifecycle events; the archive cascades to all superseded dependents whose rolled-up PENDING bullets are closed.
+- D-020 validation in `check-roadmap-conventions.mjs`: every planning-note mirror that declares `Superseded by [[…]]` forces the older plan's frontmatter `status` to `superseded`. `--fix` flips the status and touches `updated` / `last_reviewed`. Manual review for unresolvable wikilink targets, archived dependents, and terminal `shipped` / `rejected` statuses.
+- D-020 cascade in `check-roadmap-conventions.mjs` `--fix`: when a parent workstream is archived, every superseded dependent whose mirror checklist is fully DONE (no unchecked checkboxes) is moved to `archive/<slug>-archived.md` in the same pass, sharing a single `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md` entry with the parent. The dependent's `status: superseded` is preserved.
+- `scripts/migrations/1.17.0-parent-workstream-supersede-flip.mjs`: brings existing PM folders into compliance with D-020 by flipping `status: active` → `status: superseded` on planning notes whose done-pending mirrors declare `Superseded by [[…]]`. Idempotent; skips shipped/rejected/archived plans and surfaces unresolved targets as manual review.
+- `ensureSupersedeByMirrorSync`, `findSupersededDependentsForCascade`, `findSupersedeByMirrors`, and `setFrontmatterScalar` helpers in `scripts/lib/roadmap-fixers.mjs`.
+- `Superseded-by pattern` documentation in `templates/planning.md`, `templates/done-pending.md`, `templates/README.md` "Planning notes", and `REFERENCE.md` "Big Tasks Must Be Planned" (new step 5 for filing a parent plan; step 7 cascade documented).
+- Tests for D-020: status sync (flip / idempotence / skip-shipped / skip-rejected / skip-archived / leave-parent-alone), cascade detection (find dependents with DONE checklists / no parent match / no wikilinkable Planning note), validator `--fix` round-trip, and 1.17.0 migration idempotence.
+- `scripts/check-backticked-wikilinks.mjs`: validator for wikilinks wrapped in single-backtick inline code (e.g. `` `[[target]]` ``) that Obsidian does not render as clickable links. `--check` reports each finding with file:line:snippet; `--fix` strips the wrapping backticks when the span is just the wikilink. Intentional-syntax examples (e.g. `` `- [[#heading]]` ``) are flagged but not auto-fixed. Registered in `scripts/validators/_index.mjs` so `check-pm.mjs` runs it.
+- `scripts/sync-openclaw-pm-section.mjs`: OpenClaw workspace `## Project Management Skill` block sync utility with version+sha drift detection against the section-6 template in `openclaw-instruction.md`. Modes: `--check` (drift table), `--apply` (per-workspace y/N confirmation), `--bootstrap <path>` (first-time insert).
+- Trigger phrases (`re-sync PM section`, `apply project-management skill updates`, `pull PM skill updates`, `update PM section from skill`) documented in `openclaw-instruction.md` section 6 as the user-invoked signal for running the OpenClaw PM section sync.
+- Public-doc registration of the two new scripts in `SKILL.md`, `REFERENCE.md`, and `README.md` Repository Map.
+
+### Changed
+
+- Renamed `openclaw-instruction.md` section 9 from "OpenClaw PM Discord Response Shape" to "OpenClaw PM Intake Response Shape" and re-framed the rule as platform-agnostic intake-response craft. The same rule is now embedded as a `### Communication craft` sub-block in the section-6 template so it gets version-stamped and synced to OpenClaw workspace `AGENTS.md` files.
+
+## [1.16.0] - 2026-06-24
+
 ### Added
 
 - `scripts/migrations/1.16.0-planning-note-opening-shape.mjs`: removes deterministic duplicate planning-note H1s and moves existing `## Related` sections near the top while preserving plan bodies.
 - D-019 planning-note opening-shape validation in `check-roadmap-conventions.mjs`: planning notes must not repeat their filename, slug, or frontmatter title as a body H1, and existing `## Related` sections are kept near the top.
 - `decisions/D-019_POL_planning-note-opening-shape.md`: records the planning-note opening policy.
 - Tests for duplicate H1 removal, `## Related` repositioning, non-matching early-H1 manual review, validator fix/report behavior, and the 1.16.0 migration.
+
+### Changed
+
+- Planning-note guidance now treats Obsidian/file title as the note title: plan bodies start with useful content such as `## Summary`, and `## Related` is positioned near the top for quick access.
+
+## [1.15.0] - 2026-06-23
+
+### Added
+
 - `scripts/migrations/1.15.0-plan-related-links.mjs`: adds deterministic `## Related` done-pending mirror and relevant-link entries to active/proposed planning notes when the matching mirror already exists.
 - D-018 plan-to-mirror traceability validation in `check-roadmap-conventions.mjs`: active/proposed `roadmap/plans/*.md` notes must link back to their exact `roadmap/done-pending.md#<section>` mirror.
 - `decisions/D-018_POL_bidirectional-plan-traceability.md`: records the bidirectional planning-note/done-pending mirror policy.
 - Tests for plan-side done-pending mirror links, copied relevant decision/feature/system/docs links, idempotence, missing-mirror failures, and shipped-plan exclusion.
+
+### Changed
+
+- Planning-note guidance now treats `## Related` as bidirectional traceability: plans link to their done-pending mirror section and reuse relevant decision/feature/system/docs links from that mirror.
+
+## [1.14.0] - 2026-06-23
+
+### Added
+
 - `inbox/` as a required canonical PM-folder lane for raw owner/collaborator intake notes before owner triage, including `inbox/inbox.md` conventions and `templates/inbox-note.md`.
 - `scripts/check-inbox-conventions.mjs`: validates inbox note filename shape, required lifecycle frontmatter, status/resolution consistency, destination routing, and `NAME_PLACEHOLDER` handling. `--fix` fills deterministic metadata from the filename/date without inventing destinations or note bodies.
 - `scripts/migrations/1.14.0-inbox-lane.mjs`: creates missing inbox lane files and normalizes existing canonical inbox notes while preserving their bodies.
 - Inbox note coverage in bootstrap scaffolds, validator registration, convention model tests, migration tests, generated AGENTS guidance, PR impact templates, OpenClaw instructions, and public PM docs.
+
+### Changed
+
+- The canonical folder model, README route tables, folder templates, and PM close-out guidance now treat `inbox/` as required and reserve it for raw intake only, not backlog management.
+
+## [1.13.2] - 2026-06-23
+
+### Added
+
+- `scripts/migrations/1.13.2-inline-milestone-evidence-links.mjs`: removes empty or generic milestone `## Related Notes` link dumps and reports specific related-note content for manual inline integration without touching `history/` or `archive/`.
+
+### Changed
+
+- Milestone notes now place specific plan, done-pending, decision, feature, known-issue, and docs links inline inside the priority, major step, exit criterion, or deferred item they support instead of maintaining a generic `## Related Notes` section.
+
+## [1.13.1] - 2026-06-23
+
+### Added
+
+- `scripts/migrations/1.13.1-agent-maintained-milestones.mjs`: adds `## Update Triggers` to existing milestone notes, creates the active milestone if missing, and refreshes the milestones index without touching `history/` or `archive/`.
+
+## [1.13.0] - 2026-06-23
+
+### Added
+
 - `roadmap/milestones/` as the phase-level roadmap lane, with `roadmap/milestones/milestones.md`, generated milestone notes, and `templates/milestone.md`.
 - `scripts/migrations/1.13.0-roadmap-milestones.mjs`: moves legacy `roadmap/mvp-priorities.md` into `roadmap/milestones/mvp.md`, creates the milestones index, and rewrites live links while leaving `history/` and `archive/` unchanged.
-- `scripts/migrations/1.13.1-agent-maintained-milestones.mjs`: adds `## Update Triggers` to existing milestone notes, creates the active milestone if missing, and refreshes the milestones index without touching `history/` or `archive/`.
-- `scripts/migrations/1.13.2-inline-milestone-evidence-links.mjs`: removes empty or generic milestone `## Related Notes` link dumps and reports specific related-note content for manual inline integration without touching `history/` or `archive/`.
 - Shared milestone helpers for phase-to-slug mapping, active milestone resolution from `CURRENT_STATUS.md` / `projects.json`, milestone note discovery, deterministic `## Update Triggers` insertion, deprecated `## Related Notes` detection/removal, and generated milestone/index content.
 - Current-status freshness checks that require `CURRENT_STATUS.md` to be refreshed when priority-bearing PM lanes change during authoritative close-out.
 - Active-milestone freshness checks that require the active or explicitly linked `roadmap/milestones/*.md` note to be refreshed when priority-bearing PM lanes change during authoritative close-out.
@@ -37,25 +104,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for all-project reconcile migration target expansion and migration argument construction.
 - Tests for archive-ready done-pending mirror detection, human archive-confirmation insertion, deterministic `--fix` archive close-out, and unsafe archive refusal.
 - Tests for deterministic frontmatter/stale-doc repair and known-bugs section/status placement repair.
-- `scripts/check-backticked-wikilinks.mjs`: validator for wikilinks wrapped in single-backtick inline code (e.g. `` `[[target]]` ``) that Obsidian does not render as clickable links. `--check` reports each finding with file:line:snippet; `--fix` strips the wrapping backticks when the span is just the wikilink. Intentional-syntax examples (e.g. `` `- [[#heading]]` ``) are flagged but not auto-fixed. Registered in `scripts/validators/_index.mjs` so `check-pm.mjs` runs it.
-- `scripts/sync-openclaw-pm-section.mjs`: OpenClaw workspace `## Project Management Skill` block sync utility with version+sha drift detection against the section-6 template in `openclaw-instruction.md`. Modes: `--check` (drift table), `--apply` (per-workspace y/N confirmation), `--bootstrap <path>` (first-time insert).
-- Trigger phrases (`re-sync PM section`, `apply project-management skill updates`, `pull PM skill updates`, `update PM section from skill`) documented in `openclaw-instruction.md` section 6 as the user-invoked signal for running the OpenClaw PM section sync.
 
 ### Changed
 
-- Planning-note guidance now treats Obsidian/file title as the note title: plan bodies start with useful content such as `## Summary`, and `## Related` is positioned near the top for quick access.
-- Working version bumped to `1.16.0` for the planning-note opening-shape release candidate.
-- Planning-note guidance now treats `## Related` as bidirectional traceability: plans link to their done-pending mirror section and reuse relevant decision/feature/system/docs links from that mirror.
-- The canonical folder model, README route tables, folder templates, and PM close-out guidance now treat `inbox/` as required and reserve it for raw intake only, not backlog management.
 - Bootstrap now creates the milestone roadmap folder and an initial milestone note from the configured phase instead of creating `roadmap/mvp-priorities.md`.
 - Roadmap convention validation now enforces milestone-note sections from D-015/D-016, requires `## Update Triggers`, creates the active milestone under `--fix`, removes deterministic generic milestone `Related Notes` sections, and treats D-010 as superseded legacy behavior.
-- Milestone notes now place specific plan, done-pending, decision, feature, known-issue, and docs links inline inside the priority, major step, exit criterion, or deferred item they support instead of maintaining a generic `## Related Notes` section.
 - `SKILL.md`, `REFERENCE.md`, README files, generated AGENTS instructions, OpenClaw instructions, and templates now require agents to review/update `CURRENT_STATUS.md` and the active or explicitly linked milestone after relevant priority, blocker, risk, win, plan, issue, decision, feature, phase, or milestone changes and before history.
 - `AGENTS.md`, `templates/AGENTS_PM_SECTION.md`, `SKILL.md`, `REFERENCE.md`, README, generated README scaffolds, and OpenClaw instructions now document the PM close-out guard and explicit no-impact path.
 - `SKILL.md`, `README.md`, `REFERENCE.md`, OpenClaw instructions, and PM trigger docs now distinguish singular `reconcile this project` from plural/update wording that reconciles every registered project with no `--project` filter.
 - `check-roadmap-conventions.mjs --fix` now adds missing human archive-confirmation checkboxes to planning mirrors, and only then moves deterministic completed planning mirrors out of active roadmap lanes when every checkbox, including the confirmation checkbox, is checked.
 - Reconcile now auto-fixes deterministic PM metadata drift: `check-pm-consistency.mjs --fix` fills missing frontmatter fields and repairs history shape, `check-stale-docs.mjs --fix` refreshes `last_reviewed`, and `check-known-bugs-shape.mjs --fix` creates missing known-bugs sections and moves entries by explicit status while leaving `TBD` prose as manual review.
-- Renamed `openclaw-instruction.md` section 9 from "OpenClaw PM Discord Response Shape" to "OpenClaw PM Intake Response Shape" and re-framed the rule as platform-agnostic intake-response craft. The same rule is now embedded as a `### Communication craft` sub-block in the section-6 template so it gets version-stamped and synced to OpenClaw workspace `AGENTS.md` files.
 
 ### Fixed
 

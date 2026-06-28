@@ -38,6 +38,12 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the date-prefixed planning note link and required human archive-confirmation checkbox. Active/proposed planning notes also keep a near-top `## Related` linked back to `Done-pending mirror: [[<ProjectPath>/roadmap/done-pending#<slug>|done-pending#<slug>]]` and repeat relevant decision/feature/system/docs links already present in that mirror. When it ships and the user approves archival, mark the confirmation checkbox done, distill durable current truth into `system/`, and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
+- **Superseded-by pattern (D-020).** A newer planning note that absorbs an older planning note's scope is a *parent workstream*. When filed:
+  - Add the older plan to the parent's `## Related` with the annotation `(superseded-by: this plan; covered by <OMR-id>)`.
+  - In the older mirror in `roadmap/done-pending.md`, prepend a body line: `**Superseded by [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<parent-slug>|<parent-slug>]]** for new work. This section is kept on disk for history; PENDING bullets roll up to <OMR-id>.`
+  - Set the older plan's frontmatter `status: superseded`. Touch `updated` and `last_reviewed`.
+  - Do **not** move the older file to `archive/` at supersede time. Archive is the close-out event (parent ships + human verification); see "Archive cascade" below.
+  - **Archive cascade.** When the parent workstream ships and the parent's done-pending mirror is archive-ready, `check-roadmap-conventions.mjs --fix` cascades: the parent and all its superseded dependents whose rolled-up PENDING bullets are closed move to `archive/<slug>-archived.md` together, share a single `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md` entry, and carry `archived: <date>` with their original `status: superseded` preserved.
 
 ## Related
 

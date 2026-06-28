@@ -1168,4 +1168,262 @@ export function insertIdeasStatusColorsLeadNote(content) {
   return { updated, changes, manualReview };
 }
 
-export const __test = { STATUS_EMOJI, STATUS_NAMES, buildTargetIndex, findUniqueTarget };
+/* ---------------------------------------------------------------------- */
+/* D-020 helpers: parent-workstream supersede lifecycle sync + cascade.   */
+/* ---------------------------------------------------------------------- */
+
+/**
+ * Marker for `**Superseded by [[<plan>]]**` annotations in done-pending
+ * mirror bodies. Captures the wikilink target. Case-insensitive.
+ */
+const SUPERSEDED_BY_MARKER_RE =
+  /(?:^|\n)\s*\*\*?Superseded\s+by\s+\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/im;
+
+/**
+ * Set (or insert) a scalar frontmatter key `key: value`. When `date` is
+ * provided, also touch `updated` and `last_reviewed` to that date.
+ *
+ * Idempotent for an existing key (rewrites the line). If the file has
+ * no frontmatter, the original content is returned unchanged.
+ */
+export function setFrontmatterScalar(content, key, value, date = null) {
+  const normalized = String(content ?? "").replace(/\r\n/g, "\n");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n?/);
+  if (!match) return content;
+  let fm = match[1];
+  const keyEsc = escapeRegExp(key);
+  const re = new RegExp(`^${keyEsc}:\\s*.*$`, "m");
+  const line = `${key}: ${value}`;
+  if (re.test(fm)) {
+    fm = fm.replace(re, line);
+  } else {
+    fm = `${fm.trimEnd()}\n${line}`;
+  }
+  if (date) {
+    for (const dateKey of ["updated", "last_reviewed"]) {
+      const dateRe = new RegExp(`^${dateKey}:\\s*.*$`, "m");
+      if (dateRe.test(fm)) {
+        fm = fm.replace(dateRe, `${dateKey}: ${date}`);
+      } else {
+        fm = `${fm.trimEnd()}\n${dateKey}: ${date}`;
+      }
+    }
+  }
+  return `---\n${fm.trimEnd()}\n---\n${normalized.slice(match[0].length).replace(/^\n+/, "")}`;
+}
+
+/**
+ * Find every planning-note mirror in `donePendingContent` whose body
+ * declares `**Superseded by [[…]]**`. Returns the array of findings
+ * plus a manual-review list for ambiguous or unresolvable targets.
+ *
+ * Each finding's `dependentRel` is the planning-note rel of the mirror
+ * (the *older* plan being superseded), and `supersededByRel` is the rel
+ * of the new parent plan referenced by the annotation.
+ */
+export function findSupersedeByMirrors(donePendingContent, targets = []) {
+  const findings = [];
+  const manualReview = [];
+
+  for (const section of h2Sections(donePendingContent)) {
+    if (!hasPlanningNote(section.body)) continue;
+    const match = section.body.match(SUPERSEDED_BY_MARKER_RE);
+    if (!match) continue;
+
+    const raw = match[1].trim();
+    const supersededByResolved = resolvePlanningTarget(raw, targets);
+
+    const note = planningNoteTarget(section.body);
+    let dependentRel = null;
+    let dependentStatus = "missing";
+    if (!note) {
+      dependentStatus = "no-planning-note";
+    } else if (note.status !== "wiki") {
+      dependentStatus = "plain";
+    } else {
+      const dependentResolved = resolvePlanningTarget(note.target, targets);
+      if (dependentResolved.status === "found") {
+        dependentRel = dependentResolved.rel;
+        dependentStatus = "found";
+      } else {
+        dependentStatus = dependentResolved.status;
+      }
+    }
+
+    findings.push({
+      heading: section.heading,
+      body: section.body,
+      start: section.start,
+      end: section.end,
+      dependentRel,
+      dependentStatus,
+      supersededByTarget: raw,
+      supersededByRel: supersededByResolved.status === "found" ? supersededByResolved.rel : null,
+      supersededByStatus: supersededByResolved.status,
+      supersededByMatches: supersededByResolved.matches ?? null,
+    });
+
+    if (supersededByResolved.status === "ambiguous") {
+      manualReview.push(
+        `planning mirror \`## ${section.heading}\` "Superseded by" target is ambiguous: \`${raw}\` (matched ${supersededByResolved.matches.join(", ")})`
+      );
+    } else if (supersededByResolved.status === "missing") {
+      manualReview.push(
+        `planning mirror \`## ${section.heading}\` "Superseded by" target does not resolve to a \`roadmap/plans/\` note: \`${raw}\``
+      );
+    } else if (supersededByResolved.status === "already-archived") {
+      manualReview.push(
+        `planning mirror \`## ${section.heading}\` "Superseded by" target points to an already-archived plan: \`${raw}\``
+      );
+    }
+    if (dependentStatus !== "found") {
+      manualReview.push(
+        `planning mirror \`## ${section.heading}\` Planning note target could not be resolved to a \`roadmap/plans/\` note (status: ${dependentStatus})`
+      );
+    }
+  }
+
+  return { findings, manualReview };
+}
+
+/**
+ * D-020 status sync: ensure that every planning-note whose done-pending
+ * mirror declares "Superseded by [[…]]" carries `status: superseded` in
+ * its own frontmatter. Returns a map of `{ rel: updatedContent }` for
+ * plans that need rewriting plus a manual-review list.
+ *
+ * Skips:
+ *   - plans already at `status: superseded` (idempotent)
+ *   - plans at `status: shipped` / `rejected` (terminal-but-not-superseded)
+ *   - plans whose mirror target is unresolvable
+ *   - plans already in `archive/`
+ *   - plans with no content available
+ */
+export function ensureSupersedeByMirrorSync(donePendingContent, planContentsByRel = {}, targets = [], options = {}) {
+  const today = options.today ?? new Date().toISOString().slice(0, 10);
+  const { findings, manualReview } = findSupersedeByMirrors(donePendingContent, targets);
+  const updated = { ...planContentsByRel };
+  const changes = [];
+
+  for (const finding of findings) {
+    if (finding.supersededByStatus !== "found") continue; // already surfaced in manualReview
+    if (finding.dependentStatus !== "found") continue; // already surfaced in manualReview
+
+    const rel = finding.dependentRel;
+    if (rel.startsWith("archive/")) continue;
+
+    const planContent = updated[rel];
+    if (planContent === undefined) {
+      manualReview.push(
+        `planning mirror \`## ${finding.heading}\` dependent ${rel} has no content available for status sync`
+      );
+      continue;
+    }
+
+    const status = frontmatterScalar(planContent, "status");
+    if (status === "superseded") continue;
+    if (status === "shipped" || status === "rejected") {
+      manualReview.push(
+        `planning mirror \`## ${finding.heading}\` dependent ${rel} already has terminal status \`${status}\`; not auto-flipping`
+      );
+      continue;
+    }
+    if (status !== "active" && status !== "proposed") {
+      manualReview.push(
+        `planning mirror \`## ${finding.heading}\` dependent ${rel} has unexpected status \`${status ?? "(unset)"}\``
+      );
+      continue;
+    }
+
+    updated[rel] = setFrontmatterScalar(planContent, "status", "superseded", today);
+    changes.push(
+      `${rel}: \`status: ${status}\` -> \`status: superseded\` (mirror \`## ${finding.heading}\` declares "Superseded by [[${finding.supersededByTarget}]]")`
+    );
+  }
+
+  return { updated, changes, manualReview };
+}
+
+/**
+ * D-020 cascade detection: given a parent planning note that is being
+ * archived, find every planning-note mirror whose body declares
+ * "Superseded by [[…<parent>…]]" AND whose own checklist is fully DONE
+ * (no unchecked checkboxes). These are the dependents eligible for
+ * cascade archive in the parent's close-out pass.
+ */
+export function findSupersededDependentsForCascade(donePendingContent, parentPlanRel, targets = []) {
+  const findings = [];
+  const manualReview = [];
+
+  for (const section of h2Sections(donePendingContent)) {
+    if (!hasPlanningNote(section.body)) continue;
+    const match = section.body.match(SUPERSEDED_BY_MARKER_RE);
+    if (!match) continue;
+    const raw = match[1].trim();
+    const resolved = resolvePlanningTarget(raw, targets);
+
+    let matchesParent = false;
+    if (resolved.status === "found" && resolved.rel === parentPlanRel) {
+      matchesParent = true;
+    } else if (resolved.status === "ambiguous" && Array.isArray(resolved.matches) && resolved.matches.includes(parentPlanRel)) {
+      matchesParent = true;
+    } else if (resolved.status === "already-archived") {
+      continue;
+    } else {
+      continue;
+    }
+    if (!matchesParent) continue;
+
+    const note = planningNoteTarget(section.body);
+    if (!note || note.status !== "wiki") {
+      manualReview.push(
+        `planning mirror \`## ${section.heading}\` declares "Superseded by" \`${raw}\` but has no wikilinkable Planning note; cascade skipped`
+      );
+      continue;
+    }
+    const dependentResolved = resolvePlanningTarget(note.target, targets);
+    if (dependentResolved.status === "already-archived") continue;
+    if (dependentResolved.status !== "found") {
+      manualReview.push(
+        `planning mirror \`## ${section.heading}\` Planning note target does not resolve to a \`roadmap/plans/\` note: \`${note.target}\``
+      );
+      continue;
+    }
+
+    if (!isMirrorChecklistComplete(section.body)) {
+      // Not ready for cascade — leave it in `roadmap/plans/`. It will
+      // cascade in a later parent archive pass when its bullets close.
+      continue;
+    }
+
+    findings.push({
+      heading: section.heading,
+      body: section.body,
+      start: section.start,
+      end: section.end,
+      planRel: dependentResolved.rel,
+      archiveRel: archiveRelForPlan(dependentResolved.rel),
+    });
+  }
+
+  return { findings, manualReview };
+}
+
+function isMirrorChecklistComplete(body) {
+  const checkboxMatches = [...String(body).matchAll(/^\s*-\s*\[([ xX])\]/gm)];
+  if (checkboxMatches.length === 0) return false;
+  return !checkboxMatches.some((match) => match[1] === " ");
+}
+
+export const __test = {
+  STATUS_EMOJI,
+  STATUS_NAMES,
+  buildTargetIndex,
+  findUniqueTarget,
+  SUPERSEDED_BY_MARKER_RE,
+  isMirrorChecklistComplete,
+  findSupersedeByMirrors,
+  ensureSupersedeByMirrorSync,
+  findSupersededDependentsForCascade,
+  setFrontmatterScalar,
+};

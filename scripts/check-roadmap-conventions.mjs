@@ -24,6 +24,11 @@
  *     `roadmap/done-pending.md#<section>` mirror from `## Related`.
  *   - D-019: planning notes open with useful content: no redundant body
  *     title H1, and existing `## Related` sections are placed near the top.
+ *   - D-020: a planning-note mirror that declares "Superseded by [[…]]"
+ *     forces the older plan's frontmatter `status` to `superseded`. When
+ *     the parent workstream is archived, superseded dependents whose
+ *     rolled-up PENDING bullets are closed cascade into `archive/` in the
+ *     same close-out pass.
  *   - Planning mirrors in `roadmap/done-pending.md` carry a human
  *     archive-confirmation checkbox. Completed mirrors fail in report-only
  *     mode and auto-archive under `--fix` only after that checkbox is done.
@@ -31,10 +36,11 @@
  * Run with `--fix` to auto-apply the deterministic fixes (D-008
  * emoji insertion, D-009 empty-`## Fixed` removal, D-007 H2 rename,
  * D-012 TOC/link repair, D-018 plan-side mirror traceability repair,
- * D-019 planning-note opening-shape repair,
+ * D-019 planning-note opening-shape repair, D-020 supersede status sync,
  * missing idea Summary insertion, missing human
  * archive-confirmation insertion, and completed-mirror archive close-out
- * when the linked plan target is unique).
+ * when the linked plan target is unique, including cascade archive of
+ * superseded dependents whose rolled-up PENDING bullets are closed).
  * The auto-fixer cannot pick project-specific domain/lane names or infer
  * missing human prose, so those checks surface as MANUAL REVIEW findings.
  *
@@ -80,6 +86,8 @@ import {
   ensureHumanArchiveConfirmation,
   ensurePlanningNoteOpeningShape,
   ensurePlanRelatedLinks,
+  ensureSupersedeByMirrorSync,
+  findSupersededDependentsForCascade,
   planArchiveReadyDonePendingSections,
   removeDonePendingSections,
 } from "./lib/roadmap-fixers.mjs";
@@ -473,10 +481,44 @@ function archiveCompletedPlanningMirrors({ target, project, donePendingContent, 
     return { updated: donePendingContent, issues, archived };
   }
 
+  // D-020 cascade: for each parent about to be archived, find superseded
+  // dependents whose mirror checklist is fully DONE and cascade-archive
+  // them in the same pass. The cascade runs on the *input* `donePendingContent`
+  // (before the parent's section is removed) so the cascade detection can
+  // still resolve the parent wikilink target.
+  const cascadeItems = [];
+  for (const item of ready) {
+    const { findings, manualReview } = findSupersededDependentsForCascade(
+      donePendingContent,
+      item.planRel,
+      markdownTargets
+    );
+    for (const r of manualReview) issues.push(`roadmap/done-pending.md: D-020 cascade ${r}`);
+    for (const finding of findings) {
+      const depPlanPath = join(target.vault, `${finding.planRel}.md`);
+      const depArchivePath = join(target.vault, `${finding.archiveRel}.md`);
+      if (!existsSync(depPlanPath)) {
+        issues.push(`roadmap/done-pending.md: superseded dependent \`## ${finding.heading}\` planning file disappeared before cascade archive: ${finding.planRel}.md`);
+        continue;
+      }
+      if (existsSync(depArchivePath)) {
+        issues.push(`roadmap/done-pending.md: superseded dependent \`## ${finding.heading}\` archive target already exists: ${finding.archiveRel}.md`);
+        continue;
+      }
+      const depContent = readFileSync(depPlanPath, "utf8");
+      const depArchived = archivedPlanContent(depContent, { project, linkOptions, date });
+      if (depArchived.issue) {
+        issues.push(`roadmap/done-pending.md: superseded dependent \`## ${finding.heading}\` ${depArchived.issue}`);
+        continue;
+      }
+      cascadeItems.push({ ...finding, planPath: depPlanPath, archivePath: depArchivePath, archivedContent: depArchived.updated });
+    }
+  }
+
   const month = date.slice(0, 7);
   const archivedHistoryPath = join(target.vault, "history", month, `history-${date}-archived-sections.md`);
 
-  for (const item of ready) {
+  for (const item of [...ready, ...cascadeItems]) {
     mkdirSync(dirname(item.archivePath), { recursive: true });
     writeFileSync(item.archivePath, item.archivedContent);
     unlinkSync(item.planPath);
@@ -509,7 +551,7 @@ function archiveCompletedPlanningMirrors({ target, project, donePendingContent, 
     archived.push(item);
   }
 
-  const withoutArchived = removeDonePendingSections(donePendingContent, ready);
+  const withoutArchived = removeDonePendingSections(donePendingContent, [...ready, ...cascadeItems]);
   const toc = syncDonePendingContents(withoutArchived);
   return { updated: toc.updated, issues, archived };
 }
@@ -768,12 +810,44 @@ function runFor(target) {
     }
   }
 
+  // ---- D-020: parent-workstream supersede status sync ----
+  // For each planning-note mirror in `roadmap/done-pending.md` whose body
+  // declares "Superseded by [[…]]", ensure the older plan's frontmatter
+  // `status` is `superseded`. In `--fix`, flip the status and write the
+  // updated plan back to disk.
+  if (donePendingForPlanTraceability !== null) {
+    const supersedeTargets = markdownTargets.filter((target) => target.startsWith("roadmap/plans/"));
+    const planRels = supersedeTargets.sort();
+    const planContentsByRel = {};
+    for (const rel of planRels) {
+      const abs = join(target.vault, `${rel}.md`);
+      const content = readIfExists(abs);
+      if (content !== null) planContentsByRel[rel] = content;
+    }
+    const sync = ensureSupersedeByMirrorSync(
+      donePendingForPlanTraceability,
+      planContentsByRel,
+      supersedeTargets,
+      { today: todayIsoDate() }
+    );
+    if (CLI.fix) {
+      for (const [rel, updated] of Object.entries(sync.updated)) {
+        if (updated === planContentsByRel[rel]) continue;
+        const abs = join(target.vault, `${rel}.md`);
+        writeIfChanged(abs, planContentsByRel[rel], updated, rel);
+      }
+    } else {
+      for (const c of sync.changes) issues.push(`D-020 ${c}`);
+    }
+    for (const r of sync.manualReview) manualReview.push(`D-020 ${r}`);
+  }
+
   // Report
   console.log(`\n# Roadmap Conventions Report — ${target.label}\n`);
   console.log(`**Status:** ${issues.length === 0 ? "PASS" : "FAIL"}`);
   console.log("");
   if (issues.length === 0) {
-    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018 / D-019) hold for the project's roadmap files.");
+    console.log("All content-level conventions (D-007 / D-008 / D-009 / D-012 / D-015 / D-016 / D-018 / D-019 / D-020) hold for the project's roadmap files.");
   } else {
     for (const issue of issues) console.log(`- ${issue}`);
   }

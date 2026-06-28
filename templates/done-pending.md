@@ -29,6 +29,14 @@ Planning-note mirror H2 format: `## <slug>` (slug only, not the date-prefixed st
 
 Sections that are fully done should be archived to `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md` only after the user has tested the implemented plan and explicitly approved archiving.
 
+If a newer planning note absorbs this mirror's scope, the mirror body should be annotated. As the **first body line** after the `Planning note:` line, write:
+
+```
+**Superseded by [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<parent-slug>|<parent-slug>]]** for new work. This section is kept on disk for history; PENDING bullets roll up to <OMR-id>.
+```
+
+The matching older planning note's frontmatter `status` must move to `superseded` at this point (D-020). The mirror's PENDING bullets are then stated as rolled up to the parent's OMR-* workstreams; they close when the parent ships. The archive move is the close-out event — see the planning-note lifecycle in `templates/planning.md` "Superseded-by pattern" (D-020).
+
 ## example-plan-slug
 
 Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]

@@ -30,4 +30,5 @@ export default [
   "1.14.0-inbox-lane.mjs",
   "1.15.0-plan-related-links.mjs",
   "1.16.0-planning-note-opening-shape.mjs",
+  "1.17.0-parent-workstream-supersede-flip.mjs",
 ];

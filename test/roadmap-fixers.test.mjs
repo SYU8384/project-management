@@ -20,6 +20,10 @@ import {
   ensurePlanningNoteOpeningShape,
   ensurePlanRelatedLinks,
   planMirrorHeadingFromRel,
+  findSupersedeByMirrors,
+  ensureSupersedeByMirrorSync,
+  findSupersededDependentsForCascade,
+  setFrontmatterScalar,
 } from "../scripts/lib/roadmap-fixers.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -1175,5 +1179,359 @@ Planning note: 2026-06-14_inbox-card-cleanup-and-realtime
     assert.match(ideasAfter, /- \*\*Summary:\*\* TBD/);
   } finally {
     rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+/* ---------------------------------------------------------------------- */
+/* D-020: parent-workstream supersede lifecycle                            */
+/* ---------------------------------------------------------------------- */
+
+const PLAN_DEPENDENT_ACTIVE = `---
+title: lcm-command-surface
+status: active
+created: 2026-06-04
+updated: 2026-06-26
+last_reviewed: 2026-06-26
+---
+## Summary
+
+lcm-command-surface design space
+`;
+
+const PLAN_PARENT_ACTIVE = `---
+title: external-runtime-integration-and-maintenance
+status: active
+created: 2026-06-25
+updated: 2026-06-26
+last_reviewed: 2026-06-26
+---
+## Summary
+
+parent runtime workstream
+`;
+
+const PLAN_DEPENDENT_SUPERSEDED = PLAN_DEPENDENT_ACTIVE.replace("status: active", "status: superseded");
+
+const DONE_PENDING_WITH_SUPERSEDE = `# done-pending
+
+## Contents
+
+- [[#lcm-command-surface]]
+- [[#qmd-sidecar-integration]]
+- [[#external-runtime-integration-and-maintenance]]
+- [[#General Done/Pending Without Dedicated Planning Note]]
+
+## lcm-command-surface
+
+Planning note: [[roadmap/plans/2026-06-04_lcm-command-surface]]
+
+**Superseded by [[roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance|external-runtime-integration-and-maintenance]]** for new work. This section is kept on disk for history; PENDING bullets roll up to OMR-004.
+
+- [x] DONE: design space captured
+- [x] DONE: human verification
+
+## qmd-sidecar-integration
+
+Planning note: [[roadmap/plans/2026-06-04_qmd-sidecar-integration]]
+
+**Superseded by [[roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance|external-runtime-integration-and-maintenance]]** for new work. This section is kept on disk for history; PENDING bullets roll up to OMR-003.
+
+- [x] DONE: design captured
+- [ ] PENDING: human verification
+
+## external-runtime-integration-and-maintenance
+
+Planning note: [[roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance]]
+
+- [ ] PENDING: OMR-002 lockfile
+- [ ] PENDING: human verification
+
+## General Done/Pending Without Dedicated Planning Note
+
+## Navigation
+`;
+
+const TARGETS_FULL = [
+  "roadmap/plans/2026-06-04_lcm-command-surface",
+  "roadmap/plans/2026-06-04_qmd-sidecar-integration",
+  "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance",
+];
+
+const PLAN_CONTENTS_BOTH_ACTIVE = {
+  "roadmap/plans/2026-06-04_lcm-command-surface": PLAN_DEPENDENT_ACTIVE,
+  "roadmap/plans/2026-06-04_qmd-sidecar-integration": PLAN_DEPENDENT_ACTIVE,
+  "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance": PLAN_PARENT_ACTIVE,
+};
+
+test("setFrontmatterScalar inserts, updates, and touches dates", () => {
+  const inserted = setFrontmatterScalar("---\ntitle: foo\n---\nbody", "status", "superseded", "2026-06-27");
+  assert.match(inserted, /^---\ntitle: foo\nstatus: superseded\nupdated: 2026-06-27\nlast_reviewed: 2026-06-27\n---/);
+
+  const updated = setFrontmatterScalar("---\ntitle: foo\nstatus: active\nupdated: 2026-06-01\n---\nbody", "status", "superseded", "2026-06-27");
+  assert.match(updated, /status: superseded/);
+  assert.match(updated, /updated: 2026-06-27/);
+
+  const noDate = setFrontmatterScalar("---\ntitle: foo\nstatus: active\n---\nbody", "status", "superseded");
+  assert.match(noDate, /status: superseded/);
+  assert.doesNotMatch(noDate, /updated: 2026-06-27/);
+
+  const noFrontmatter = setFrontmatterScalar("# foo\nbody", "status", "superseded", "2026-06-27");
+  assert.equal(noFrontmatter, "# foo\nbody");
+});
+
+test("findSupersedeByMirrors finds dependent mirrors and resolves parent", () => {
+  const { findings, manualReview } = findSupersedeByMirrors(DONE_PENDING_WITH_SUPERSEDE, TARGETS_FULL);
+  assert.equal(findings.length, 2);
+  assert.deepEqual(findings.map((f) => f.heading), ["lcm-command-surface", "qmd-sidecar-integration"]);
+  assert.deepEqual(findings.map((f) => f.dependentRel), [
+    "roadmap/plans/2026-06-04_lcm-command-surface",
+    "roadmap/plans/2026-06-04_qmd-sidecar-integration",
+  ]);
+  assert.ok(findings.every((f) => f.supersededByRel === "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance"));
+  assert.equal(manualReview.length, 0);
+});
+
+test("findSupersedeByMirrors reports manual review for unresolvable parent target", () => {
+  const broken = DONE_PENDING_WITH_SUPERSEDE.replace(
+    "2026-06-25_external-runtime-integration-and-maintenance",
+    "nonexistent-plan"
+  );
+  const { manualReview } = findSupersedeByMirrors(broken, TARGETS_FULL);
+  assert.ok(manualReview.some((m) => m.includes("does not resolve to a `roadmap/plans/` note")));
+});
+
+test("ensureSupersedeByMirrorSync flips dependent status and leaves parent alone", () => {
+  const result = ensureSupersedeByMirrorSync(
+    DONE_PENDING_WITH_SUPERSEDE,
+    PLAN_CONTENTS_BOTH_ACTIVE,
+    TARGETS_FULL,
+    { today: "2026-06-27" }
+  );
+  assert.equal(result.changes.length, 2);
+  assert.ok(result.changes.every((c) => c.startsWith("roadmap/plans/2026-06-04_") && c.includes("`status: active` -> `status: superseded`")));
+  assert.equal(result.manualReview.length, 0);
+
+  for (const rel of [
+    "roadmap/plans/2026-06-04_lcm-command-surface",
+    "roadmap/plans/2026-06-04_qmd-sidecar-integration",
+  ]) {
+    assert.match(result.updated[rel], /status: superseded/);
+    assert.match(result.updated[rel], /updated: 2026-06-27/);
+    assert.match(result.updated[rel], /last_reviewed: 2026-06-27/);
+  }
+  assert.equal(result.updated["roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance"], PLAN_PARENT_ACTIVE);
+});
+
+test("ensureSupersedeByMirrorSync is idempotent on already-superseded plans", () => {
+  const result = ensureSupersedeByMirrorSync(
+    DONE_PENDING_WITH_SUPERSEDE,
+    {
+      "roadmap/plans/2026-06-04_lcm-command-surface": PLAN_DEPENDENT_SUPERSEDED,
+      "roadmap/plans/2026-06-04_qmd-sidecar-integration": PLAN_DEPENDENT_SUPERSEDED,
+      "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance": PLAN_PARENT_ACTIVE,
+    },
+    TARGETS_FULL,
+    { today: "2026-06-27" }
+  );
+  assert.equal(result.changes.length, 0);
+  assert.equal(result.manualReview.length, 0);
+});
+
+test("ensureSupersedeByMirrorSync skips shipped/rejected dependents and surfaces manual review", () => {
+  const shipped = PLAN_DEPENDENT_ACTIVE.replace("status: active", "status: shipped");
+  const rejected = PLAN_DEPENDENT_ACTIVE.replace("status: active", "status: rejected");
+  const result = ensureSupersedeByMirrorSync(
+    DONE_PENDING_WITH_SUPERSEDE,
+    {
+      "roadmap/plans/2026-06-04_lcm-command-surface": shipped,
+      "roadmap/plans/2026-06-04_qmd-sidecar-integration": rejected,
+      "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance": PLAN_PARENT_ACTIVE,
+    },
+    TARGETS_FULL,
+    { today: "2026-06-27" }
+  );
+  assert.equal(result.changes.length, 0);
+  assert.equal(result.manualReview.length, 2);
+  assert.ok(result.manualReview.some((m) => m.includes("already has terminal status `shipped`")));
+  assert.ok(result.manualReview.some((m) => m.includes("already has terminal status `rejected`")));
+});
+
+test("ensureSupersedeByMirrorSync skips archived dependents", () => {
+  const archivedTargets = [...TARGETS_FULL, "archive/lcm-command-surface-archived"];
+  const result = ensureSupersedeByMirrorSync(
+    DONE_PENDING_WITH_SUPERSEDE,
+    {
+      "archive/lcm-command-surface-archived": PLAN_DEPENDENT_ACTIVE,
+      "roadmap/plans/2026-06-04_qmd-sidecar-integration": PLAN_DEPENDENT_ACTIVE,
+      "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance": PLAN_PARENT_ACTIVE,
+    },
+    archivedTargets,
+    { today: "2026-06-27" }
+  );
+  assert.equal(result.changes.length, 1);
+  assert.match(result.changes[0], /qmd-sidecar-integration/);
+});
+
+test("findSupersededDependentsForCascade finds dependents whose checklist is fully DONE", () => {
+  const { findings, manualReview } = findSupersededDependentsForCascade(
+    DONE_PENDING_WITH_SUPERSEDE,
+    "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance",
+    TARGETS_FULL
+  );
+  // Only `lcm-command-surface` has its checklist fully DONE; qmd has unchecked.
+  assert.deepEqual(findings.map((f) => f.heading), ["lcm-command-surface"]);
+  assert.deepEqual(findings.map((f) => f.planRel), ["roadmap/plans/2026-06-04_lcm-command-surface"]);
+  assert.deepEqual(findings.map((f) => f.archiveRel), ["archive/lcm-command-surface-archived"]);
+  assert.equal(manualReview.length, 0);
+});
+
+test("findSupersededDependentsForCascade returns empty when no parent match", () => {
+  const { findings } = findSupersededDependentsForCascade(
+    DONE_PENDING_WITH_SUPERSEDE,
+    "roadmap/plans/2026-06-30_other-parent",
+    TARGETS_FULL
+  );
+  assert.equal(findings.length, 0);
+});
+
+test("findSupersededDependentsForCascade reports manual review when dependent has no Planning note wikilink", () => {
+  const broken = DONE_PENDING_WITH_SUPERSEDE.replace(
+    "Planning note: [[roadmap/plans/2026-06-04_lcm-command-surface]]",
+    "Planning note: bare-text-stem"
+  );
+  const { findings, manualReview } = findSupersededDependentsForCascade(
+    broken,
+    "roadmap/plans/2026-06-25_external-runtime-integration-and-maintenance",
+    TARGETS_FULL
+  );
+  assert.equal(findings.length, 0);
+  assert.ok(manualReview.some((m) => m.includes("no wikilinkable Planning note")));
+});
+
+test("validator --fix flips a stale active status to superseded (D-020)", () => {
+  const pm = mkdtempSync(join(tmpdir(), "pm-d020-validator-"));
+  try {
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    mkdirSync(join(pm, "roadmap", "milestones"), { recursive: true });
+    writeFileSync(
+      join(pm, "roadmap", "done-pending.md"),
+      DONE_PENDING_WITH_SUPERSEDE
+    );
+    writeFileSync(
+      join(pm, "roadmap", "plans", "2026-06-04_lcm-command-surface.md"),
+      PLAN_DEPENDENT_ACTIVE
+    );
+    writeFileSync(
+      join(pm, "roadmap", "plans", "2026-06-04_qmd-sidecar-integration.md"),
+      PLAN_DEPENDENT_ACTIVE
+    );
+    writeFileSync(
+      join(pm, "roadmap", "plans", "2026-06-25_external-runtime-integration-and-maintenance.md"),
+      PLAN_PARENT_ACTIVE
+    );
+
+    const before = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(before.status, 1, before.stdout + before.stderr);
+    assert.match(before.stdout, /D-020/);
+    assert.match(before.stdout, /lcm-command-surface/);
+    assert.match(before.stdout, /qmd-sidecar-integration/);
+
+    const fixed = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm, "--fix"], { encoding: "utf8" });
+    // Other D-018 fixes may also fire; we only assert D-020 was applied.
+    assert.match(fixed.stdout, /fixed: roadmap\/plans\/2026-06-04_lcm-command-surface/);
+    assert.match(fixed.stdout, /fixed: roadmap\/plans\/2026-06-04_qmd-sidecar-integration/);
+
+    const after1 = readFileSync(join(pm, "roadmap", "plans", "2026-06-04_lcm-command-surface.md"), "utf8");
+    const after2 = readFileSync(join(pm, "roadmap", "plans", "2026-06-04_qmd-sidecar-integration.md"), "utf8");
+    assert.match(after1, /status: superseded/);
+    assert.match(after2, /status: superseded/);
+
+    const pass = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm], { encoding: "utf8" });
+    assert.doesNotMatch(pass.stdout, /D-020.*lcm-command-surface/);
+    assert.doesNotMatch(pass.stdout, /D-020.*qmd-sidecar-integration/);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});
+
+test("migration 1.17.0 flips dependent status and is idempotent", () => {
+  const vault = mkdtempSync(join(tmpdir(), "pm-d020-migration-"));
+  const pm = join(vault, "Projects", "Example");
+  try {
+    mkdirSync(join(vault, ".obsidian"), { recursive: true });
+    mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
+    mkdirSync(join(pm, "roadmap", "milestones"), { recursive: true });
+    writeFileSync(join(pm, "roadmap", "done-pending.md"), DONE_PENDING_WITH_SUPERSEDE);
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-04_lcm-command-surface.md"), PLAN_DEPENDENT_ACTIVE);
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-04_qmd-sidecar-integration.md"), PLAN_DEPENDENT_ACTIVE);
+    writeFileSync(join(pm, "roadmap", "plans", "2026-06-25_external-runtime-integration-and-maintenance.md"), PLAN_PARENT_ACTIVE);
+    const config = join(vault, "projects.json");
+    writeFileSync(config, JSON.stringify({
+      vault_root: vault,
+      skill_dir: SKILL_DIR,
+      projects: {
+        Example: {
+          code_repo: null,
+          pm_folder: pm,
+          phase: "beta",
+          notes: "test",
+          access: "authoritative",
+        },
+      },
+    }, null, 2));
+
+    const apply1 = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.17.0-parent-workstream-supersede-flip",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(apply1.status, 0, apply1.stdout + apply1.stderr);
+    assert.match(apply1.stdout, /2026-06-04_lcm-command-surface\.md/);
+    assert.match(apply1.stdout, /2026-06-04_qmd-sidecar-integration\.md/);
+
+    const after1 = readFileSync(join(pm, "roadmap", "plans", "2026-06-04_lcm-command-surface.md"), "utf8");
+    assert.match(after1, /status: superseded/);
+    const after2 = readFileSync(join(pm, "roadmap", "plans", "2026-06-04_qmd-sidecar-integration.md"), "utf8");
+    assert.match(after2, /status: superseded/);
+    const parentAfter = readFileSync(join(pm, "roadmap", "plans", "2026-06-25_external-runtime-integration-and-maintenance.md"), "utf8");
+    assert.match(parentAfter, /status: active/);
+
+    const apply2 = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.17.0-parent-workstream-supersede-flip",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(apply2.status, 0, apply2.stdout + apply2.stderr);
+    assert.match(apply2.stdout, /No applicable migrations/);
+
+    const detectViaForce = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.17.0-parent-workstream-supersede-flip",
+      "--force",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(detectViaForce.status, 0, detectViaForce.stdout + detectViaForce.stderr);
+    assert.match(detectViaForce.stderr, /detect\(\) returned false; nothing to apply/);
+
+    const after3 = readFileSync(join(pm, "roadmap", "plans", "2026-06-04_lcm-command-surface.md"), "utf8");
+    assert.match(after3, /status: superseded/);
+    assert.equal(after3, after1, "second apply must not change a conformant file");
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
   }
 });
