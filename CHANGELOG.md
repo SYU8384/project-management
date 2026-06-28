@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `install.ps1`: thin PowerShell shim (~50 lines) that finds `bash.exe` (Git Bash) or falls back to `wsl.exe` and delegates to the canonical `install.sh`. Forwards all arguments verbatim (`--target`, `--channel`, `--ref`, etc.) so Windows users can use a one-liner: `irm https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1 | iex`. Native PowerShell install without a POSIX shell is out of scope; the shim keeps `install.sh` as the single source of truth.
+- README Quick Start: a "Windows users" note between Path A and Path B explaining Git Bash and WSL, plus a "Path C — Windows PowerShell" subsection after Path B with the `irm | iex` command and forwarded-args examples.
+
+### Changed
+
+- README Quick Start: previously gave no Windows context. The `curl | bash` examples will fail in `cmd.exe` and native PowerShell; the new note makes the Git Bash / WSL / PowerShell shim story discoverable.
+
 ## [1.17.0] - 2026-06-27
 
 ### Note
