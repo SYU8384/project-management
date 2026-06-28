@@ -58,13 +58,18 @@ Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `o
 From PowerShell 5.1 (Windows 10 default) or PowerShell 7+:
 
 ```powershell
-iwr https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1 -OutFile install.ps1
-.\install.ps1 -Target agents -Yes
+$installer = Join-Path $env:TEMP "project-management-install.ps1"
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1" -OutFile $installer
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Target agents -Yes
 ```
 
 The installer needs `git` on PATH (ships with Git for Windows,
 GitHub Desktop, or VS Code). If `git.exe` isn't found, the installer
 will tell you to install Git for Windows and exit.
+
+The temp-file path keeps the command working even if PowerShell opens in
+`C:\WINDOWS\system32` or another directory you cannot write to. The
+process-scoped execution-policy bypass is only for this installer run.
 
 ## 🎯 Triggers (coding-agent users)
 

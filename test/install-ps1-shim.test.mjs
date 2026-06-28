@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
 const INSTALL_PS1 = join(SKILL_DIR, "install.ps1");
+const README = join(SKILL_DIR, "README.md");
 
 test("install.ps1 exists and is non-empty", () => {
   assert.ok(existsSync(INSTALL_PS1), "install.ps1 must exist at the repo root");
@@ -65,6 +66,19 @@ test("install.ps1 has the param-block caveat in the header", () => {
   assert.match(content, /param\(\)\s*block/i);
   assert.match(content, /irm\s*\|\s*iex/);
   assert.match(content, /two-step/i);
+});
+
+test("PowerShell docs use a temp-file execution-policy-safe invocation", () => {
+  const readme = readFileSync(README, "utf8");
+  const installer = readFileSync(INSTALL_PS1, "utf8");
+
+  for (const content of [readme, installer]) {
+    assert.match(content, /Join-Path\s+\$env:TEMP\s+"project-management-install\.ps1"/);
+    assert.match(content, /Invoke-WebRequest\s+-UseBasicParsing\s+-Uri\s+"https:\/\/raw\.githubusercontent\.com\/SYU8384\/project-management\/main\/install\.ps1"\s+-OutFile\s+\$installer/);
+    assert.match(content, /powershell\.exe\s+-NoProfile\s+-ExecutionPolicy\s+Bypass\s+-File\s+\$installer\s+-Target\s+agents\s+-Yes/);
+    assert.doesNotMatch(content, /-OutFile\s+install\.ps1/);
+    assert.doesNotMatch(content, /\\\.\\install\.ps1\s+-Target\s+agents\s+-Yes/);
+  }
 });
 
 test("install.ps1 propagates exit code on missing git", () => {

@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- README Path C / `install.ps1` header: Windows PowerShell install commands now download the script to `%TEMP%` and run it with a process-scoped execution-policy bypass. This avoids the common failure where PowerShell opens in `C:\WINDOWS\system32` and `Invoke-WebRequest -OutFile install.ps1` cannot write there.
+
 ## [1.18.0] - 2026-06-27
 
 ### Added
 
-- `install.ps1`: native Windows-PowerShell installer with no bash dependency. Clones the project-management repo to a standard target (codex, agents, claude, openclaw) or a custom directory, and checks out the requested ref. Requires `git` on PATH (most Windows devs have it; if not, the installer tells you to install Git for Windows). Forwarded flags: `-Target`, `-Channel`, `-Ref`, `-Dest`, `-Name`, `-Repo`, `-Force`, `-Yes`. The two-step PowerShell pattern is `iwr ... -OutFile install.ps1; .\install.ps1 -Target agents -Yes`. Sibling of `install.sh` (bash / WSL / Git Bash); both produce the same installed directory.
-- README Quick Start: a "Windows users" note between Path A and Path B explaining Git Bash and WSL, plus a "Path C — Windows PowerShell" subsection after Path B with the `iwr | .Content | iex` one-liner.
+- `install.ps1`: native Windows-PowerShell installer with no bash dependency. Clones the project-management repo to a standard target (codex, agents, claude, openclaw) or a custom directory, and checks out the requested ref. Requires `git` on PATH (most Windows devs have it; if not, the installer tells you to install Git for Windows). Forwarded flags: `-Target`, `-Channel`, `-Ref`, `-Dest`, `-Name`, `-Repo`, `-Force`, `-Yes`. The two-step PowerShell pattern downloads the script to a file, then runs it with `-Target agents -Yes`. Sibling of `install.sh` (bash / WSL / Git Bash); both produce the same installed directory.
+- README Quick Start: a "Windows users" note between Path A and Path B explaining Git Bash and WSL, plus a "Path C — Windows PowerShell" subsection after Path B with the native PowerShell two-step install command.
 
 ### Changed
 

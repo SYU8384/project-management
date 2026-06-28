@@ -19,8 +19,13 @@
   downloaded .ps1 file -- not piped through `irm | iex`. PowerShell
   rejects param() blocks in iex-evaluated script blocks. The
   standard two-step is:
-      iwr .../install.ps1 -OutFile install.ps1
-      .\install.ps1 -Target agents -Yes
+      $installer = Join-Path $env:TEMP "project-management-install.ps1"
+      Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1" -OutFile $installer
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Target agents -Yes
+
+  Downloading to $env:TEMP avoids protected-current-directory failures
+  such as C:\WINDOWS\system32. The execution-policy bypass is scoped to
+  this installer process.
 
   Failure modes:
     - git not on PATH: the installer prints a one-line error
