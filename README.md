@@ -26,6 +26,10 @@ Read https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-
 
 The OpenClaw agent handles the rest — installing or updating the skill, creating `~/.config/project-management/projects.json`, running a guided setup for each project, and auditing everything else. **You don't need to say `setup this repo` afterward**; OpenClaw runs setup autonomously.
 
+### Windows users
+
+The `curl | bash` commands in Path B require a POSIX shell. On Windows, run them from **Git Bash** (ships with [Git for Windows](https://git-scm.com/download/win)) or **WSL** (Windows Subsystem for Linux). Git Bash is the lighter option — it is a native Windows install of bash with no Linux VM. Native `cmd.exe` and PowerShell are not supported by the bash installer; for a PowerShell-friendly entry point, see [Path C — Windows PowerShell](#path-c--windows-powershell) below.
+
 ### Path B — You use Codex / Claude / another coding agent (PM is a side effect of code work)
 
 **Interactive installer (recommended for first-time installs):**
@@ -43,6 +47,24 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 ```
 
 Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `openclaw`, or `--dest <path>` for a custom directory.
+
+### Path C — Windows PowerShell
+
+If you prefer PowerShell over Git Bash, the installer ships a thin `install.ps1` shim that finds `bash.exe` (Git Bash) or falls back to `wsl.exe` and delegates to the canonical `install.sh`:
+
+```powershell
+irm https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1 | iex
+```
+
+The shim forwards its arguments to `install.sh`, so the same flags work:
+
+```powershell
+.\install.ps1 --target agents --yes
+.\install.ps1 --channel v1
+.\install.ps1 --ref v1.6.0
+```
+
+PowerShell native install (no bash dependency) is not supported — see [the `install.ps1` header comment](install.ps1) for the design rationale. The shim is ~50 lines and depends on `install.sh` for the real logic, so new install features land in one place.
 
 ## 🎯 Triggers (coding-agent users)
 
