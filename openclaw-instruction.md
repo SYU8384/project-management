@@ -29,28 +29,48 @@ Choose `skill_dir` this way:
 
 ## 2. Install Or Update The Chosen Skill
 
-If `skill_dir` already exists and is a valid git checkout, update it:
+If `skill_dir` already exists and is a valid git checkout, update it from any shell that has `git`:
 
-```bash
-cd <skill_dir>
-git pull --ff-only
+```text
+git -C <skill_dir> pull --ff-only
 ```
 
-If no valid install exists, install to the default OpenClaw managed/local skill root:
+If no valid install exists, install to the default OpenClaw managed/local skill root using the shell OpenClaw can run on this machine.
+
+macOS, Linux, WSL, or Git Bash:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
   | bash -s -- --target openclaw --yes
 ```
 
-If the user chose a custom root, install/update with `--dest <skills-dir>` instead:
+Native Windows PowerShell:
+
+```powershell
+$installer = Join-Path $env:TEMP "project-management-install.ps1"
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1" -OutFile $installer
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Target openclaw -Yes
+```
+
+If the user chose a custom root, pass the parent skills directory instead of `--target openclaw` / `-Target openclaw`.
+
+macOS, Linux, WSL, or Git Bash:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh \
   | bash -s -- --dest <skills-dir> --yes
 ```
 
+Native Windows PowerShell:
+
+```powershell
+$installer = Join-Path $env:TEMP "project-management-install.ps1"
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/SYU8384/project-management/main/install.ps1" -OutFile $installer
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Dest "<skills-dir>" -Yes
+```
+
 To discard local changes during an update, add `--force` before `--yes`.
+For native Windows PowerShell, add `-Force` before `-Yes`.
 
 After install/update, set:
 

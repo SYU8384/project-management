@@ -34,7 +34,7 @@ function detect({ pmFolder }) {
 
 function plan({ pmFolder }) {
   return [
-    `Apply the known-bugs shape convention (D-011) to \`docs/Developer Guide/known-bugs.md\`.`,
+    `Apply the known-bugs shape convention (D-021) to \`docs/Developer Guide/known-bugs.md\`.`,
     `Auto-fixed: remove H3 bug links from Contents TOC, normalize \`<to be filled in by maintainer\` placeholders to \`TBD\`, add missing required fields with \`TBD\`.`,
     `Manual review: fields marked \`TBD\` need maintainer-supplied root cause, solution, or verification details.`,
   ];
@@ -91,7 +91,7 @@ function apply({ pmFolder, ctx: c }) {
 
   return {
     suggestedHistory: [
-      `- **Known-bugs entries now expose root cause, solution, and verification consistently.** chore(pm): apply migration \`1.9.0-known-bugs-shape\` and bring \`docs/Developer Guide/known-bugs.md\` up to the D-011 shape convention. Auto-fixed: ${log.length} change(s). Manual review: ${allManualReview.length} item(s).`,
+      `- **Known-bugs entries now expose root cause, solution, and verification consistently.** chore(pm): apply migration \`1.9.0-known-bugs-shape\` and bring \`docs/Developer Guide/known-bugs.md\` up to the D-021 shape convention. Auto-fixed: ${log.length} change(s). Manual review: ${allManualReview.length} item(s).`,
     ],
     manualReview: allManualReview,
   };
@@ -102,7 +102,7 @@ export default {
   from: "<1.9.0",
   to: "1.9.0",
   describe:
-    "Apply the known-bugs shape convention (D-011) to `docs/Developer Guide/known-bugs.md`: remove H3 bug links from the Contents TOC, normalize `<to be filled in by maintainer` placeholders to `TBD`, and add missing required fields with `TBD`. Idempotent. TBD fields surface as MANUAL REVIEW.",
+    "Apply the known-bugs shape convention (D-021) to `docs/Developer Guide/known-bugs.md`: remove H3 bug links from the Contents TOC, normalize `<to be filled in by maintainer` placeholders to `TBD`, and add missing required fields with `TBD`. Idempotent. TBD fields surface as MANUAL REVIEW.",
   detect,
   plan,
   apply,

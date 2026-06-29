@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Static repo-shape test coverage to prevent live PM decision records (`decisions/D-*.md`) from being reintroduced at the skill repo root.
+
+### Changed
+
+- README Quick Start: clarified the three install paths as OpenClaw PM agent, coding agent on macOS/Linux/WSL/Git Bash, and coding agent on native Windows PowerShell. Path B is now explicitly POSIX-shell-only, Path C lists valid PowerShell targets, and downstream trigger/versioning text no longer implies bash is the only installer.
+- `openclaw-instruction.md`: install/update guidance is now OS-aware, with bash commands for macOS/Linux/WSL/Git Bash and native PowerShell commands for Windows OpenClaw installs, including `-Target openclaw` and custom `-Dest` examples.
+
+### Removed
+
+- Root `decisions/D-*.md` files from the skill repo. Live decision records now stay in the PM folder's `decisions/` lane; the repo ships templates, scripts, and guidance only.
+
 ### Fixed
 
 - README Path C / `install.ps1` header: Windows PowerShell install commands now download the script to `%TEMP%` and run it with a process-scoped execution-policy bypass. This avoids the common failure where PowerShell opens in `C:\WINDOWS\system32` and `Invoke-WebRequest -OutFile install.ps1` cannot write there.

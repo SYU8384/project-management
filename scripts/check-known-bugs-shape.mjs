@@ -139,7 +139,7 @@ function runFor(target) {
   console.log(`**Status:** ${issues.length === 0 ? "PASS" : "FAIL"}`);
   console.log("");
   if (issues.length === 0) {
-    console.log("Known-bugs entry shape follows the D-011 convention.");
+    console.log("Known-bugs entry shape follows the D-021 convention.");
   } else {
     for (const issue of issues) console.log(`- ${relPath}: ${issue}`);
   }

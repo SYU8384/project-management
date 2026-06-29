@@ -28,7 +28,7 @@ const validators = [
   { file: "check-inbox-conventions.mjs",     label: "Inbox conventions" },
   { file: "check-roadmap-conventions.mjs",   label: "Roadmap conventions (D-007/008/009/012/015/016)" },
   { file: "check-content-semantics.mjs",     label: "Content semantics (A/B/C/D)" },
-  { file: "check-known-bugs-shape.mjs",      label: "Known-bugs shape (D-011)" },
+  { file: "check-known-bugs-shape.mjs",      label: "Known-bugs shape (D-021)" },
   { file: "check-live-routing.mjs",          label: "Live routing hygiene (D-013)" },
   { file: "check-obsidian-links.mjs",        label: "Obsidian links (D-014)" },
   { file: "check-backticked-wikilinks.mjs",  label: "Backticked wikilinks" },

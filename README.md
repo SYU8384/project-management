@@ -1,7 +1,7 @@
 # Project Management Skill
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Install with curl](https://img.shields.io/badge/install-curl%20%7C%20bash-0f766e.svg)](#quick-start)
+[![Install with bash or PowerShell](https://img.shields.io/badge/install-bash%20%2F%20PowerShell-0f766e.svg)](#quick-start)
 [![Markdown PM folders](https://img.shields.io/badge/docs-Markdown%20%2B%20Obsidian-2563eb.svg)](#pm-folder-model)
 
 A portable agent skill for keeping project-management notes, product docs, roadmap state, and code changes in sync.
@@ -12,11 +12,13 @@ It works especially well with an Obsidian vault, but the convention is plain Mar
 
 ## 🚀 Quick Start
 
-Pick the path that matches your situation. OpenClaw can handle setup end to end; coding-agent installs need one project setup step after installation.
+Pick the path that matches how you use the skill and which shell you can run. OpenClaw can handle setup end to end; coding-agent installs need one project setup step after installation.
 
-### Path A — You have an OpenClaw PM agent (recommended for PM-domain work)
+### Path A — OpenClaw PM agent (any OS; recommended for PM-domain work)
 
 OpenClaw PM agents live in your chat, not in your repo. Their job is the PM work itself — brainstorming, capturing decisions and meetings, tracking progress across projects, and keeping the PM folder current. This is *broader* than what a coding agent does as a side effect of code changes. Use OpenClaw when the work is PM-shaped.
+
+Use this path on any OS where OpenClaw can run the matching installer.
 
 Paste this to your OpenClaw agent:
 
@@ -24,18 +26,11 @@ Paste this to your OpenClaw agent:
 Read https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md and follow its instructions.
 ```
 
-The OpenClaw agent handles the rest — installing or updating the skill, creating `~/.config/project-management/projects.json`, running a guided setup for each project, and auditing everything else. **You don't need to say `setup this repo` afterward**; OpenClaw runs setup autonomously.
+The OpenClaw instruction is OS-aware: it uses the bash installer on macOS, Linux, WSL, or Git Bash, and the PowerShell installer on native Windows. The OpenClaw agent handles the rest — installing or updating the skill, creating `~/.config/project-management/projects.json`, running a guided setup for each project, and auditing everything else. **You don't need to say `setup this repo` afterward**; OpenClaw runs setup autonomously.
 
-### Windows users
+### Path B — Coding agent on macOS / Linux / WSL / Git Bash
 
-The `curl | bash` commands in Path B require a POSIX shell. On Windows, run them
-from **Git Bash** (ships with [Git for Windows](https://git-scm.com/download/win))
-or **WSL** (Windows Subsystem for Linux). Git Bash is the lighter option — it
-is a native Windows install of bash with no Linux VM.
-
-If you prefer PowerShell, see [Path C — Windows PowerShell](#path-c--windows-powershell) below.
-
-### Path B — You use Codex / Claude / another coding agent (PM is a side effect of code work)
+Use this path for Codex, Claude, or another coding agent when your shell can run POSIX `bash`. These `curl | bash` commands do **not** run in native Windows PowerShell or `cmd.exe`; use [Path C](#path-c--coding-agent-on-native-windows-powershell) there.
 
 **Interactive installer (recommended for first-time installs):**
 
@@ -53,9 +48,9 @@ curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/ins
 
 Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `openclaw`, or `--dest <path>` for a custom directory.
 
-### Path C — Windows PowerShell
+### Path C — Coding agent on native Windows PowerShell
 
-From PowerShell 5.1 (Windows 10 default) or PowerShell 7+:
+Use this path from PowerShell 5.1 (Windows 10 default) or PowerShell 7+. It is the native-Windows equivalent of Path B:
 
 ```powershell
 $installer = Join-Path $env:TEMP "project-management-install.ps1"
@@ -71,9 +66,11 @@ The temp-file path keeps the command working even if PowerShell opens in
 `C:\WINDOWS\system32` or another directory you cannot write to. The
 process-scoped execution-policy bypass is only for this installer run.
 
+Targets are `agents` (`%USERPROFILE%\.agents\skills\project-management`), `codex`, `claude`, `openclaw`, or `-Dest <skills-dir>` for a custom parent skills directory. Keep `-Target agents` unless your agent expects a different skill root.
+
 ## 🎯 Triggers (coding-agent users)
 
-If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B, after install + first setup the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`. Restart your coding agent and use these phrases.
+If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B or Path C, after install + first setup the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`. Restart your coding agent and use these phrases.
 
 The order below follows a new user's natural flow: **register your project first** (`setup this repo` or `setup as collaborator`), then use verify / reconcile to clean state, and reserve migrate for the narrow case of migrations-only. Use `log this` after code changes in authoritative projects.
 
@@ -181,9 +178,11 @@ History is written last because it records what changed after the durable docs h
 |---|---|
 | [`SKILL.md`](./SKILL.md) | Agent entry point: concise trigger router and highest-risk PM rules. |
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
-| [`install.sh`](./install.sh) | Curl-friendly installer for Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
+| [`install.sh`](./install.sh) | Bash installer for macOS, Linux, WSL, Git Bash, Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
+| [`install.ps1`](./install.ps1) | Native Windows PowerShell installer for the same standard targets and custom skills directories. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
 | [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, decisions, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
+| Generated PM `decisions/` lane | Runtime PM folders own live decision records; the skill repo does not ship root `decisions/D-*.md` files. |
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter for `projects.json`; the bootstrap script copies it to `~/.config/project-management/projects.json` on first run. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation/reconcile entry point that runs all PM checks and coordinates `--fix`. |
@@ -242,18 +241,24 @@ History is written last because it records what changed after the durable docs h
 
 This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
 
-- **Default install:** pulls the moving `v1` branch, which points at the latest stable `v1.x.x` release (currently `v1.17.0`). Use `--channel main` to follow the bleeding edge of `main` instead.
-- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.6.0` pins to an exact release. To upgrade from a pin, re-run the installer without the `--ref` flag.
-- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the moving `v1` branch (latest stable). `curl -fsSL .../install.sh | bash -s -- --channel main` resolves to `main` (bleeding edge).
+- **Default install:** pulls the moving `v1` branch, which points at the latest stable `v1.x.x` release. Use `--channel main` / `-Channel main` to follow the bleeding edge of `main` instead.
+- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.6.0` pins to an exact release. Native PowerShell users can pass `-Ref v1.6.0` to `install.ps1`. To upgrade from a pin, re-run the installer without the ref flag.
+- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the moving `v1` branch (latest stable). `curl -fsSL .../install.sh | bash -s -- --channel main` resolves to `main` (bleeding edge). Native PowerShell users can pass `-Channel v1` or `-Channel main`.
 - **The `v1` branch is a moving pointer.** It advances to each new `v1.x.x` release. Existing non-pinned installs fast-forward on the next update; pinned installs do not.
 - **Upgrading from a v1.6.0 (or earlier) pin:** if you previously installed with `--ref v1.6.0` (or any earlier tag), re-run `curl -fsSL .../install.sh | bash -s -- --target agents --yes` (drop the `--ref` flag) to advance to the latest `v1` channel.
 - **Update an existing install:** re-run the same install command; existing clones fetch and fast-forward to the selected ref. If the checkout has local changes, pass `--force` to discard them.
 - **Force update:** `curl -fsSL .../install.sh | bash -s -- --force --yes` resets the skill checkout to the selected ref and removes untracked files.
 
+The bash examples above are for Path B. Path C supports the same channel/ref/force concepts with PowerShell-style flags: `-Channel`, `-Ref`, and `-Force`.
+
 **Check the installed version** without re-running the installer:
 
 ```bash
 cat <skill_dir>/VERSION
+```
+
+```powershell
+Get-Content <skill_dir>\VERSION
 ```
 
 The version is printed after every install or update:

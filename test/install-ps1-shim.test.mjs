@@ -10,6 +10,7 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
 const INSTALL_PS1 = join(SKILL_DIR, "install.ps1");
 const README = join(SKILL_DIR, "README.md");
+const OPENCLAW_INSTRUCTION = join(SKILL_DIR, "openclaw-instruction.md");
 
 test("install.ps1 exists and is non-empty", () => {
   assert.ok(existsSync(INSTALL_PS1), "install.ps1 must exist at the repo root");
@@ -79,6 +80,34 @@ test("PowerShell docs use a temp-file execution-policy-safe invocation", () => {
     assert.doesNotMatch(content, /-OutFile\s+install\.ps1/);
     assert.doesNotMatch(content, /\\\.\\install\.ps1\s+-Target\s+agents\s+-Yes/);
   }
+});
+
+test("README Quick Start labels install paths by workflow and shell", () => {
+  const readme = readFileSync(README, "utf8");
+
+  assert.match(readme, /Path A — OpenClaw PM agent \(any OS; recommended for PM-domain work\)/);
+  assert.match(readme, /any OS where OpenClaw can run the matching installer/);
+  assert.match(readme, /uses the bash installer on macOS, Linux, WSL, or Git Bash/);
+  assert.match(readme, /PowerShell installer on native Windows/);
+  assert.match(readme, /Path B — Coding agent on macOS \/ Linux \/ WSL \/ Git Bash/);
+  assert.match(readme, /POSIX `bash`/);
+  assert.match(readme, /do \*\*not\*\* run in native Windows PowerShell or `cmd\.exe`/);
+  assert.match(readme, /Path C — Coding agent on native Windows PowerShell/);
+  assert.match(readme, /Targets are `agents`[\s\S]*`codex`[\s\S]*`claude`[\s\S]*`openclaw`[\s\S]*`-Dest <skills-dir>`/);
+  assert.match(readme, /If you went through Path B or Path C/);
+  assert.match(readme, /\[`install\.ps1`\]\(\.\/install\.ps1\)/);
+  assert.doesNotMatch(readme, /currently `v1\.\d+\.\d+`/);
+});
+
+test("OpenClaw instruction has bash and native Windows install paths", () => {
+  const content = readFileSync(OPENCLAW_INSTRUCTION, "utf8");
+
+  assert.match(content, /git -C <skill_dir> pull --ff-only/);
+  assert.match(content, /install\.sh[\s\S]*--target openclaw --yes/);
+  assert.match(content, /install\.ps1[\s\S]*-Target openclaw -Yes/);
+  assert.match(content, /install\.sh[\s\S]*--dest <skills-dir> --yes/);
+  assert.match(content, /install\.ps1[\s\S]*-Dest "<skills-dir>" -Yes/);
+  assert.match(content, /For native Windows PowerShell, add `-Force` before `-Yes`/);
 });
 
 test("install.ps1 propagates exit code on missing git", () => {

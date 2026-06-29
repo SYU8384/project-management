@@ -54,7 +54,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 - Milestone evidence links belong inline: link specific plans, done-pending sections, decisions, feature notes, known issues, or docs inside the priority, major step, exit criterion, or deferred item they support. Do not maintain a generic milestone `## Related Notes` link dump.
 - Live PM notes outside `history/` and `archive/` must not teach retired lanes. Use `roadmap/plans/`, root `decisions/`, and `Relevant decisions:`; link bare `ADR-NNN` / `D-NNN` references only when the target is unique.
 - `archived: <date>` belongs only on moved `archive/*-archived.md` files. Do not use `status: archived`.
-- Active bug tracking belongs in `roadmap/known-issues.md`; engineering root cause, fix, verification, and recurrence knowledge belongs in `docs/Developer Guide/known-bugs.md`. Entries follow the D-011 shape convention (per-section required fields, no H3 links in Contents, placeholders surfaced as MANUAL REVIEW).
+- Active bug tracking belongs in `roadmap/known-issues.md`; engineering root cause, fix, verification, and recurrence knowledge belongs in `docs/Developer Guide/known-bugs.md`. Entries follow the D-021 shape convention (per-section required fields, no H3 links in Contents, placeholders surfaced as MANUAL REVIEW).
 - PM notes must not store plaintext credentials, tokens, API keys, private URLs with secrets, or recovery codes. Document purpose, status, and where credentials live outside the PM folder.
 
 ## Commands
