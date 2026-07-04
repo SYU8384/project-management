@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -25,6 +25,11 @@ import {
   findSupersededDependentsForCascade,
   setFrontmatterScalar,
 } from "../scripts/lib/roadmap-fixers.mjs";
+import {
+  historyArchivedSectionsRel,
+  historyDateParts,
+  historyMonthIndexRel,
+} from "../scripts/lib/history-paths.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
@@ -894,7 +899,7 @@ test("check-roadmap-conventions --fix archives deterministic completed planning 
   try {
     mkdirSync(join(pm, "roadmap", "plans"), { recursive: true });
     mkdirSync(join(pm, "archive"), { recursive: true });
-    mkdirSync(join(pm, "history", "2026-06"), { recursive: true });
+    mkdirSync(join(pm, "history"), { recursive: true });
     mkdirSync(join(pm, "features"), { recursive: true });
     writeIndex(
       join(pm, "roadmap", "plans", "plans.md"),
@@ -902,7 +907,7 @@ test("check-roadmap-conventions --fix archives deterministic completed planning 
       "[[roadmap/plans/2026-06-01_completed-plan|2026-06-01_completed-plan]]"
     );
     writeIndex(join(pm, "archive", "archive.md"), "archive");
-    writeIndex(join(pm, "history", "2026-06", "2026-06.md"), "2026-06");
+    writeIndex(join(pm, "history", "history.md"), "history");
     writeFileSync(join(pm, "features", "feature.md"), "See [[roadmap/plans/2026-06-01_completed-plan|the plan]].\n");
     writeFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), `---
 title: completed-plan
@@ -950,6 +955,7 @@ Planning note: [[roadmap/plans/2026-06-01_completed-plan|2026-06-01_completed-pl
     assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
 
     const today = new Date().toISOString().slice(0, 10);
+    const { year, monthName } = historyDateParts(today);
     const archivePath = join(pm, "archive", "completed-plan-archived.md");
     assert.equal(readFileSync(join(pm, "roadmap", "done-pending.md"), "utf8").includes("## completed-plan"), false);
     assert.throws(() => readFileSync(join(pm, "roadmap", "plans", "2026-06-01_completed-plan.md"), "utf8"));
@@ -963,10 +969,14 @@ Planning note: [[roadmap/plans/2026-06-01_completed-plan|2026-06-01_completed-pl
     assert.equal(plansIndex.includes("2026-06-01_completed-plan"), false);
     const archiveIndex = readFileSync(join(pm, "archive", "archive.md"), "utf8");
     assert.match(archiveIndex, /\[\[archive\/completed-plan-archived\|completed-plan-archived\]\]/);
-    const archivedSections = readFileSync(join(pm, "history", "2026-06", `history-${today}-archived-sections.md`), "utf8");
+    const archivedSections = readFileSync(join(pm, `${historyArchivedSectionsRel(today)}.md`), "utf8");
     assert.match(archivedSections, /## completed-plan/);
     assert.match(archivedSections, /Archived roadmap checklist:/);
-    const monthIndex = readFileSync(join(pm, "history", "2026-06", "2026-06.md"), "utf8");
+    const historyIndex = readFileSync(join(pm, "history", "history.md"), "utf8");
+    assert.match(historyIndex, new RegExp(`history/${year}/${year}`));
+    const yearIndex = readFileSync(join(pm, "history", year, `${year}.md`), "utf8");
+    assert.match(yearIndex, new RegExp(`history/${year}/${monthName}/${monthName}`));
+    const monthIndex = readFileSync(join(pm, `${historyMonthIndexRel(today)}.md`), "utf8");
     assert.match(monthIndex, new RegExp(`history-${today}-archived-sections`));
     const feature = readFileSync(join(pm, "features", "feature.md"), "utf8");
     assert.match(feature, /\[\[archive\/completed-plan-archived\|the plan\]\]/);
@@ -1531,6 +1541,139 @@ test("migration 1.17.0 flips dependent status and is idempotent", () => {
     const after3 = readFileSync(join(pm, "roadmap", "plans", "2026-06-04_lcm-command-surface.md"), "utf8");
     assert.match(after3, /status: superseded/);
     assert.equal(after3, after1, "second apply must not change a conformant file");
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test("migration 1.18.0 moves legacy history month folders and rewrites links", () => {
+  const vault = mkdtempSync(join(tmpdir(), "pm-history-layout-migration-"));
+  const pm = join(vault, "Projects", "Example");
+  try {
+    mkdirSync(join(vault, ".obsidian"), { recursive: true });
+    mkdirSync(join(pm, "history", "2026-06"), { recursive: true });
+    mkdirSync(join(pm, "features"), { recursive: true });
+    writeFileSync(join(pm, "history", "history.md"), `---
+title: history
+created: 2026-06-01
+updated: 2026-06-01
+last_reviewed: 2026-06-01
+pageType: index
+status: active
+owner: PM
+---
+# history
+
+<!-- vault-maintain:index:start -->
+## Subfolders
+
+- [[Projects/Example/history/2026-06/2026-06|2026-06/]]
+
+## Notes
+
+*(no items)*
+<!-- vault-maintain:index:end -->
+`);
+    writeFileSync(join(pm, "history", "2026-06", "2026-06.md"), `---
+title: "2026-06"
+created: 2026-06-01
+updated: 2026-06-01
+last_reviewed: 2026-06-01
+pageType: index
+status: active
+owner: PM
+---
+# 2026-06
+
+Legacy month intro.
+
+<!-- vault-maintain:index:start -->
+## Subfolders
+
+*(no items)*
+
+## Notes
+
+- [[Projects/Example/history/2026-06/history-2026-06-20|history-2026-06-20]]
+<!-- vault-maintain:index:end -->
+`);
+    writeFileSync(join(pm, "history", "2026-06", "history-2026-06-20.md"), `---
+title: history-2026-06-20
+created: 2026-06-20
+updated: 2026-06-20
+last_reviewed: 2026-06-20
+pageType: history
+kind: mixed
+owner: PM
+---
+# history-2026-06-20
+
+Preserve this body exactly.
+
+## Navigation
+
+- [[Projects/Example/history/2026-06/2026-06|Back to 2026-06]]
+`);
+    writeFileSync(join(pm, "features", "feature.md"), "See [[Projects/Example/history/2026-06/history-2026-06-20|that log]] and [[Projects/Example/history/2026-06/2026-06|June index]].\n");
+
+    const config = join(vault, "projects.json");
+    writeFileSync(config, JSON.stringify({
+      vault_root: vault,
+      skill_dir: SKILL_DIR,
+      projects: {
+        Example: {
+          code_repo: null,
+          pm_folder: pm,
+          phase: "beta",
+          notes: "test",
+          access: "authoritative",
+        },
+      },
+    }, null, 2));
+
+    const result = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.18.0-history-year-month-layout",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.equal(existsSync(join(pm, "history", "2026-06")), false);
+    assert.equal(existsSync(join(pm, "history", "2026", "June", "history-2026-06-20.md")), true);
+    assert.equal(existsSync(join(pm, "history", "2026", "June", "June.md")), true);
+    assert.equal(existsSync(join(pm, "history", "2026", "2026.md")), true);
+
+    const day = readFileSync(join(pm, "history", "2026", "June", "history-2026-06-20.md"), "utf8");
+    assert.match(day, /Preserve this body exactly\./);
+    assert.match(day, /Projects\/Example\/history\/2026\/June\/June\|Back to 2026-06/);
+    const rootIndex = readFileSync(join(pm, "history", "history.md"), "utf8");
+    assert.match(rootIndex, /Projects\/Example\/history\/2026\/2026\|2026\//);
+    assert.doesNotMatch(rootIndex, /history\/2026-06\/2026-06/);
+    const yearIndex = readFileSync(join(pm, "history", "2026", "2026.md"), "utf8");
+    assert.match(yearIndex, /history\/2026\/June\/June\|June\//);
+    const monthIndex = readFileSync(join(pm, "history", "2026", "June", "June.md"), "utf8");
+    assert.match(monthIndex, /# June/);
+    assert.match(monthIndex, /history\/2026\/June\/history-2026-06-20/);
+    const feature = readFileSync(join(pm, "features", "feature.md"), "utf8");
+    assert.match(feature, /Projects\/Example\/history\/2026\/June\/history-2026-06-20\|that log/);
+    assert.match(feature, /Projects\/Example\/history\/2026\/June\/June\|June index/);
+
+    const second = spawnSync(process.execPath, [
+      MIGRATE_SCRIPT,
+      "--pm-folder",
+      pm,
+      "--config",
+      config,
+      "--migration",
+      "1.18.0-history-year-month-layout",
+      "--yes",
+    ], { encoding: "utf8" });
+    assert.equal(second.status, 0, second.stdout + second.stderr);
+    assert.match(second.stdout + second.stderr, /No applicable migrations|detect\(\) returned false/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
   }

@@ -82,7 +82,9 @@ The order below follows a new user's natural flow: **register your project first
 | Fix one project's PM state | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix` for the resolved project, repairs its registered repo `AGENTS.md` PM section, applies pending migrations, re-validates. Idempotent. |
 | Update all registered projects | `reconcile all projects` *(or* `reconcile existing projects` */* `reconcile outdated projects` */* `update projects with latest skill changes`*) | When the skill changed and registered projects may be stale. | Runs all registered projects with no `--project` filter: deterministic fixes, pending migrations, stale registered repo `AGENTS.md` repairs, then re-validation. |
 | Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
-| Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. |
+| Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. If the logged item is a known issue, bug, risk, blocker, limitation, or current gap, records it in `roadmap/known-issues.md` first. |
+| Record a known issue | `record this known issue`, `log this bug`, `record this limitation`, or `record this current gap` | When you discover an observed bug, risk, blocker, product limitation, or current gap. | Adds or updates the canonical `roadmap/known-issues.md` entry, then refreshes current status, milestone, mirrors, indexes, and history as needed. |
+| Create or update the team roster | `create a team note`, `record project people`, `add collaborators`, `who owns this project`, or `setup team/roles` | When maintainers, collaborators, PM access, approval rules, or inbox author names need a canonical place. | Creates or updates optional root `TEAM.md`. |
 | Check code-work PM close-out | run `check-pm-closeout.mjs` | Before a coding agent gives its final response after meaningful code work. | Verifies local access, worktree changes, current-state PM updates, milestone refreshes for priority-bearing work, and the current-day history log; allows explicit no-impact reasons. |
 | Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, active roadmap state, known issues, and recent history; produces a 1-paragraph summary pointing to the right files. |
 
@@ -140,6 +142,7 @@ Each project gets a Markdown folder with stable lanes:
 | Path | Purpose |
 |---|---|
 | `PRODUCT.md` | Product vision, target users, current product shape, principles, and boundaries. |
+| `TEAM.md` | Optional root roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases. |
 | `CURRENT_STATUS.md` | Current snapshot: phase, priorities, blockers, recent wins, risks, and stale-doc state. Refresh whenever priority-bearing roadmap, decision, feature, issue, or milestone state changes. |
 | `system/` | Current architecture, behavior, runtime, auth, database, integrations, and deployment. |
 | `docs/User Guide/` | End-user manual, FAQ, and product reference notes. |
@@ -155,7 +158,7 @@ Each project gets a Markdown folder with stable lanes:
 | `history/` | Human-readable chronological logs of completed work, organized by year-month. |
 | `archive/` | Superseded material replaced by current docs. |
 
-Every visible folder has a folder-note index named after the folder, including history month folders such as `history/2026-06/2026-06.md`.
+Every visible folder has a folder-note index named after the folder, including history year/month folders such as `history/2026/2026.md` and `history/2026/June/June.md`.
 
 ## 🔄 Workflow
 
@@ -166,7 +169,7 @@ The workflow has three branches — one per access mode. The owner's path is the
 | 1. Read the project's PM README | Yes (routing map) | Yes (context only) | (skip — no PM folder) |
 | 2. Update current-state docs (`system/`, `docs/`, `features/`, `roadmap/`, `decisions/`) | Yes | No | No |
 | 3. Update folder-note indexes and navigation | Yes | No | No |
-| 4. Write `history/YYYY-MM/history-YYYY-MM-DD.md` | Yes | No | No |
+| 4. Write `history/YYYY/<Month>/history-YYYY-MM-DD.md` | Yes | No | No |
 | 5. Run close-out guard / PR impact check | `check-pm-closeout.mjs` should pass, or the agent states an explicit no-impact reason | Fill in the per-lane checkboxes (be specific) | Leave the section empty |
 | After merge | (done) | Maintainer applies PM updates from the PR body | Maintainer inspects the code diff and infers PM updates |
 
@@ -223,9 +226,9 @@ History is written last because it records what changed after the durable docs h
 - **Milestones are live state.** Agents create and refresh the active `roadmap/milestones/<phase>.md` note before history whenever phase, priority, plan, decision, feature, known issue, blocker, or risk state changes.
 - **Milestone links are evidence, not a link dump.** Put specific plan, decision, feature, known-issue, or docs links inline inside the priority, major step, exit criterion, or deferred item they support; generic folder/index links belong in Navigation and folder notes.
 - **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
-- **Bugs become knowledge.** Active bug tracking stays in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
+- **Known issues route first to roadmap.** Active bugs, risks, blockers, limitations, and current gaps stay in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
 - **Inbox is raw intake, not backlog.** `inbox/` captures owner/collaborator notes before triage; durable plans, ideas, decisions, issues, docs, and system truth move to their canonical lanes.
-- **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, and `CURRENT_STATUS.md`.
+- **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`, and recognized optional root notes such as `TEAM.md`.
 - **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
 - **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md` with TOC links that match real H2 sections and plan/decision/feature links inside each section. Superseded-by pattern (D-020) keeps the parent workstream as the live checklist and demotes the older plan's frontmatter to `status: superseded` while the archive move waits for parent close-out + human verification.
 - **Planning notes open with context.** Obsidian/file title is the note title; plan bodies should not repeat it as a body H1. Start with useful content such as `## Summary`, then put `## Related` near the top for quick navigation.

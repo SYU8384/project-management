@@ -5,6 +5,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, utimesSync } from "node:
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { historyDayRel } from "../scripts/lib/history-paths.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
@@ -40,7 +41,7 @@ function todayHistoryPath(pmFolder) {
   const yyyy = String(now.getFullYear());
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
-  return join(pmFolder, "history", `${yyyy}-${mm}`, `history-${yyyy}-${mm}-${dd}.md`);
+  return join(pmFolder, `${historyDayRel(`${yyyy}-${mm}-${dd}`)}.md`);
 }
 
 test("check-pm-closeout: no matching code_repo means no local PM access", () => {
@@ -123,7 +124,7 @@ test("check-pm-closeout: authoritative project with changed files fails without 
     assert.match(result.stdout, /Project: MissingPM \(code_repo\)/);
     assert.match(result.stdout, /PM close-out required/);
     assert.match(result.stdout, /Current-state PM files updated: none found/);
-    assert.match(result.stdout, /history\/YYYY-MM\/history-YYYY-MM-DD\.md/);
+    assert.match(result.stdout, /history\/YYYY\/<Month>\/history-YYYY-MM-DD\.md/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

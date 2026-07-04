@@ -5,6 +5,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, existsSync
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { historyDayRel } from "../scripts/lib/history-paths.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
@@ -90,9 +91,8 @@ test("sync-agents-section: rewrites a stale PM section, preserves surrounding co
     const yyyy = now.getUTCFullYear();
     const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
     const day = String(now.getUTCDate()).padStart(2, "0");
-    const monthDir = join(pmFolder, "history", `${yyyy}-${mm}`);
-    mkdirSync(monthDir, { recursive: true });
-    const historyFile = join(monthDir, `history-${yyyy}-${mm}-${day}.md`);
+    const historyFile = join(pmFolder, `${historyDayRel(`${yyyy}-${mm}-${day}`)}.md`);
+    mkdirSync(dirname(historyFile), { recursive: true });
     writeFileSync(historyFile, "# Today's history\n");
 
     const cfgPath = writeProjectsJson(dir, {
@@ -180,9 +180,8 @@ test("sync-agents-section: --no-history skips history bullet", () => {
     const yyyy = now.getUTCFullYear();
     const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
     const day = String(now.getUTCDate()).padStart(2, "0");
-    const monthDir = join(pmFolder, "history", `${yyyy}-${mm}`);
-    mkdirSync(monthDir, { recursive: true });
-    const historyFile = join(monthDir, `history-${yyyy}-${mm}-${day}.md`);
+    const historyFile = join(pmFolder, `${historyDayRel(`${yyyy}-${mm}-${day}`)}.md`);
+    mkdirSync(dirname(historyFile), { recursive: true });
     writeFileSync(historyFile, "# Today\n");
 
     const cfgPath = writeProjectsJson(dir, {

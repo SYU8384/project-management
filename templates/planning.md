@@ -43,7 +43,7 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
   - In the older mirror in `roadmap/done-pending.md`, prepend a body line: `**Superseded by [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<parent-slug>|<parent-slug>]]** for new work. This section is kept on disk for history; PENDING bullets roll up to <OMR-id>.`
   - Set the older plan's frontmatter `status: superseded`. Touch `updated` and `last_reviewed`.
   - Do **not** move the older file to `archive/` at supersede time. Archive is the close-out event (parent ships + human verification); see "Archive cascade" below.
-  - **Archive cascade.** When the parent workstream ships and the parent's done-pending mirror is archive-ready, `check-roadmap-conventions.mjs --fix` cascades: the parent and all its superseded dependents whose rolled-up PENDING bullets are closed move to `archive/<slug>-archived.md` together, share a single `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md` entry, and carry `archived: <date>` with their original `status: superseded` preserved.
+  - **Archive cascade.** When the parent workstream ships and the parent's done-pending mirror is archive-ready, `check-roadmap-conventions.mjs --fix` cascades: the parent and all its superseded dependents whose rolled-up PENDING bullets are closed move to `archive/<slug>-archived.md` together, share a single `history/YYYY/<Month>/history-YYYY-MM-DD-archived-sections.md` entry, and carry `archived: <date>` with their original `status: superseded` preserved.
 
 ## Related
 

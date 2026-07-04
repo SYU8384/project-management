@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   ACCESS_VALUES,
+  OPTIONAL_ROOT_NOTES,
   REQUIRED_DIRS,
   expectedPageTypeForPath,
   isFolderNotePath,
@@ -17,6 +18,10 @@ test("required PM lanes are centralized", () => {
   assert.deepEqual(REQUIRED_DIRS, ["roadmap", "roadmap/milestones", "system", "history", "inbox", "archive", "docs", "features"]);
 });
 
+test("optional root notes are centralized", () => {
+  assert.deepEqual(OPTIONAL_ROOT_NOTES, ["TEAM.md"]);
+});
+
 test("folder-note detection handles root and nested indexes", () => {
   assert.equal(isFolderNotePath("Project Management.md", "Project Management"), true);
   assert.equal(isFolderNotePath("docs/Developer Guide/Developer Guide.md", "Project Management"), true);
@@ -28,6 +33,7 @@ test("page type inference follows canonical lanes", () => {
   assert.equal(expectedPageTypeForPath("decisions/D-011_ADR_model.md", "Project Management"), "decision");
   assert.equal(expectedPageTypeForPath("features/validation-and-repair.md", "Project Management"), "feature");
   assert.equal(expectedPageTypeForPath("docs/User Guide/getting-started.md", "Project Management"), "note");
+  assert.equal(expectedPageTypeForPath("TEAM.md", "Project Management"), "note");
   assert.equal(expectedPageTypeForPath("inbox/2026-06-23_NAME_PLACEHOLDER_raw-idea.md", "Project Management"), "note");
   assert.equal(expectedPageTypeForPath("inbox/inbox.md", "Project Management"), "index");
   assert.equal(expectedPageTypeForPath("roadmap/roadmap.md", "Project Management"), "index");
@@ -37,6 +43,7 @@ test("page type inference follows canonical lanes", () => {
 
 test("route table exposes expected lanes for README generation/checking", () => {
   const lanes = routeRows().map(([lane]) => lane);
+  assert.ok(lanes.includes("TEAM.md"));
   assert.ok(lanes.includes("system/"));
   assert.ok(lanes.includes("inbox/"));
   assert.ok(lanes.includes("roadmap/milestones/"));

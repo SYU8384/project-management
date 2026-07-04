@@ -242,11 +242,11 @@ async function scan(filePath) {
 
 /** Tiny YAML-ish frontmatter parser. Handles simple `key: value` lines. */
 function parseFrontmatter(content) {
-  const m = content.match(/^---\n([\s\S]*?)\n---/);
+  const m = content.match(/^\ufeff?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)?/);
   if (!m) return null;
   const block = m[1];
   const out = {};
-  for (const line of block.split("\n")) {
+  for (const line of block.split(/\r?\n/)) {
     const kv = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/);
     if (!kv) continue;
     out[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, "");

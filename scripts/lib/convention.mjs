@@ -124,6 +124,10 @@ export const REQUIRED_ROOT_FILES = Object.freeze([
   "CURRENT_STATUS.md",
 ]);
 
+export const OPTIONAL_ROOT_NOTES = Object.freeze([
+  "TEAM.md",
+]);
+
 export const REQUIRED_ROADMAP_FILES = Object.freeze([
   "roadmap/known-issues.md",
   "roadmap/done-pending.md",
@@ -203,6 +207,7 @@ export function isCanonicalTopLevelLane(name) {
 export function expectedPageTypeForPath(relPath, projectName, existing = null) {
   if (isFolderNotePath(relPath, projectName)) return "index";
   if (["README.md", "PRODUCT.md", "CURRENT_STATUS.md"].includes(relPath)) return "index";
+  if (OPTIONAL_ROOT_NOTES.includes(relPath)) return "note";
   if (relPath === "roadmap/roadmap.md") return "index";
   if (relPath === "roadmap/milestones/milestones.md") return "index";
   if (relPath === "features/features.md") return "index";
@@ -225,6 +230,7 @@ export function isFolderNotePath(relPath, projectName) {
 export function routeRows() {
   return [
     ["PRODUCT.md", "Product vision, target users, current product shape, principles, boundaries, future goals"],
+    ["TEAM.md", "Optional root roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases"],
     ["system/", "Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment"],
     ["docs/User Guide/", "End-user behavior and product reference"],
     ["docs/Admin Guide/", "Live product operations and admin workflows"],

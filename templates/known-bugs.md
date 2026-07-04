@@ -35,7 +35,7 @@ Shape rules: every entry must include the fields listed for its section; the val
 **Root cause:** <Durable cause, not just the symptom.>
 **Solution:** <General fix or diagnostic rule.>
 **Seen in:** <Files, features, jobs, endpoints, or workflows.>
-**References:** [[<ProjectPath>/roadmap/known-issues|known-issues]], [[<ProjectPath>/history/YYYY-MM/history-YYYY-MM-DD|history-YYYY-MM-DD]]
+**References:** [[<ProjectPath>/roadmap/known-issues|known-issues]], [[<ProjectPath>/history/YYYY/<Month>/history-YYYY-MM-DD|history-YYYY-MM-DD]]
 
 ## Active Bugs
 
@@ -57,7 +57,7 @@ Shape rules: every entry must include the fields listed for its section; the val
 **Root cause:** <Why it happened.>
 **Solution:** <What changed.>
 **Verification:** <Tests, commands, manual checks, or production checks.>
-**References:** [[<ProjectPath>/history/YYYY-MM/history-YYYY-MM-DD|history-YYYY-MM-DD]]
+**References:** [[<ProjectPath>/history/YYYY/<Month>/history-YYYY-MM-DD|history-YYYY-MM-DD]]
 
 ## Deferred / Monitoring
 

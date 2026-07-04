@@ -17,6 +17,11 @@ import { parseFrontmatter, markdownStem, wikiLinks } from "./lib/markdown.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { normalizePmFrontmatter } from "./lib/frontmatter-fixers.mjs";
 import { activeMilestoneInfo, phaseFromCurrentStatusContent } from "./lib/milestones.mjs";
+import {
+  isCanonicalHistoryLogRel,
+  isLegacyHistoryLogRel,
+  isLegacyHistoryMonthRel,
+} from "./lib/history-paths.mjs";
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -139,6 +144,8 @@ function isPriorityBearingRel(rel) {
   );
 }
 
+const HISTORY_KINDS = new Set(["changelog", "worklog", "mixed"]);
+
 function runFor(target) {
   const project = target.project ?? basename(target.vault);
   const skipSet = loadPmSkip(target.vault);
@@ -166,6 +173,11 @@ function runFor(target) {
 
   for (const abs of files) {
     const rel = relative(target.vault, abs).split("\\").join("/");
+    if (isLegacyHistoryMonthRel(rel)) {
+      issues.push(
+        `${rel}: legacy history month folders \`history/YYYY-MM/\` are migration-only and invalid for new history logs; run migration \`1.18.0-history-year-month-layout\` to move logs to \`history/YYYY/<Month>/\`.`
+      );
+    }
     let content = readFileSync(abs, "utf8");
     if (CLI.fix) {
       const fixed = normalizePmFrontmatter(content, { rel, project, date: today });
@@ -222,7 +234,7 @@ function runFor(target) {
         } else if (rel.startsWith("system/") && rel !== "system/system.md") {
           msg = `${rel}: missing pageType. Did you mean \`pageType: system\`? (System files live under \`system/<topic>.md\`.)`;
         } else if (rel.startsWith("history/")) {
-          msg = `${rel}: missing pageType. Did you mean \`pageType: history\`? (History logs live under \`history/YYYY-MM/history-YYYY-MM-DD.md\`.)`;
+          msg = `${rel}: missing pageType. Did you mean \`pageType: history\`? (History logs live under \`history/YYYY/<Month>/history-YYYY-MM-DD.md\`; legacy \`history/YYYY-MM/\` is migration-only.)`;
         } else if (rel.startsWith("docs/") && rel !== "docs/docs.md") {
           msg = `${rel}: missing pageType. Did you mean \`pageType: note\`? (Doc files live under \`docs/<Guide>/<topic>.md\`.)`;
         } else if (rel.startsWith("roadmap/") && rel !== "roadmap/roadmap.md") {
@@ -233,8 +245,12 @@ function runFor(target) {
     }
     if (fm.status === "archived") issues.push(`${rel}: status must not be archived; use archived: date`);
     if (fm.pageType === "history") {
-      if (/^history\/\d{4}-\d{2}\/history-\d{4}-\d{2}-\d{2}/.test(rel) && !fm.kind) {
-        issues.push(`${rel}: history log missing kind`);
+      if (isCanonicalHistoryLogRel(rel) || isLegacyHistoryLogRel(rel)) {
+        if (!fm.kind) {
+          issues.push(`${rel}: history log missing kind`);
+        } else if (!HISTORY_KINDS.has(fm.kind)) {
+          issues.push(`${rel}: history kind ${fm.kind} must be changelog, worklog, or mixed`);
+        }
       }
       if (fm.status) issues.push(`${rel}: history file should omit status`);
     } else if (!fm.status) {

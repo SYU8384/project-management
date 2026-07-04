@@ -1,10 +1,10 @@
 import { basename } from "node:path";
 
 export function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^\ufeff?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)?/);
   if (!match) return null;
   const out = {};
-  for (const line of match[1].split("\n")) {
+  for (const line of match[1].split(/\r?\n/)) {
     const kv = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/);
     if (kv) out[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, "");
   }
@@ -12,7 +12,7 @@ export function parseFrontmatter(content) {
 }
 
 export function stripFrontmatter(content) {
-  const match = content.match(/^---\n[\s\S]*?\n---\n?/);
+  const match = content.match(/^\ufeff?---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)?/);
   return match ? content.slice(match[0].length) : content;
 }
 

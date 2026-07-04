@@ -14,6 +14,7 @@ function parseScalarFields(block) {
 function leadingFrontmatterBlocks(content) {
   const blocks = [];
   let offset = 0;
+  if (content[offset] === "\ufeff") offset += 1;
   while (content.slice(offset).startsWith("---\n")) {
     const rest = content.slice(offset + 4);
     const close = rest.indexOf("\n---");
@@ -74,6 +75,8 @@ function defaultStatus(pageType) {
   return "active";
 }
 
+const HISTORY_KINDS = new Set(["changelog", "worklog", "mixed"]);
+
 export function normalizePmFrontmatter(content, { rel, project, date }) {
   const normalized = String(content ?? "").replace(/\r\n/g, "\n");
   const blocks = leadingFrontmatterBlocks(normalized);
@@ -116,6 +119,10 @@ export function normalizePmFrontmatter(content, { rel, project, date }) {
     if (!originalFields.kind) {
       raw = setScalarLine(raw, "kind", "mixed");
       changes.push("added kind");
+      fixedFields.add("kind");
+    } else if (!HISTORY_KINDS.has(originalFields.kind)) {
+      raw = setScalarLine(raw, "kind", "mixed");
+      changes.push(`kind ${originalFields.kind} -> mixed`);
       fixedFields.add("kind");
     }
     if (originalFields.status) {

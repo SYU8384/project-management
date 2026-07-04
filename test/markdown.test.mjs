@@ -6,6 +6,7 @@ import {
   hasH2,
   parseFrontmatter,
   replaceSectionBody,
+  stripFrontmatter,
   wikiLinks,
 } from "../scripts/lib/markdown.mjs";
 
@@ -31,6 +32,32 @@ test("frontmatter parser reads scalar fields", () => {
     pageType: "note",
     status: "active",
   });
+});
+
+test("frontmatter parser reads CRLF scalar fields", () => {
+  const crlfDoc = doc.replace(/\n/g, "\r\n");
+  assert.deepEqual(parseFrontmatter(crlfDoc), {
+    title: "Example",
+    pageType: "note",
+    status: "active",
+  });
+});
+
+test("frontmatter parser reads files with a leading BOM", () => {
+  assert.deepEqual(parseFrontmatter(`\ufeff${doc}`), {
+    title: "Example",
+    pageType: "note",
+    status: "active",
+  });
+});
+
+test("stripFrontmatter removes CRLF frontmatter", () => {
+  const crlfDoc = doc.replace(/\n/g, "\r\n");
+  assert.equal(stripFrontmatter(crlfDoc).startsWith("# Example"), true);
+});
+
+test("stripFrontmatter removes a leading BOM with frontmatter", () => {
+  assert.equal(stripFrontmatter(`\ufeff${doc}`).startsWith("# Example"), true);
 });
 
 test("heading helpers ignore frontmatter", () => {

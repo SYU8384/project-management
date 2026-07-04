@@ -14,6 +14,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { isValidAccess } from "./lib/convention.mjs";
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import { activeMilestoneInfo } from "./lib/milestones.mjs";
+import { historyDayRel } from "./lib/history-paths.mjs";
 
 const USAGE = `Usage: node scripts/check-pm-closeout.mjs [options]
 
@@ -158,7 +159,7 @@ function todayParts() {
   const yyyy = String(now.getFullYear());
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
-  return { yyyy, mm, dd };
+  return { yyyy, mm, dd, date: `${yyyy}-${mm}-${dd}` };
 }
 
 function defaultBaseline() {
@@ -253,8 +254,8 @@ function findPmEvidence(pmFolder, baseline, { projectName = null, configPath = n
   const linkedMilestonesUpdated = linkedMilestones.filter((relPath) =>
     recentlyModified(join(pmFolder, relPath), baseline)
   );
-  const { yyyy, mm, dd } = todayParts();
-  const historyRel = `history/${yyyy}-${mm}/history-${yyyy}-${mm}-${dd}.md`;
+  const { date } = todayParts();
+  const historyRel = `${historyDayRel(date)}.md`;
   const historyUpdated = recentlyModified(join(pmFolder, historyRel), baseline);
   return {
     currentState: modifiedCurrentState,
@@ -308,7 +309,7 @@ function suggestPmLanes(changes) {
       suggestions.add("features/pm-folder-bootstrap.md");
     }
   }
-  suggestions.add("history/YYYY-MM/history-YYYY-MM-DD.md");
+  suggestions.add("history/YYYY/<Month>/history-YYYY-MM-DD.md");
   return [...suggestions];
 }
 

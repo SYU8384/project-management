@@ -6,6 +6,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdtempSync } from "node:fs";
+import {
+  historyDayRel,
+  historyMonthIndexRel,
+  historyYearIndexRel,
+} from "../scripts/lib/history-paths.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
@@ -297,6 +302,13 @@ test("bootstrap creates milestone lane instead of mvp-priorities", () => {
     assert.match(alpha, /Link the specific plan, decision, feature, known issue, or doc inline/);
     const roadmap = readFileSync(join(pm, "roadmap", "roadmap.md"), "utf8");
     assert.match(roadmap, /roadmap\/milestones\/milestones/);
+    assert.equal(existsSync(join(pm, `${historyYearIndexRel("2026-06-20")}.md`)), true);
+    assert.equal(existsSync(join(pm, `${historyMonthIndexRel("2026-06-20")}.md`)), true);
+    assert.equal(existsSync(join(pm, `${historyDayRel("2026-06-20")}.md`)), true);
+    const historyIndex = readFileSync(join(pm, "history", "history.md"), "utf8");
+    assert.match(historyIndex, /Project\/history\/2026\/2026\|2026\//);
+    const yearIndex = readFileSync(join(pm, `${historyYearIndexRel("2026-06-20")}.md`), "utf8");
+    assert.match(yearIndex, /Project\/history\/2026\/June\/June\|June\//);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

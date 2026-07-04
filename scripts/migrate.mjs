@@ -462,7 +462,7 @@ async function main() {
         writeLedger(pmFolder, ledger);
         process.stdout.write(`Recorded ${migration.id} as applied.\n`);
         if (result && Array.isArray(result.suggestedHistory)) {
-          process.stdout.write("\nSuggested history bullet (append to history/<YYYY-MM>/<date>.md):\n");
+          process.stdout.write("\nSuggested history bullet (append to history/YYYY/<Month>/history-YYYY-MM-DD.md):\n");
           for (const line of result.suggestedHistory) process.stdout.write(`  ${line}\n`);
         }
       }

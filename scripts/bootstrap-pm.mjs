@@ -25,6 +25,14 @@ import { findVaultRoot } from "./lib/paths.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
 import { summarizeScaffoldCounts } from "./lib/scaffold-plan.mjs";
+import {
+  historyDateParts,
+  historyDayRel,
+  historyMonthIndexRel,
+  historyMonthRel,
+  historyYearIndexRel,
+  historyYearRel,
+} from "./lib/history-paths.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = dirname(SCRIPT_DIR);
@@ -44,10 +52,13 @@ function usage() {
     [--access authoritative|read-only] \\
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
+    [--team-note skip|placeholder] \\
     [--dry-run] \\
     [--yes] \\
     [--sync]
 
+  --team-note placeholder: create optional root TEAM.md from the template if absent.
+  --team-note skip: default; do not create TEAM.md during bootstrap.
   --sync: re-read projects.json and rewrite the phase/notes lines in
   CURRENT_STATUS.md, PRODUCT.md, and <Project>.md to match. Idempotent.
   Use after editing phase/notes in projects.json so the documents stay
@@ -66,6 +77,7 @@ function parseArgs(argv) {
     access: "authoritative",
     vaultRoot: null,
     date: localDate(),
+    teamNote: "skip",
     dryRun: false,
     yes: false,
     sync: false,
@@ -99,6 +111,7 @@ function parseArgs(argv) {
     else if (arg === "--access") out.access = value;
     else if (arg === "--vault-root") out.vaultRoot = value;
     else if (arg === "--date") out.date = value;
+    else if (arg === "--team-note") out.teamNote = value;
     else {
       console.error(`Unknown argument: ${arg}`);
       usage();
@@ -128,6 +141,10 @@ function parseArgs(argv) {
     console.error(`Invalid --date: ${out.date}. Expected YYYY-MM-DD.`);
     process.exit(2);
   }
+  if (!["skip", "placeholder"].includes(out.teamNote)) {
+    console.error(`Invalid --team-note: ${out.teamNote}. Expected skip or placeholder.`);
+    process.exit(2);
+  }
   return out;
 }
 
@@ -137,10 +154,6 @@ function localDate() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function monthOf(date) {
-  return date.slice(0, 7);
 }
 
 function slugify(value) {
@@ -187,7 +200,14 @@ const configPath = cli.config
 const discoveredVaultRoot = cli.vaultRoot ? resolve(cli.vaultRoot) : findVaultRoot(pmFolder, configPath);
 const vaultRoot = discoveredVaultRoot === pmFolder ? dirname(pmFolder) : discoveredVaultRoot;
 const date = cli.date;
-const month = monthOf(date);
+const historyDate = historyDateParts(date);
+const historyYear = historyDate.year;
+const historyMonthName = historyDate.monthName;
+const historyYearPath = historyYearRel(date);
+const historyYearIndexPath = historyYearIndexRel(date);
+const historyMonthPath = historyMonthRel(date);
+const historyMonthIndexPath = historyMonthIndexRel(date);
+const historyDayPath = historyDayRel(date);
 const notes = cli.notes || `${project} project.`;
 const access = cli.access;
 const linkRoot = projectPathFromVault(vaultRoot, pmFolder);
@@ -548,7 +568,8 @@ function scaffold() {
     "docs/User Guide",
     "features",
     "history",
-    `history/${month}`,
+    historyYearPath,
+    historyMonthPath,
     "inbox",
     "roadmap",
     "roadmap/milestones",
@@ -562,13 +583,22 @@ function scaffold() {
     `${notes}\n\n## Start Here\n\n- [[${linkRoot}/README|README]] - PM folder routing map.\n- [[${linkRoot}/PRODUCT|PRODUCT]] - Product context.\n- [[${linkRoot}/CURRENT_STATUS|CURRENT_STATUS]] - Current snapshot.\n\n${nav([`${linkRoot}/README`, "README"])}`));
 
   writeCreateOnly(join(pmFolder, "README.md"), page(`${project} Project Docs`, "index",
-    `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`inbox/\` | Raw owner/collaborator intake notes before owner triage |\n| \`roadmap/\` | Milestones, known issues, done/pending, ideas, and scoped plans under \`roadmap/plans/\` |\n| \`roadmap/milestones/\` | Agent-maintained phase strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans/decisions/features/issues/docs |\n| \`roadmap/plans/\` | Concrete plans (mirrored into \`roadmap/done-pending.md\` when in flight, with near-top plan-side \`## Related\` backlinks) |\n| \`decisions/\` | Typed decision log (architecture, product, market, vendor, policy, rejection, experiment) |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules
+    `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`TEAM.md\` | Optional root roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`inbox/\` | Raw owner/collaborator intake notes before owner triage |\n| \`roadmap/\` | Milestones, known issues, done/pending, ideas, and scoped plans under \`roadmap/plans/\` |\n| \`roadmap/milestones/\` | Agent-maintained phase strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans/decisions/features/issues/docs |\n| \`roadmap/plans/\` | Concrete plans (mirrored into \`roadmap/done-pending.md\` when in flight, with near-top plan-side \`## Related\` backlinks) |\n| \`decisions/\` | Typed decision log (architecture, product, market, vendor, policy, rejection, experiment) |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules
 
 Update current-state docs first, then history. Review \`CURRENT_STATUS.md\` and the active \`roadmap/milestones/<phase>.md\` note whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, phase, or milestone state change. Keep active/proposed planning notes linked from a near-top \`## Related\` to their exact \`roadmap/done-pending.md#<slug>\` mirror, and do not repeat the filename, slug, or frontmatter title as a body H1. In milestone notes, link specific plans, decisions, features, known issues, or docs inline inside the priority, major step, exit criterion, or deferred item they support; do not maintain a generic \`## Related Notes\` link dump. Create the active milestone note if it is missing. Update folder indexes whenever notes are added, moved, archived, or deleted. After meaningful code work in an authoritative repo, run \`check-pm-closeout.mjs\` if available, or explicitly record the no-impact reason.
 
 > **Tip:** Expand this README using the full template at \`<skill_dir>/templates/README.md\` for additional sections (Folder Structure, Naming Conventions, Update Frequency, Conventions by Page Type).
 
 ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
+
+  if (cli.teamNote === "placeholder") {
+    writeCreateOnly(join(pmFolder, "TEAM.md"), substituteTemplate("TEAM.md", {
+      "<Project>": project,
+      "<project>": projectSlug,
+      "<ProjectPath>": linkRoot,
+      "<YYYY-MM-DD>": date,
+    }));
+  }
 
   writeCreateOnly(join(pmFolder, "PRODUCT.md"), page(`${project} Product`, "index",
     `## Summary\n\n${notes}\n\n## Current Phase\n\n${cli.phase}\n\n## Product Notes\n\nUse this page for product vision, target users, current product shape, principles, boundaries, and future goals.\n\n${rootNav}`));
@@ -636,7 +666,7 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
   writeCreateOnly(join(pmFolder, "history/history.md"), folderNote({
     title: "history",
     intro: "Chronological logs of completed meaningful work.",
-    subfolders: [[`${linkRoot}/history/${month}/${month}`, `${month}/`, "History logs for this month"]],
+    subfolders: [[`${linkRoot}/${historyYearIndexPath}`, `${historyYear}/`, `History logs for ${historyYear}`]],
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`]),
   }));
 
@@ -651,15 +681,22 @@ ${nav([`${linkRoot}/${project}`, `Back to ${project}`])}`));
     navigation: nav([`${linkRoot}/${project}`, `Back to ${project}`], [`${linkRoot}/README`, "README"]),
   }));
 
-  writeCreateOnly(join(pmFolder, `history/${month}/${month}.md`), folderNote({
-    title: month,
-    intro: `History logs for ${month}.`,
-    notes: [[`${linkRoot}/history/${month}/history-${date}`, `history-${date}`, "Initial PM scaffold"]],
+  writeCreateOnly(join(pmFolder, `${historyYearIndexPath}.md`), folderNote({
+    title: historyYear,
+    intro: `History logs for ${historyYear}.`,
+    subfolders: [[`${linkRoot}/${historyMonthIndexPath}`, `${historyMonthName}/`, `History logs for ${historyMonthName} ${historyYear}`]],
     navigation: nav([`${linkRoot}/history/history`, "Back to history"], [`${linkRoot}/${project}`, `Back to ${project}`]),
   }));
 
-  writeCreateOnly(join(pmFolder, `history/${month}/history-${date}.md`), historyPage(`history-${date}`,
-    `- **${project} now has a complete PM folder scaffold.** feat(pm): bootstrap the standard project-management folder structure, indexes, roadmap notes, docs guides, and initial history entry.\n\n${nav([`${linkRoot}/history/${month}/${month}`, `Back to ${month}`], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
+  writeCreateOnly(join(pmFolder, `${historyMonthIndexPath}.md`), folderNote({
+    title: historyMonthName,
+    intro: `History logs for ${historyMonthName} ${historyYear}.`,
+    notes: [[`${linkRoot}/${historyDayPath}`, `history-${date}`, "Initial PM scaffold"]],
+    navigation: nav([`${linkRoot}/${historyYearIndexPath}`, `Back to ${historyYear}`], [`${linkRoot}/history/history`, "Back to history"], [`${linkRoot}/${project}`, `Back to ${project}`]),
+  }));
+
+  writeCreateOnly(join(pmFolder, `${historyDayPath}.md`), historyPage(`history-${date}`,
+    `- **${project} now has a complete PM folder scaffold.** feat(pm): bootstrap the standard project-management folder structure, indexes, roadmap notes, docs guides, and initial history entry.\n\n${nav([`${linkRoot}/${historyMonthIndexPath}`, `Back to ${historyMonthName}`], [`${linkRoot}/${project}`, `Back to ${project}`])}`));
 
   writeCreateOnly(join(pmFolder, "roadmap/plans/plans.md"), folderNote({
     title: "plans",

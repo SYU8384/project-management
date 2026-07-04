@@ -54,6 +54,7 @@ import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import {
   REQUIRED_DIRS,
   OPTIONAL_DIRS,
+  OPTIONAL_ROOT_NOTES,
   REQUIRED_ROOT_FILES,
   REQUIRED_ROADMAP_FILES,
   REQUIRED_INDEX_FILES,
@@ -252,15 +253,17 @@ function checkRequired() {
     }
   }
 
-  // <Project>.md: any single .md at root beyond the four standard ones
+  // <Project>.md: any single .md at root beyond the standard root docs and
+  // recognized optional root notes. Optional notes like TEAM.md must not mask
+  // a missing project landing page.
   const rootMds = listRootMds();
-  const standardRootMds = new Set(["README.md", "PRODUCT.md", "CURRENT_STATUS.md"]);
+  const standardRootMds = new Set([...REQUIRED_ROOT_FILES, ...OPTIONAL_ROOT_NOTES]);
   const projectFile = rootMds.find((f) => !standardRootMds.has(f));
   if (projectFile) {
     findings.project.found = projectFile;
     findings.project.present = true;
   } else {
-    findings.required.missing.push(`file: <Project>.md (one .md at root beyond README/PRODUCT/CURRENT_STATUS)`);
+    findings.required.missing.push(`file: <Project>.md (one .md at root beyond README/PRODUCT/CURRENT_STATUS and optional root notes)`);
   }
 
   for (const file of REQUIRED_ROADMAP_FILES) {

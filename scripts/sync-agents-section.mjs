@@ -21,7 +21,7 @@
  *   - Otherwise, write the new section in place. The script does not
  *     touch any other part of the AGENTS.md.
  *   - Optionally append an outcome-first history bullet to the PM
- *     folder's `history/YYYY-MM/history-YYYY-MM-DD.md` (if the file
+ *     folder's `history/YYYY/<Month>/history-YYYY-MM-DD.md` (if the file
  *     exists). Use `--no-history` to skip this.
  *
  * Flags:
@@ -42,6 +42,7 @@ import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { isValidAccess } from "./lib/convention.mjs";
+import { historyDayRel } from "./lib/history-paths.mjs";
 import { normalizeMarkdownSection } from "./lib/markdown.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
 
@@ -114,12 +115,8 @@ function todayStamp() {
 
 function appendHistoryBullet(pmFolder) {
   if (!pmFolder) return false;
-  const now = new Date();
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(now.getUTCDate()).padStart(2, "0");
-  const monthDir = join(pmFolder, "history", `${yyyy}-${mm}`);
-  const dayFile = join(monthDir, `history-${yyyy}-${mm}-${day}.md`);
+  const date = todayStamp();
+  const dayFile = join(pmFolder, `${historyDayRel(date)}.md`);
   if (!existsSync(dayFile)) return false;   // don't create new history files
   const bullet = `\n- **The code repo PM instructions now match the portable template.** chore(pm): sync AGENTS.md \`## PM folder\` section with the latest portable template (sync-agents-section.mjs).\n`;
   appendFileSync(dayFile, bullet);

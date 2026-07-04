@@ -53,6 +53,12 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { findVaultRoot, resolveProjectsConfigPath } from "./lib/paths.mjs";
 import {
+  historyArchivedSectionsRel,
+  historyDateParts,
+  historyMonthIndexRel,
+  historyYearIndexRel,
+} from "./lib/history-paths.mjs";
+import {
   basenameNoExt,
   normalizeLinkPath,
   parseWikiLinkBody,
@@ -324,8 +330,11 @@ function targetMatchesRel(target, rel) {
   );
 }
 
-function updateIndexNotes(content, { removeRels = [], addRel = null, addDisplay = null, linkOptions = {}, date }) {
-  const markerRe = /(<!--\s*vault-maintain:index:start\s*-->[\s\S]*?^## Notes\s*$\n)([\s\S]*?)(\n<!--\s*vault-maintain:index:end\s*-->)/m;
+function updateIndexSection(content, { section, removeRels = [], addRel = null, addDisplay = null, linkOptions = {}, date }) {
+  const markerRe = new RegExp(
+    `(<!--\\s*vault-maintain:index:start\\s*-->[\\s\\S]*?^## ${escapeRegExp(section)}\\s*$\\n)([\\s\\S]*?)(\\n(?:## |<!--\\s*vault-maintain:index:end\\s*-->))`,
+    "m"
+  );
   const match = content.match(markerRe);
   if (!match) return touchFrontmatter(content, date);
 
@@ -353,6 +362,14 @@ function updateIndexNotes(content, { removeRels = [], addRel = null, addDisplay 
   return touchFrontmatter(updated, date);
 }
 
+function updateIndexNotes(content, options) {
+  return updateIndexSection(content, { ...options, section: "Notes" });
+}
+
+function updateIndexSubfolders(content, options) {
+  return updateIndexSection(content, { ...options, section: "Subfolders" });
+}
+
 function defaultFolderIndex(project, page, body, icon, iconColor, date, linkOptions) {
   return `---\ntitle: "${page}"\ntags:\n  - project-management\ncreated: ${date}\nupdated: ${date}\nlast_reviewed: ${date}\npageType: index\nstatus: active\nowner: PM\nicon: "${icon}"\niconColor: "${iconColor}"\n---\n# ${page}\n\n${body}\n\n<!-- vault-maintain:index:start -->\n## Subfolders\n\n*(no items)*\n\n## Notes\n\n*(no items)*\n<!-- vault-maintain:index:end -->\n\n## Navigation\n\n- ${pmWikiLink(project, `Back to ${project}`, linkOptions)}\n- [[Projects/Projects|Back to Projects]]\n- [[Home|Back to Home]]\n`;
 }
@@ -362,6 +379,18 @@ function ensureIndexLink(filePath, { project, page, body, icon, iconColor, addRe
     ? readFileSync(filePath, "utf8")
     : defaultFolderIndex(project, page, body, icon, iconColor, date, linkOptions);
   const updated = updateIndexNotes(original, { addRel, addDisplay, linkOptions, date });
+  if (updated !== original || !existsSync(filePath)) {
+    mkdirSync(dirname(filePath), { recursive: true });
+    writeFileSync(filePath, updated);
+    process.stdout.write(`fixed: ${relative(process.cwd(), filePath)}\n`);
+  }
+}
+
+function ensureIndexSubfolderLink(filePath, { project, page, body, icon, iconColor, addRel, addDisplay, linkOptions, date }) {
+  const original = existsSync(filePath)
+    ? readFileSync(filePath, "utf8")
+    : defaultFolderIndex(project, page, body, icon, iconColor, date, linkOptions);
+  const updated = updateIndexSubfolders(original, { addRel, addDisplay, linkOptions, date });
   if (updated !== original || !existsSync(filePath)) {
     mkdirSync(dirname(filePath), { recursive: true });
     writeFileSync(filePath, updated);
@@ -379,8 +408,11 @@ function removeIndexLink(filePath, { removeRel, date }) {
   }
 }
 
-function archivedHistoryNote(project, month, date, linkOptions) {
-  return `---\ntitle: history-${date}-archived-sections\naliases: [${project} archived sections ${date}]\ntags:\n  - project-management\n  - history\n  - archive\nkind: mixed\ncreated: ${date}\nupdated: ${date}\nlast_reviewed: ${date}\npageType: history\nicon: "LiCalendar"\niconColor: "#8b5cf6"\nowner: PM\n---\n# history-${date}-archived-sections\n\nCompleted \`roadmap/done-pending.md\` sections archived on ${date}.\n\n## Navigation\n\n- ${pmWikiLink(`history/${month}/${month}`, `Back to ${month}`, linkOptions)}\n- ${pmWikiLink("history/history", "Back to history", linkOptions)}\n- ${pmWikiLink(project, `Back to ${project}`, linkOptions)}\n- [[Projects/Projects|Back to Projects]]\n- [[Home|Back to Home]]\n`;
+function archivedHistoryNote(project, date, linkOptions) {
+  const { year, monthName } = historyDateParts(date);
+  const monthIndexRel = historyMonthIndexRel(date);
+  const yearIndexRel = historyYearIndexRel(date);
+  return `---\ntitle: history-${date}-archived-sections\naliases: [${project} archived sections ${date}]\ntags:\n  - project-management\n  - history\n  - archive\nkind: mixed\ncreated: ${date}\nupdated: ${date}\nlast_reviewed: ${date}\npageType: history\nicon: "LiCalendar"\niconColor: "#8b5cf6"\nowner: PM\n---\n# history-${date}-archived-sections\n\nCompleted \`roadmap/done-pending.md\` sections archived on ${date}.\n\n## Navigation\n\n- ${pmWikiLink(monthIndexRel, `Back to ${monthName}`, linkOptions)}\n- ${pmWikiLink(yearIndexRel, `Back to ${year}`, linkOptions)}\n- ${pmWikiLink("history/history", "Back to history", linkOptions)}\n- ${pmWikiLink(project, `Back to ${project}`, linkOptions)}\n- [[Projects/Projects|Back to Projects]]\n- [[Home|Back to Home]]\n`;
 }
 
 function archivedSectionEntry(item, linkOptions) {
@@ -399,10 +431,10 @@ function archivedSectionEntry(item, linkOptions) {
   ].join("\n");
 }
 
-function appendArchivedSectionHistory(filePath, { project, month, date, item, linkOptions }) {
+function appendArchivedSectionHistory(filePath, { project, date, item, linkOptions }) {
   const original = existsSync(filePath)
     ? readFileSync(filePath, "utf8")
-    : archivedHistoryNote(project, month, date, linkOptions);
+    : archivedHistoryNote(project, date, linkOptions);
   if (new RegExp(`^##\\s+${escapeRegExp(item.heading)}\\s*$`, "m").test(original)) return;
   const navigation = original.match(/^## Navigation\s*$/m);
   const entry = archivedSectionEntry(item, linkOptions);
@@ -515,8 +547,11 @@ function archiveCompletedPlanningMirrors({ target, project, donePendingContent, 
     }
   }
 
-  const month = date.slice(0, 7);
-  const archivedHistoryPath = join(target.vault, "history", month, `history-${date}-archived-sections.md`);
+  const { year, monthName } = historyDateParts(date);
+  const yearIndexRel = historyYearIndexRel(date);
+  const monthIndexRel = historyMonthIndexRel(date);
+  const archivedHistoryRel = historyArchivedSectionsRel(date);
+  const archivedHistoryPath = join(target.vault, `${archivedHistoryRel}.md`);
 
   for (const item of [...ready, ...cascadeItems]) {
     mkdirSync(dirname(item.archivePath), { recursive: true });
@@ -536,14 +571,36 @@ function archiveCompletedPlanningMirrors({ target, project, donePendingContent, 
       linkOptions,
       date,
     });
-    appendArchivedSectionHistory(archivedHistoryPath, { project, month, date, item, linkOptions });
-    ensureIndexLink(join(target.vault, "history", month, `${month}.md`), {
+    appendArchivedSectionHistory(archivedHistoryPath, { project, date, item, linkOptions });
+    ensureIndexSubfolderLink(join(target.vault, "history", "history.md"), {
       project,
-      page: month,
-      body: `History entries for ${month}.`,
+      page: "history",
+      body: "Chronological logs of completed meaningful work.",
       icon: "LiCalendar",
       iconColor: "#8b5cf6",
-      addRel: `history/${month}/history-${date}-archived-sections`,
+      addRel: yearIndexRel,
+      addDisplay: `${year}/`,
+      linkOptions,
+      date,
+    });
+    ensureIndexSubfolderLink(join(target.vault, `${yearIndexRel}.md`), {
+      project,
+      page: year,
+      body: `History entries for ${year}.`,
+      icon: "LiCalendar",
+      iconColor: "#8b5cf6",
+      addRel: monthIndexRel,
+      addDisplay: `${monthName}/`,
+      linkOptions,
+      date,
+    });
+    ensureIndexLink(join(target.vault, `${monthIndexRel}.md`), {
+      project,
+      page: monthName,
+      body: `History entries for ${monthName} ${year}.`,
+      icon: "LiCalendar",
+      iconColor: "#8b5cf6",
+      addRel: archivedHistoryRel,
       addDisplay: `history-${date}-archived-sections`,
       linkOptions,
       date,

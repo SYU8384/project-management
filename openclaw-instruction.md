@@ -156,6 +156,13 @@ Ask for:
    - Owner / maintainer with a real `code_repo`: propose creating or updating `AGENTS.md` automatically unless the user explicitly refuses file edits
    - Collaborator or no-code setup: add/update `AGENTS.md` when useful, or skip when `code_repo` is `null`
 
+5. **TEAM.md setup** (ask only when the context is collaborative)
+   - Create `TEAM.md`
+   - Skip for now
+   - Create placeholder
+
+   Ask this only for owner/maintainer setup that mentions collaborators, read-only collaborator setup, or explicit team, role, access, approval, or inbox-author context. Both create choices map to a placeholder file unless the user provides concrete names or roles.
+
 Ask free-text follow-ups only for missing facts:
 
 - Project name
@@ -163,6 +170,7 @@ Ask free-text follow-ups only for missing facts:
 - PM folder path, unless current working directory was confirmed as the PM folder or the user has no PM access at all
 - Vault root
 - One-line project/product description
+- Concrete people, roles, PM access notes, approval rules, or inbox author aliases, only when the user chose to populate `TEAM.md` now
 - Optional notes
 
 Map role to `access`:
@@ -172,7 +180,7 @@ Map role to `access`:
 
 (Contributors with no PM access at all don't register projects in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.)
 
-If the user chose owner + create new PM folder, ask approval and then run `<skill_dir>/scripts/bootstrap-pm.mjs` with the collected project name, `pm_folder`, `code_repo` (or `null`), phase, notes, vault root, and `<projects_json>` config path. The script registers the project, creates the PM scaffold, and wires the authoritative code repo `AGENTS.md` when `code_repo` is not `null`; empty confirmed PM folders and empty confirmed code repos are valid inputs. If the user chose existing or messy PM folder, register it first, then audit/repair with validation. Ask approval before changing files, but do not treat an empty code repo or empty PM folder as a blocker.
+If the user chose owner + create new PM folder, ask approval and then run `<skill_dir>/scripts/bootstrap-pm.mjs` with the collected project name, `pm_folder`, `code_repo` (or `null`), phase, notes, vault root, `<projects_json>` config path, and `--team-note placeholder` only when the setup intake selected `TEAM.md`. The script registers the project, creates the PM scaffold, and wires the authoritative code repo `AGENTS.md` when `code_repo` is not `null`; empty confirmed PM folders and empty confirmed code repos are valid inputs. If the user chose existing or messy PM folder, register it first, then audit/repair with validation. Ask approval before changing files, but do not treat an empty code repo or empty PM folder as a blocker.
 
 ## 5. If projects.json Already Has Projects
 
@@ -224,11 +232,12 @@ Coding agents still update PM folders after code changes and should run `check-p
 
 Common routes:
 - Raw owner/collaborator intake goes to `inbox/YYYY-MM-DD_<name>_<title>.md`. If no creator name is provided, use `NAME_PLACEHOLDER` in the filename, title/H1, and `author`, then ask the user what name should replace it.
+- Maintainers, collaborators, PM access, approval rules, and inbox author aliases go to optional root `TEAM.md` when the user asks to create a team note, record project people, add collaborators, identify ownership, or set up team/roles.
 - Ideas go to `roadmap/ideas.md`.
 - Active bugs, risks, and blockers go to `roadmap/known-issues.md`.
 - Engineering bug knowledge goes to `docs/Developer Guide/known-bugs.md`.
 - Phase-level priorities go to agent-maintained `roadmap/milestones/` notes, active execution mirrors go to `roadmap/done-pending.md`, active/proposed planning notes link back to their exact done-pending mirror from a near-top `## Related`, and the current top-priority snapshot goes to `CURRENT_STATUS.md`. Planning note bodies should not repeat the filename, slug, or frontmatter title as a body H1; start with useful content such as `## Summary`. Derive the active milestone from `CURRENT_STATUS.md` `## Current Phase` (fallback: `projects.json` phase), create it if missing, and refresh it before history whenever phase, priority, plan, decision, feature, issue, blocker, or risk state changes. In milestone notes, link specific plans, done-pending sections, decisions, feature notes, known issues, or docs inline inside the priority, major step, exit criterion, or deferred item they support; do not maintain a generic `## Related Notes` link dump.
-- Completed meaningful PM work ends with a brief `history/YYYY-MM/history-YYYY-MM-DD.md` entry.
+- Completed meaningful PM work ends with a brief `history/YYYY/<Month>/history-YYYY-MM-DD.md` entry.
 
 Maintainer PR PM backfill:
 - When reviewing or merging a PR, check whether the PR body has a useful `PM folder impact` section.

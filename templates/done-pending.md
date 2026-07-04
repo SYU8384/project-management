@@ -27,7 +27,7 @@ This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 p
 
 Planning-note mirror H2 format: `## <slug>` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a `Planning note:` line linking to the plan, then a DONE/PENDING checklist, then the required human archive-confirmation checkbox, then `Relevant decisions:`, `Relevant features:`, and optional `Relevant system:` / `Relevant docs:` lines. The matching active/proposed plan's near-top `## Related` links back to this exact section and repeats the relevant decision/feature/system/docs links already present here. Do not use `Relevant ADRs:`; decisions are the first-class lane.
 
-Sections that are fully done should be archived to `history/YYYY-MM/history-YYYY-MM-DD-archived-sections.md` only after the user has tested the implemented plan and explicitly approved archiving.
+Sections that are fully done should be archived to `history/YYYY/<Month>/history-YYYY-MM-DD-archived-sections.md` only after the user has tested the implemented plan and explicitly approved archiving.
 
 If a newer planning note absorbs this mirror's scope, the mirror body should be annotated. As the **first body line** after the `Planning note:` line, write:
 

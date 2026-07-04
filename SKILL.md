@@ -17,14 +17,15 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
    - `authoritative`: update the PM folder directly.
    - `read-only`: read the PM folder, then fill the PR body's PM impact section; do not edit the PM folder.
    - no PM access: do not register the project locally; contributor workflow is PR-body-only.
-4. Update current-state docs before history. For code work, check `CURRENT_STATUS.md`, the active `roadmap/milestones/<phase>.md`, `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, then append `history/YYYY-MM/history-YYYY-MM-DD.md`. Refresh `CURRENT_STATUS.md` and the active or explicitly linked milestone whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, or phase/milestone state change.
+4. Update current-state docs before history. For code work, check `CURRENT_STATUS.md`, the active `roadmap/milestones/<phase>.md`, `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, then append `history/YYYY/<Month>/history-YYYY-MM-DD.md`. Refresh `CURRENT_STATUS.md` and the active or explicitly linked milestone whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, or phase/milestone state change.
 5. Before the final response after meaningful code work, run `scripts/check-pm-closeout.mjs` when possible, or explicitly state the no-impact reason. Validate when setup, repair, migration, or structural drift is in scope.
 
 ## Trigger Map
 
 | User says | Do this |
 |---|---|
-| "log this", "record this", "I just finished..." | Read the PM README, update affected current-state docs and indexes, append history. |
+| "log this", "record this", "I just finished..." | Read the PM README, update affected current-state docs and indexes, append history. If the logged item is a known issue, bug, risk, blocker, limitation, or current gap, update `roadmap/known-issues.md` first. |
+| "record/log this known issue", "bug", "risk", "blocker", "limitation", "current gap" | Read the PM README, add or update the canonical `roadmap/known-issues.md` entry, then refresh `CURRENT_STATUS.md`, the active or explicitly linked milestone, affected plans/done-pending mirrors, indexes, and history as needed. |
 | "setup", "setup this repo", "setup PM", "setup as collaborator" | Run setup intake from `REFERENCE.md`; route to bootstrap, repair, or read-only registration. |
 | "initialize/bootstrap/create PM folder" | Run `scripts/bootstrap-pm.mjs` with project, PM folder, code repo/null, phase, notes, access, and config path. |
 | "verify/check/audit setup" | Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` when registered. |
@@ -34,6 +35,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 | "migrate/upgrade PM/clear migration debt" | Use `scripts/migrate.mjs`; name the migration and concrete effects before applying. |
 | "add/fix AGENTS.md PM folder section" | Apply the portable AGENTS template; local `projects.json` access controls runtime behavior. |
 | "sync AGENTS.md / PM section is stale" | Run `node <skill_dir>/scripts/sync-agents-section.mjs --project <name>` (or omit `--project` for all). Re-renders the `## PM folder` span in each code repo's `AGENTS.md` from the latest template; preserves all other AGENTS.md content. |
+| "create a team note", "record project people", "add collaborators", "who owns this project", "setup team/roles" | Create or update optional root `TEAM.md` for maintainers, collaborators, PM access, approval rules, and inbox author aliases. |
 | "summarize this project" | Read README, CURRENT_STATUS, PRODUCT, done-pending, known-issues, and recent history; return one paragraph. |
 | "PR PM impact", "opened/merged/reviewed a PR" | Use Contributor Workflow in `REFERENCE.md`; maintainer agents backfill PM docs when needed. |
 | "big task", "multi-session", or broad architecture/doc redesign | Write or update a planning note before implementation and mirror it in `roadmap/done-pending.md`. |
@@ -46,6 +48,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 - `roadmap/done-pending.md` Contents links point only to actual H2 headings inside the same note. Put planning-note, decision, feature, system, and docs links inside each section, not in the TOC.
 - Cross-note PM wikilinks are vault-relative when `vault_root` is known (for example `[[Projects/Example/roadmap/done-pending|done-pending]]`), never OS-absolute and never hardcoded to a specific user's folder layout. Same-note links stay as `[[#Heading]]`.
 - `inbox/` is raw intake, not backlog. Use it for untriaged owner/collaborator notes only; after owner review, digest durable content into ideas, plans, done-pending, decisions, system, features, docs, or known issues. When the owner digests an inbox note, flip `status` to `processed`, set `resolution` to the routing value (`idea / planning / done-pending / decision / feature / system / docs / known-issue / addressed-directly / no-action / multiple`), and set `destination` to the vault-relative wikilink of the canonical lane — body `Owner Triage` wikilinks alone do not satisfy `check-inbox-conventions.mjs`. If creating an inbox note without a provided creator name, use `NAME_PLACEHOLDER` in the filename, title/H1, and `author`, then ask the user what name should replace it.
+- `TEAM.md` is an optional root roster note, not a contact database. Use it for maintainers, collaborators, PM access, approval rules, and inbox author aliases; keep local-machine setup in `projects.json` and never store private contact details or secrets there.
 - `roadmap/ideas.md` entries need a real `**Summary:**` paragraph in `## Idea Details`; do not leave one-line backlog dumps.
 - Deferred items have one home: ideas if never scoped, the plan's `NOT in scope` section if scoped then deferred, or a `NEG` decision if explicitly rejected.
 - Decisions live in root `decisions/` as `D-NNN_<type>_<slug>.md`, with type `ADR / PRD / MKT / VND / POL / NEG / EXP`.

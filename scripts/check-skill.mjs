@@ -8,11 +8,12 @@
  */
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
   ACCESS_VALUES,
+  OPTIONAL_ROOT_NOTES,
   REQUIRED_DIRS,
   REQUIRED_ROADMAP_FILES,
   REQUIRED_INDEX_FILES,
@@ -22,7 +23,8 @@ import {
 import { finding, renderFindings } from "./lib/findings.mjs";
 import { unresolvedPlaceholders } from "./lib/template-renderer.mjs";
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const MODULE_PATH = fileURLToPath(import.meta.url);
+const SCRIPT_DIR = dirname(MODULE_PATH);
 const SKILL_DIR = dirname(SCRIPT_DIR);
 
 const PUBLIC_DOCS = [
@@ -32,6 +34,7 @@ const PUBLIC_DOCS = [
   "openclaw-instruction.md",
   "templates/AGENTS_PM_SECTION.md",
   "templates/README.md",
+  "templates/TEAM.md",
   "templates/CURRENT_STATUS.md",
   "templates/done-pending.md",
   "templates/feature.md",
@@ -92,6 +95,7 @@ const ALLOWED_PLACEHOLDERS = new Set([
   "<Issue 2>",
   "<Lane>",
   "<milestone>",
+  "<Month>",
   "<NewGuide>",
   "<Priority 1>",
   "<Priority 2>",
@@ -182,6 +186,56 @@ function checkStalePhrases(findings) {
   }
 }
 
+function isMigrationCompatibilityLine(line) {
+  return /\b(legacy|migration|migrate|compatibility|compat)\b/i.test(line);
+}
+
+export function stalePublicHistoryPathLines(content) {
+  return String(content)
+    .split(/\r?\n/)
+    .map((line, index) => ({ line, lineNumber: index + 1 }))
+    .filter(({ line }) => /history\/YYYY-MM(?:\/history-YYYY-MM-DD(?:-archived-sections)?\.md|\/)/.test(line))
+    .filter(({ line }) => !isMigrationCompatibilityLine(line));
+}
+
+function checkHistoryPathDrift(findings) {
+  for (const rel of existingPublicDocs()) {
+    const staleLines = stalePublicHistoryPathLines(read(rel));
+    for (const { lineNumber } of staleLines) {
+      findings.push(finding({
+        code: "stale.history-year-month-path",
+        path: `${rel}:${lineNumber}`,
+        message: "public docs teach the retired history/YYYY-MM path",
+        remedy: "Use history/YYYY/<Month>/history-YYYY-MM-DD.md for new history logs; mention history/YYYY-MM only as explicit migration compatibility.",
+      }));
+    }
+  }
+}
+
+export function hasKnownIssueRouting(content) {
+  const text = String(content).toLowerCase();
+  return text.includes("roadmap/known-issues.md")
+    && /known[- ]issue/.test(text)
+    && /\bbug\b/.test(text)
+    && /\brisk\b/.test(text)
+    && /\bblocker\b/.test(text)
+    && /\blimitation\b/.test(text)
+    && /\bcurrent gap\b/.test(text);
+}
+
+function checkKnownIssueRouting(findings) {
+  for (const rel of ["README.md", "SKILL.md", "REFERENCE.md"]) {
+    if (!hasKnownIssueRouting(read(rel))) {
+      findings.push(finding({
+        code: "docs.known-issue-routing-missing",
+        path: rel,
+        message: "public docs do not explicitly route known issues to roadmap/known-issues.md",
+        remedy: "Document that known issues, bugs, risks, blockers, limitations, and current gaps are logged in roadmap/known-issues.md before current-status, milestones, mirrors, and history.",
+      }));
+    }
+  }
+}
+
 function checkPlaceholders(findings) {
   for (const rel of existingPublicDocs()) {
     for (const placeholder of unresolvedPlaceholders(read(rel))) {
@@ -207,7 +261,7 @@ function checkConventionCoverage(findings) {
       }));
     }
   }
-  for (const rel of [...REQUIRED_DIRS, ...REQUIRED_ROADMAP_FILES, ...REQUIRED_INDEX_FILES]) {
+  for (const rel of [...REQUIRED_DIRS, ...OPTIONAL_ROOT_NOTES, ...REQUIRED_ROADMAP_FILES, ...REQUIRED_INDEX_FILES]) {
     if (!conventionText.includes(`"${rel}"`)) {
       findings.push(finding({
         code: "convention.required-path-missing",
@@ -300,16 +354,25 @@ function checkPortableAgentsTemplate(findings) {
   }
 }
 
-const findings = [];
-checkStalePhrases(findings);
-checkPlaceholders(findings);
-checkConventionCoverage(findings);
-checkReadmeRouteRows(findings);
-checkNoRetiredTemplate(findings);
-checkPortableAgentsTemplate(findings);
+export function runSkillChecks() {
+  const findings = [];
+  checkStalePhrases(findings);
+  checkHistoryPathDrift(findings);
+  checkKnownIssueRouting(findings);
+  checkPlaceholders(findings);
+  checkConventionCoverage(findings);
+  checkReadmeRouteRows(findings);
+  checkNoRetiredTemplate(findings);
+  checkPortableAgentsTemplate(findings);
+  return findings;
+}
 
-console.log(renderFindings("Skill Quality Report", findings, {
-  okMessage: `Checked ${existingPublicDocs().length} public docs and ${walkScripts(join(SKILL_DIR, "scripts")).length} scripts.`,
-}));
+if (process.argv[1] && resolve(process.argv[1]) === MODULE_PATH) {
+  const findings = runSkillChecks();
 
-process.exit(findings.length > 0 ? 1 : 0);
+  console.log(renderFindings("Skill Quality Report", findings, {
+    okMessage: `Checked ${existingPublicDocs().length} public docs and ${walkScripts(join(SKILL_DIR, "scripts")).length} scripts.`,
+  }));
+
+  process.exit(findings.length > 0 ? 1 : 0);
+}

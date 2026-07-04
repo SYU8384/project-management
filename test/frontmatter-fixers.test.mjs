@@ -40,7 +40,7 @@ test("normalizePmFrontmatter collapses duplicate leading frontmatter separated b
 });
 
 test("normalizePmFrontmatter repairs history metadata shape", () => {
-  const input = `---\ntitle: history-2026-06-17\ncreated: 2026-06-17\nupdated: 2026-06-17\nlast_reviewed: 2026-06-17\npageType: history\nstatus: active\n---\n# history\n`;
+  const input = `---\ntitle: history-2026-06-17\ncreated: 2026-06-17\nupdated: 2026-06-17\nlast_reviewed: 2026-06-17\npageType: history\nkind: product\nstatus: active\n---\n# history\n`;
   const result = normalizePmFrontmatter(input, {
     rel: "history/2026-06/history-2026-06-17.md",
     project: "Synapse",
@@ -74,6 +74,24 @@ test("check-pm-consistency --fix clears deterministic missing frontmatter fields
     assert.match(updated, /^title: "architecture"$/m);
     assert.match(updated, /^pageType: system$/m);
     assert.match(updated, /^status: active$/m);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("check-pm-consistency --fix repairs invalid history kind and status", () => {
+  const dir = mkdtempSync(join(tmpdir(), "pm-history-kind-"));
+  try {
+    mkdirSync(join(dir, "history/2026/June"), { recursive: true });
+    writeFileSync(
+      join(dir, "history/2026/June/history-2026-06-20.md"),
+      `---\r\ntitle: history-2026-06-20\r\ncreated: 2026-06-20\r\nupdated: 2026-06-20\r\nlast_reviewed: 2026-06-20\r\npageType: history\r\nkind: product\r\nstatus: active\r\n---\r\n# history\r\n`
+    );
+    const fixed = spawnSync(process.execPath, [CONSISTENCY_SCRIPT, dir, "--fix"], { encoding: "utf8" });
+    assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+    const updated = readFileSync(join(dir, "history/2026/June/history-2026-06-20.md"), "utf8");
+    assert.match(updated, /^kind: mixed$/m);
+    assert.doesNotMatch(updated, /^status:/m);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -35,9 +35,9 @@ Active milestone: [[<ProjectPath>/roadmap/milestones/<milestone>|<milestone>]]
 
 ## Recent Wins
 
-- **<Win 1>** (<Project>/history/<YYYY-MM>/history-YYYY-MM-DD). <one-sentence description>.
-- **<Win 2>** (<Project>/history/<YYYY-MM>/history-YYYY-MM-DD). <one-sentence description>.
-- **<Win 3>** (<Project>/history/<YYYY-MM>/history-YYYY-MM-DD). <one-sentence description>.
+- **<Win 1>** (<Project>/history/YYYY/<Month>/history-YYYY-MM-DD). <one-sentence description>.
+- **<Win 2>** (<Project>/history/YYYY/<Month>/history-YYYY-MM-DD). <one-sentence description>.
+- **<Win 3>** (<Project>/history/YYYY/<Month>/history-YYYY-MM-DD). <one-sentence description>.
 
 ## Major Risks
 

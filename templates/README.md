@@ -32,6 +32,7 @@ owner: PM
 | File / Folder | Scope | What to write there |
 |---|---|---|
 | `PRODUCT.md` | Product | Product vision, target users, core loop, current product shape, principles, boundaries, future goals |
+| `TEAM.md` | Optional people/authority | Maintainers, collaborators, PM access, approval rules, and inbox author aliases |
 | `system/` | Current state | Current architecture, auth, database, runtime, integrations, deployment, behavior |
 | `docs/User Guide/` | End-user docs | User manual, FAQ, and product reference notes |
 | `docs/Admin Guide/` | Admin/operator docs | Live product operations: support, feedback, admin panel workflows, monitoring, statistics, background job runs, access, incident response, production verification, and data repair |
@@ -55,6 +56,7 @@ owner: PM
 ├── <Project>.md (or <ProjectName>.md)
 ├── PRODUCT.md
 ├── README.md
+├── TEAM.md (optional)
 ├── archive/
 │   └── archive.md
 ├── docs/
@@ -73,9 +75,11 @@ owner: PM
 │   └── <feature>.md
 ├── history/
 │   ├── history.md
-│   └── YYYY-MM/
-│       ├── YYYY-MM.md
-│       └── history-YYYY-MM-DD.md
+│   └── YYYY/
+│       ├── YYYY.md
+│       └── Month/
+│           ├── Month.md
+│           └── history-YYYY-MM-DD.md
 ├── inbox/
 │   ├── inbox.md
 │   └── YYYY-MM-DD_<name>_<title>.md
@@ -102,13 +106,14 @@ owner: PM
 
 | What happened | Where to log |
 |---|---|
-| Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/YYYY-MM/history-YYYY-MM-DD.md` |
+| Current behavior, architecture, data flow, runtime, auth, database, integration, or deployment changed | Relevant `system/` doc first, then `history/YYYY/<Month>/history-YYYY-MM-DD.md` |
 | User-facing behavior or UX changed | Relevant `docs/User Guide/`, relevant `system/` doc, affected `features/<feature>.md`, roadmap status if applicable, then `history/` |
 | Admin/operator workflow changed (support, feedback, admin panel, monitoring, statistics, background job run, access, incident response, data repair) | Relevant `docs/Admin Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | Coding-engineer workflow changed (local setup, code structure, API, schema, prompt, test, migration, build, release, job implementation) | Relevant `docs/Developer Guide/`, useful commands in `docs/Quick Commands/`, then `history/` |
 | Engineering bug found, fixed, recurring, or debugged | `roadmap/known-issues.md` for active tracking, `docs/Developer Guide/known-bugs.md` for root cause/solution/verification, then `history/` when fixed |
 | New concrete plan or decision not fully implemented | `roadmap/plans/YYYY-MM-DD_slug.md`, then add/update a matching slug-only section in `roadmap/done-pending.md` and keep the plan's near-top `## Related` linked back to that section |
 | Significant decision made (architecture, product, market, vendor, policy, rejection, experiment) | New `D-NNN_<type>_<slug>.md` in `decisions/` (see `templates/decision.md`) |
+| Maintainers, collaborators, PM access, approval rules, or inbox author aliases need a canonical place | Optional root `TEAM.md`; create it from `templates/TEAM.md` when explicitly requested or selected during collaborative setup |
 | New feature enters design phase (coherent user-facing capability) | Create `features/<feature>.md` (from `templates/feature.md`); link to relevant `system/`, `roadmap/plans/`, and `decisions/` docs |
 | Feature's scope, availability, or known issues changed | Update the matching `features/<feature>.md` (not just the system/ doc it points to) |
 | Raw owner/collaborator idea, request, or discussion note needs capture before triage | `inbox/YYYY-MM-DD_<name>_<title>.md`; use `NAME_PLACEHOLDER` when no creator name is provided |
@@ -133,14 +138,15 @@ Ask before creating root notes, new roadmap notes, new top-level folders, or new
 - Editing existing notes in any lane (system/, docs/, features/, history/, decisions/, roadmap/).
 - Adding notes to existing folders that already have a folder note (e.g., creating a new `system/<topic>.md` if `system/system.md` exists).
 - Adding raw intake notes to `inbox/` using the inbox filename/frontmatter convention.
-- Adding `history/YYYY-MM/history-YYYY-MM-DD.md` entries when `history/YYYY-MM/YYYY-MM.md` already exists.
+- Creating or updating root `TEAM.md` when the user explicitly asks to record team/roles/collaborators or selected it during setup.
+- Adding `history/YYYY/<Month>/history-YYYY-MM-DD.md` entries when the year and month folder notes already exist.
 - Adding notes to optional lanes that already exist (`meetings/`, custom docs categories, etc.).
 - Creating or refreshing the active `roadmap/milestones/<phase>.md` note derived from `CURRENT_STATUS.md` or `projects.json`.
 - Creating migration ledger entries in `.pm/` via the migration runner.
 
 **Ask before:**
 
-- Creating root notes (`<Project>.md`, new entries to root).
+- Creating root notes other than `<Project>.md` and recognized optional root notes such as `TEAM.md`.
 - Creating new roadmap notes outside the standard set (`roadmap/known-issues.md`, `roadmap/ideas.md`, `roadmap/done-pending.md`, and the active milestone note under `roadmap/milestones/`), or inventing future milestone notes from ambiguous prose.
 - Creating a new top-level folder under the project root.
 - Creating a new docs guide category (`docs/<NewGuide>/`).
@@ -163,9 +169,9 @@ For the full permission policy matrix, see `REFERENCE.md` → "Permission Policy
 | Docs guide folders | Title Case category labels | `Admin Guide/`, `Quick Commands/` |
 | Folder notes | exactly match the folder name | `Admin Guide/Admin Guide.md`, `history/history.md` |
 | Content notes | neutral lowercase kebab-case slug, no numeric prefix | `architecture.md`, `background-jobs.md` |
-| Root canonical docs | uppercase special files | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md` |
+| Root canonical docs | uppercase special files | `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`, optional `TEAM.md` |
 | Docs guide notes | neutral lowercase kebab-case slug, no numeric prefix | `user-manual.md`, `cloudflare-tunnel.md` |
-| Date-stamped logs | `YYYY-MM/history-YYYY-MM-DD.md` (organized by year-month) | `2026-06/history-2026-06-04.md` |
+| Date-stamped logs | `YYYY/<Month>/history-YYYY-MM-DD.md` (organized by year and English month) | `2026/June/history-2026-06-04.md` |
 | Planning notes | `YYYY-MM-DD_slug.md` (date prefix) | `2026-05-24_<planning-slug>.md` |
 | Decisions | `D-NNN_<type>_<slug>.md` (numbered globally, typed) | `D-001_ADR_tauri-opencode.md` |
 | Meeting records | `YYYY-MM-DD_<topic-slug>.md` (optional lane) | `2026-06-10_openclaw-pm-onboarding.md` |
@@ -178,17 +184,18 @@ For the full permission policy matrix, see `REFERENCE.md` → "Permission Policy
 - `docs/`: update in the same session as user/admin/developer workflow changes. `docs/Developer Guide/known-bugs.md` is required and tracks engineering bug knowledge, active or fixed.
 - `roadmap/`: update when pending/done/known issue status changes or a new idea enters the backlog.
 - `inbox/`: create raw notes on request before triage; update note frontmatter when the owner processes or rejects the note.
+- `TEAM.md` (optional root): update when maintainers, collaborators, PM access, approval rules, or inbox author aliases change. Keep private contact details and secrets out.
 - `roadmap/milestones/`: agents create and refresh the active milestone note before history whenever phase, priority, plan, done-pending mirror, decision, feature, known issue, blocker, or risk state changes. If no prose changes after review, refresh `updated` and `last_reviewed`.
 - `roadmap/plans/`: update when a plan or implementation strategy is created or revised before fully shipped.
 - `decisions/`: add a new typed decision (`ADR / PRD / MKT / VND / POL / NEG / EXP`) when a significant decision is made. Update existing decisions only via `supersedes:` chains — do not edit an `accepted` decision's body to re-litigate it.
 - `features/`: update when a feature's current behavior, known issues, or roadmap changes.
-- `history/`: update last with outcome-first bullets after meaningful work is finished. Each bullet starts with a bold human-readable sentence, then includes a concise conventional type/scope token and implementation detail. New month folders must include `YYYY-MM/YYYY-MM.md` and be linked from `history/history.md`.
+- `history/`: update last with outcome-first bullets after meaningful work is finished. Each bullet starts with a bold human-readable sentence, then includes a concise conventional type/scope token and implementation detail. New year/month folders must include `YYYY/YYYY.md` and `YYYY/<Month>/<Month>.md`, with the year linked from `history/history.md` and the month linked from the year index. Legacy `history/YYYY-MM/` folders are migration input only; normal validation fails them and points to migration `1.18.0-history-year-month-layout`.
 - `CURRENT_STATUS.md` (at root): update with the current snapshot — top priorities, blocked, recent wins, major risks, stale docs. PM agent maintains it and refreshes it before history whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, phase, or milestone state change.
 - `README.md`: update when folder structure, live routing, link hygiene, secret-handling rules, or logging rules change.
 
 ## Conventions by Page Type
 
-Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `roadmap/plans/plans.md`, `decisions/decisions.md`, `features/features.md`, `history/2026-06/2026-06.md`) follow the universal shape in `templates/folder-note.md` and may include a `## Conventions` block stating the rules that apply to that lane inline.
+Quick reference for how each page type is written. Detailed body shape lives in the per-type page template (see `templates/`). Folder notes (e.g., `roadmap/plans/plans.md`, `decisions/decisions.md`, `features/features.md`, `history/2026/June/June.md`) follow the universal shape in `templates/folder-note.md` and may include a `## Conventions` block stating the rules that apply to that lane inline.
 
 ### Docs guide notes (`docs/<Guide>/<slug>.md`)
 

@@ -149,7 +149,10 @@ if (fixRequested) {
   console.log("\n========================================");
   console.log("# Phase 2: Validator auto-fix");
   console.log("========================================");
-  allFailures.push(...runChecks("Phase 2: Validator auto-fix", REGISTRY, ["--fix"]));
+  const fixFailures = runChecks("Phase 2: Validator auto-fix", REGISTRY, ["--fix"]);
+  if (fixFailures.length > 0) {
+    console.log("\n# Auto-fix findings detected; continuing to migrations and final re-validation.\n");
+  }
 
   console.log("\n========================================");
   console.log("# Phase 3: Pending migrations");
