@@ -25,6 +25,12 @@ related:
 
 <!-- Replace every source_of_truth, roadmap_source, related, and body reference with a link to an existing note. Do not leave stale paths or retired lane names. -->
 
+## Supersession Review
+
+- **Reviewed:** active/proposed `roadmap/plans/`, `roadmap/done-pending.md`, accepted/active `decisions/`, relevant `features/`, and relevant `system/` docs.
+- **Outcome:** <supersedes [[<ProjectPath>/features/<old-feature>|<old-feature>]] / related-not-superseded: [[<ProjectPath>/features/<related-feature>|<related-feature>]] / none found>.
+- **Action:** <if replacing another feature page, mark the older feature `status: deprecated` and add `Replaced by: [[<ProjectPath>/features/<feature>|<feature>]]`; otherwise state no lifecycle change>.
+
 ## Status
 
 **<Status (alpha | beta | stable | deprecated)>.** <one-paragraph description of the feature's current state — what works, what's rough, what's missing>.

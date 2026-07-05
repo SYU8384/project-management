@@ -7,14 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-07-05
+
 ### Added
 
 - Static repo-shape test coverage to prevent live PM decision records (`decisions/D-*.md`) from being reintroduced at the skill repo root.
+- `scripts/check-supersession-conventions.mjs`: validates explicitly declared supersession links across planning notes, decisions, and feature pages. `--fix` only applies deterministic decision status flips when a newer decision declares `supersedes: D-NNN`.
+- `scripts/migrations/1.19.0-supersession-review-guidance.mjs`: refreshes live PM folder guide notes with the new plan/decision/feature supersession-review rule without rewriting user-authored artifact bodies.
 
 ### Changed
 
 - README Quick Start: clarified the three install paths as OpenClaw PM agent, coding agent on macOS/Linux/WSL/Git Bash, and coding agent on native Windows PowerShell. Path B is now explicitly POSIX-shell-only, Path C lists valid PowerShell targets, and downstream trigger/versioning text no longer implies bash is the only installer.
 - `openclaw-instruction.md`: install/update guidance is now OS-aware, with bash commands for macOS/Linux/WSL/Git Bash and native PowerShell commands for Windows OpenClaw installs, including `-Target openclaw` and custom `-Dest` examples.
+- PM authoring templates and guidance now require `## Supersession Review` for durable planning notes, decisions, and feature pages, recording `supersedes`, `related-not-superseded`, or `none found`.
 
 ### Removed
 

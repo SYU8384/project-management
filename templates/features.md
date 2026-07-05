@@ -31,6 +31,7 @@ Curated per-feature pages. Each feature page is a single index that points into 
 - **One feature per page.** A "feature" is a coherent user-facing capability (chat, memory, email) or a coherent technical pillar (runtime, isolation).
 - **Body sections:** Status (alpha/beta/stable/deprecated), Current Behavior, Known Issues, Roadmap, Relevant Decisions, Source of Truth.
 - **Frontmatter fields:** `pageType: feature`, `status` (alpha/beta/stable/deprecated), `owner`, `source_of_truth` (path to the system/ doc that is canonical for this feature), `roadmap_source` (path to the relevant roadmap section).
+- **Supersession review:** before creating or materially changing a feature page, check related feature pages, accepted/active decisions, active/proposed plans, `roadmap/done-pending.md`, and the source-of-truth `system/` docs. If a new feature replaces an older feature page, mark the older page `status: deprecated` and link the replacement.
 - **Don't duplicate content.** Feature pages *point* to system/, `roadmap/plans/`, and `decisions/`; they don't *replace* them. If a system/ doc changes, the feature page's `source_of_truth` link is still valid; no edit needed unless the feature itself changes.
 
 ## When to add a feature page

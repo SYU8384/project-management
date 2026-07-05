@@ -22,10 +22,16 @@ supersedes: <D-id>
 
 ## Status
 
-> **Note:** `decision_date` and `supersedes` are convention-only frontmatter fields not enforced by validators.
+> **Note:** `decision_date` is convention-only frontmatter. `supersedes` is validated when present.
 
 **Proposed** | **Accepted** | **Active** (accepted and being rolled out) | **Superseded by D-MMM** (<YYYY-MM-DD>) | **Deprecated** (<YYYY-MM-DD>).
 When this decision supersedes another, set `supersedes: <D-id>` in this file's frontmatter and move the prior decision's `status` to `superseded` with the date recorded here. `active` is allowed but should be temporary — a decision lingering in `active` past the underlying work is a smell; either it's `accepted` or it should be re-evaluated.
+
+## Supersession Review
+
+- **Reviewed:** active/proposed `roadmap/plans/`, `roadmap/done-pending.md`, accepted/active `decisions/`, relevant `features/`, and relevant `system/` docs.
+- **Outcome:** <supersedes D-NNN / related-not-superseded: [[<ProjectPath>/decisions/D-NNN_<type>_slug|D-NNN <title>]] / none found>.
+- **Action:** <if superseding, set `supersedes: D-NNN` above and move the prior decision to `status: superseded`; otherwise state no lifecycle change>.
 
 ## Context
 

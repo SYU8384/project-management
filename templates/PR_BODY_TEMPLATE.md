@@ -32,6 +32,7 @@ User/Admin/Developer docs affected:
 Features affected:
 - [ ] features/<feature>.md — Current Behavior, Known Issues, or Roadmap updated
 - [ ] features/features.md — new feature page added to index (if applicable)
+- [ ] Feature supersession checked — older replaced feature pages marked `status: deprecated`, or related-not-superseded/no predecessor recorded
 
 Inbox affected:
 - [ ] inbox/YYYY-MM-DD_<name>_<title>.md — raw intake note added, processed, or rejected: ...
@@ -47,11 +48,12 @@ History entries needed:
 Planning notes affected:
 - [ ] roadmap/plans/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL
 - [ ] roadmap/plans/<date>_slug.md — no redundant body H1; near-top `## Related` links exact done-pending mirror and copied relevant decision/feature/system/docs links
+- [ ] roadmap/plans/<date>_slug.md — `## Supersession Review` records supersedes | related-not-superseded | none found
 - [ ] roadmap/plans/<date>_slug.md → move to archive/ if fully shipped: ...
 
 Decisions affected:
 - [ ] New decision if significant: decisions/D-NNN_<type>_<slug>.md. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment)
-- [ ] Existing decision if assumption changed: decisions/D-NNN_<type>_<slug>.md (write a superseding decision; do not edit the accepted body)
+- [ ] Existing decision if assumption changed: decisions/D-NNN_<type>_<slug>.md (write a superseding decision with `supersedes: D-NNN`; do not edit the accepted body)
 
 Folder indexes affected:
 - [ ] <folder>/<folder>.md — note added, moved, renamed, archived, or deleted: ...

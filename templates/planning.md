@@ -38,6 +38,7 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
 - **Owner:** typically `PM`. Use `Platform team` or `Operator` for plans owned by another team.
 - **Cross-link:** when a planning note is approved, add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the date-prefixed planning note link and required human archive-confirmation checkbox. Active/proposed planning notes also keep a near-top `## Related` linked back to `Done-pending mirror: [[<ProjectPath>/roadmap/done-pending#<slug>|done-pending#<slug>]]` and repeat relevant decision/feature/system/docs links already present in that mirror. When it ships and the user approves archival, mark the confirmation checkbox done, distill durable current truth into `system/`, and archive the file.
 - **Decisions cited, not duplicated:** if the plan records a significant decision, write a typed `decisions/D-NNN_<type>_<slug>.md` and link it from the plan's Related section. Do not restate the decision's reasoning in the plan.
+- **Supersession review:** before filing a new planning note, search active/proposed `roadmap/plans/`, `roadmap/done-pending.md`, accepted/active `decisions/`, relevant `features/`, and relevant `system/` docs. Add `## Supersession Review` near the top with `supersedes`, `related-not-superseded`, or `none found`.
 - **Superseded-by pattern (D-020).** A newer planning note that absorbs an older planning note's scope is a *parent workstream*. When filed:
   - Add the older plan to the parent's `## Related` with the annotation `(superseded-by: this plan; covered by <OMR-id>)`.
   - In the older mirror in `roadmap/done-pending.md`, prepend a body line: `**Superseded by [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<parent-slug>|<parent-slug>]]** for new work. This section is kept on disk for history; PENDING bullets roll up to <OMR-id>.`
@@ -48,6 +49,7 @@ Concrete plans, implementation strategies, and design approaches for <Project> f
 ## Related
 
 <!-- Add the done-pending mirror plus related decisions, system docs, and feature pages here, one per line:
+- Supersession review outcome: <supersedes / related-not-superseded / none found>
 - Done-pending mirror: [[<ProjectPath>/roadmap/done-pending#<slug>|done-pending#<slug>]]
 - [[<ProjectPath>/decisions/D-NNN_<type>_slug|D-NNN <title>]] — decision made in the course of this plan
 - [[<ProjectPath>/system/<topic>|<topic>]] — system doc that implements this plan
