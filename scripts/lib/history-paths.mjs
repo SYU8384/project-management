@@ -91,3 +91,43 @@ export function isLegacyHistoryLogRel(relPath) {
   const normalized = String(relPath).replaceAll("\\", "/");
   return /^history\/\d{4}-\d{2}\/history-\d{4}-\d{2}-\d{2}(?:-archived-sections)?\.md$/.test(normalized);
 }
+
+export function isMigrationCompatibilityLine(line) {
+  return /\b(legacy|migration|migrate|compatibility|compat|retired|invalid)\b/i.test(String(line));
+}
+
+export function staleHistoryGuidanceLines(content) {
+  return String(content)
+    .split(/\r?\n/)
+    .map((line, index) => ({ line, lineNumber: index + 1 }))
+    .filter(({ line }) =>
+      /(?:history\/)?YYYY-MM\/history-YYYY-MM-DD(?:-archived-sections)?\.md|history\/YYYY-MM\//.test(line)
+    )
+    .filter(({ line }) => !isMigrationCompatibilityLine(line));
+}
+
+export function rewriteStaleHistoryGuidance(content) {
+  const original = String(content);
+  const eol = original.includes("\r\n") ? "\r\n" : "\n";
+  const normalized = original.replace(/\r\n/g, "\n");
+  const withCanonicalTree = normalized.replace(
+    /^(\s*[│ ]*└── )YYYY-MM\/\n(\s*[│ ]*└── )history-YYYY-MM-DD\.md$/gm,
+    (_, folderPrefix, filePrefix) => {
+      const childPrefix = filePrefix.replace(/└── $/, "");
+      return `${folderPrefix}YYYY/\n${childPrefix}├── YYYY.md\n${childPrefix}└── <Month>/\n${childPrefix}    ├── <Month>.md\n${childPrefix}    └── history-YYYY-MM-DD.md`;
+    }
+  );
+
+  const rewritten = withCanonicalTree
+    .split("\n")
+    .map((line) => {
+      if (isMigrationCompatibilityLine(line)) return line;
+      return line
+        .replaceAll("history/YYYY-MM/", "history/YYYY/<Month>/")
+        .replaceAll("YYYY-MM/history-YYYY-MM-DD-archived-sections.md", "YYYY/<Month>/history-YYYY-MM-DD-archived-sections.md")
+        .replaceAll("YYYY-MM/history-YYYY-MM-DD.md", "YYYY/<Month>/history-YYYY-MM-DD.md");
+    })
+    .join("\n");
+  if (rewritten === normalized) return original;
+  return eol === "\r\n" ? rewritten.replace(/\n/g, "\r\n") : rewritten;
+}

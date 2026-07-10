@@ -202,6 +202,7 @@ const findings = {
   system: { hasSystemMd: false, hasAnySystemDoc: false },
   optional: { missing: [], present: [] },
   unappliedMigrations: [],
+  appliedMigrationDrift: [],
   folderNames: { violations: [] },
   folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [], selfLinkViolations: [], bodyBloat: [], docsGuideBloat: [] },
   unexpectedFolders: [],
@@ -337,13 +338,9 @@ async function checkMigrations() {
     return;
   }
   if (!registry || !Array.isArray(registry.default)) return;
-  // The migration runner consults `.pm/migrations.json` to skip
-  // already-applied migrations. Mirror that here so the report only
-  // surfaces migrations whose `detect()` returns true AND whose
-  // id is not in the ledger — i.e., "this project's PM folder has
-  // content that would change if the migration ran." Already-applied
-  // migrations whose `detect()` is conservative (returns true even
-  // when the work is done) are not "debt" and should not appear.
+  // Applied migrations are normally suppressed because some detectors are
+  // intentionally conservative. Migrations that opt into reconcileOnDrift
+  // are safe to re-detect and must surface post-ledger regressions.
   const applied = loadAppliedMigrationIds(vaultRoot);
   for (const spec of registry.default) {
     const filePath = join(scriptDir(), "migrations", spec);
@@ -355,7 +352,8 @@ async function checkMigrations() {
     }
     const m = mod && mod.default;
     if (!m || typeof m.detect !== "function") continue;
-    if (applied.has(m.id)) continue;
+    const isApplied = applied.has(m.id);
+    if (isApplied && m.reconcileOnDrift !== true) continue;
     let needed;
     try {
       needed = await m.detect({ pmFolder: vaultRoot });
@@ -365,10 +363,16 @@ async function checkMigrations() {
     if (!needed) continue;
     const describe = typeof m.describe === "string" ? m.describe : "";
     const firstLine = describe.split("\n")[0].trim();
-    const runHint = `Run \`node ${skillDir}/scripts/migrate.mjs --pm-folder ${vaultRoot}\` (or pass --project <name> --config <configPath> if applicable) to apply it. If the migration is already in the project's ledger, pass --force to bypass the ledger and re-run.`;
-    findings.unappliedMigrations.push(
-      `Migration \`${m.id}\` is unapplied. ${runHint} ${firstLine}`
-    );
+    if (isApplied) {
+      findings.appliedMigrationDrift.push(
+        `Migration \`${m.id}\` is recorded as applied but matching drift has reappeared. Run \`check-pm.mjs --fix\` to repair it. ${firstLine}`
+      );
+    } else {
+      const runHint = `Run \`node ${skillDir}/scripts/migrate.mjs --pm-folder ${vaultRoot}\` (or pass --project <name> --config <configPath> if applicable) to apply it.`;
+      findings.unappliedMigrations.push(
+        `Migration \`${m.id}\` is unapplied. ${runHint} ${firstLine}`
+      );
+    }
   }
 }
 
@@ -708,11 +712,22 @@ function emit() {
   }
 
   if (findings.unappliedMigrations.length > 0) {
-    lines.push("## Migration Debt");
+    lines.push("## Pending Migration Debt");
     lines.push("");
-    lines.push("These registered migrations have content on disk that would change if the migration ran, and the migration is not in this project's `.pm/migrations.json` ledger. If the migration is already in the ledger but you want to re-run it (e.g., a `detect()` pattern was extended in a later skill release), pass `--force` to `migrate.mjs`.");
+    lines.push("These registered migrations still match content on disk and are not recorded in this project's `.pm/migrations.json` ledger.");
     lines.push("");
     for (const m of findings.unappliedMigrations) {
+      lines.push(`- ${m}`);
+      lines.push("");
+    }
+  }
+
+  if (findings.appliedMigrationDrift.length > 0) {
+    lines.push("## Applied Migration Drift");
+    lines.push("");
+    lines.push("These migrations explicitly support deterministic recurring repair and detected drift after their ledger entry was recorded.");
+    lines.push("");
+    for (const m of findings.appliedMigrationDrift) {
       lines.push(`- ${m}`);
       lines.push("");
     }
@@ -909,7 +924,9 @@ function issueTotal() {
     + findingsRef.unexpectedFolders.length
     + findingsRef.docsNames.violations.length
     + findingsRef.historyNames.violations.length
-    + findingsRef.roadmapShape.violations.length;
+    + findingsRef.roadmapShape.violations.length
+    + findingsRef.unappliedMigrations.length
+    + findingsRef.appliedMigrationDrift.length;
 }
 
 async function runFor(target) {
@@ -924,6 +941,7 @@ async function runFor(target) {
   findings.system = { hasSystemMd: false, hasAnySystemDoc: false };
   findings.optional = { missing: [], present: [] };
   findings.unappliedMigrations = [];
+  findings.appliedMigrationDrift = [];
   findings.folderNames = { violations: [] };
   findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [], selfLinkViolations: [], bodyBloat: [], docsGuideBloat: [] };
   findings.unexpectedFolders = [];

@@ -69,7 +69,7 @@ Use `reconcile this project` for one resolved/current project. Use `reconcile al
 node <skill_dir>/scripts/check-pm.mjs --config ~/.config/project-management/projects.json --fix
 ```
 
-All-project reconcile applies deterministic validator fixes, pending migrations, stale registered repo `AGENTS.md` repairs, then re-validates. Deterministic fixes include metadata/date/history shape, roadmap/link drift, known-bugs section/status placement, and registered AGENTS sections. `TBD` prose fields and ambiguous links remain manual review. `sync-agents-section.mjs` remains the targeted AGENTS-only tool; full reconcile should use `check-pm.mjs --fix`.
+All-project reconcile applies deterministic validator fixes, pending migrations, explicitly opted-in applied-migration drift repairs, stale registered repo `AGENTS.md` repairs, then re-validates. Deterministic fixes include metadata/date/history shape, roadmap/link drift, known-bugs section/status placement, and registered AGENTS sections. `TBD` prose fields and ambiguous links remain manual review. `sync-agents-section.mjs` remains the targeted AGENTS-only tool; full reconcile should use `check-pm.mjs --fix`.
 
 For changes to the skill repository itself, also run:
 
@@ -248,20 +248,27 @@ Ledger shape:
 ### Authoring a new migration
 
 1. Create `scripts/migrations/<id>.mjs`. Pick `<id>` as `<version>-<slug>` (e.g. `1.1.0-decision-type-required`).
-2. Export `{ id, from, to, describe, detect, plan?, apply }`. Make `detect()` safe to call multiple times; make `apply()` idempotent (the runner does not guarantee single-call semantics).
+2. Export `{ id, from, to, describe, detect, plan?, apply, reconcileOnDrift? }`. Make `detect()` safe to call multiple times; make `apply()` idempotent. Set `reconcileOnDrift: true` only when post-ledger drift can be detected and repaired deterministically without inventing or overwriting ambiguous human content.
 3. Add `"<id>.mjs"` to the array in `scripts/migrations/_index.mjs`.
 4. Add a `CHANGELOG.md` entry under the version that introduces the change.
 5. Update `REFERENCE.md` if the migration changes the lane shape in a way that other docs need to reflect.
 
 ### Agent behavior on detection
 
-The validator (`check-vault-structure.mjs`) reads the same registry and emits a `## Migration Debt` section when a registered migration's `detect()` returns true **and the migration is not in the project's applied-migrations ledger** (`.pm/migrations.json`). The ledger-aware check prevents already-applied migrations from being reported as debt when their conservative `detect()` patterns still match content on disk. When the agent (the LLM running the skill) sees this section in its validator output, it should:
+The validator (`check-vault-structure.mjs`) reads the same registry and distinguishes two cases:
+
+- `## Pending Migration Debt` — `detect()` returns true and the migration is absent from `.pm/migrations.json`.
+- `## Applied Migration Drift` — the migration is recorded, declares `reconcileOnDrift: true`, and its detector finds new drift. Conservative one-shot migrations remain suppressed after ledger application.
+
+Both cases fail report-only validation. An explicitly requested reconcile automatically repairs the second case and preserves the existing ledger row. When an agent sees pending migration debt outside a reconcile request, it should:
 
 1. **Scope the ask to the project the user is currently working on.** Do not surface migration debt on unrelated projects during unrelated work.
 2. **Name the specific migration id.** Not "want to migrate?" — "Migration `1.0.0-lane-restructure` is unapplied for project *X*. It would: move `planning/` to `roadmap/plans/`, …" with the concrete list of effects.
 3. **Ask once per session.** If the user declines, suppress re-asks for the rest of the session. Do not nag.
 4. **Run on approval.** On user "yes," run `node <skill_dir>/scripts/migrate.mjs --project <name> --yes`. Report the script's output verbatim and suggest the history bullet the script prints.
 5. **Do not auto-migrate.** Migration is structurally different from "log this." Migration restructures existing files; logging is append-only. Even in `access: authoritative` projects, the user must approve.
+
+An explicit `reconcile this project` / `reconcile all projects` request is approval for registered deterministic fix phases, including opted-in applied-drift repairs. It is not approval to force arbitrary one-shot migrations.
 
 ### Registered migrations (v1.0.0)
 

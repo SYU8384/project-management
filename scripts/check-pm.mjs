@@ -10,15 +10,14 @@
  * With `--fix`, runs the full reconcile workflow:
  *   Phase 1: validators (report-only baseline; failures do not determine final exit)
  *   Phase 2: validator --fix (auto-create missing folder notes, repair deterministic metadata/content drift, repair AGENTS.md PM sections)
- *   Phase 3: pending migrations (from registry, idempotent, reads ledger)
+ *   Phase 3: pending migrations plus explicitly opted-in applied-drift repair
  *   Phase 4: validators (final report; residual failures determine final exit)
  *
  * The orchestrator passes target args through to focused validators. During
  * Phase 3, a config-only all-project reconcile expands into focused per-project
  * migration invocations. `--dry-run` is honored at Phase 3 (migrations report
- * what they'd do, don't apply). `--force` is passed to migrations so
- * ledger-blocked re-applies work (e.g., v1.0.2 re-run after v1.2.0
- * detection-pattern extension).
+ * what they'd do, don't apply). `--force` is passed only when the caller
+ * requested it or a migration declares `reconcileOnDrift: true`.
  */
 
 import { spawnSync } from "node:child_process";
@@ -77,7 +76,7 @@ function runChecks(phaseLabel, checks, extraArgs = []) {
   return failures;
 }
 
-function findUnappliedMigrations() {
+function findRegisteredMigrations() {
   const listResult = spawnSync(
     process.execPath,
     [join(SCRIPT_DIR, "migrate.mjs"), "--list", "--json"],
@@ -92,12 +91,15 @@ function findUnappliedMigrations() {
   }
   if (!Array.isArray(registry)) return [];
 
-  return registry.map((m) => m.id);
+  return registry.map((m) => ({
+    id: m.id,
+    reconcileOnDrift: m.reconcileOnDrift === true,
+  }));
 }
 
 function runMigrations() {
-  const migrationIds = findUnappliedMigrations();
-  if (migrationIds.length === 0) {
+  const migrations = findRegisteredMigrations();
+  if (migrations.length === 0) {
     console.log("\n## Migrations\n\nNo unapplied migrations found.\n");
     return [];
   }
@@ -107,27 +109,27 @@ function runMigrations() {
     return [];
   }
   console.log(
-    `\n## Migrations (${migrationIds.length} registered; ${migrationTargets.length} target${migrationTargets.length === 1 ? "" : "s"})\n`
+    `\n## Migrations (${migrations.length} registered; ${migrationTargets.length} target${migrationTargets.length === 1 ? "" : "s"})\n`
   );
   const failures = [];
 
   for (const target of migrationTargets) {
     console.log(`\n## Migration target: ${target.label}\n`);
-    for (const id of migrationIds) {
-      console.log(`\n### Migration ${id}\n`);
+    for (const migration of migrations) {
+      console.log(`\n### Migration ${migration.id}\n`);
       const result = runChild(
         join(SCRIPT_DIR, "migrate.mjs"),
-        buildMigrationArgs(id, target.args, {
+        buildMigrationArgs(migration.id, target.args, {
           dryRun: dryRunRequested,
-          force: forceRequested,
+          force: forceRequested || migration.reconcileOnDrift,
         })
       );
       if (result.error) {
-        failures.push(`${target.label} ${id}: ${result.error.message}`);
+        failures.push(`${target.label} ${migration.id}: ${result.error.message}`);
         continue;
       }
       if (result.status !== 0) {
-        failures.push(`${target.label} ${id}: exit ${result.status ?? "unknown"}`);
+        failures.push(`${target.label} ${migration.id}: exit ${result.status ?? "unknown"}`);
       }
     }
   }

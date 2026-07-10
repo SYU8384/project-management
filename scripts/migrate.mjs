@@ -24,7 +24,8 @@
  * migration. Use this when a migration's detect() patterns are extended
  * after you already ran it (e.g. the v1.2.0 extension of the v1.0.2
  * migration's coverage to v1.0.0–v1.0.3-era text). Without --force the
- * ledger blocks re-running.
+ * ledger blocks re-running. Successful forced reapplication preserves the
+ * existing ledger row instead of appending a duplicate.
  *
  * Exit codes:
  *   0 = no work to do, or all applicable migrations applied cleanly
@@ -369,6 +370,7 @@ async function main() {
         from: m.from ?? null,
         to: m.to ?? null,
         describe: m.describe ?? null,
+        reconcileOnDrift: m.reconcileOnDrift === true,
       }));
       process.stdout.write(JSON.stringify(out, null, 2) + "\n");
     } else {
@@ -415,10 +417,11 @@ async function main() {
   let anyApplied = false;
 
   for (const migration of targets) {
-    if (appliedIds.has(migration.id) && !cli.migration) {
+    const alreadyApplied = appliedIds.has(migration.id);
+    if (alreadyApplied && !cli.migration) {
       continue;
     }
-    if (appliedIds.has(migration.id) && cli.migration && !cli.force) {
+    if (alreadyApplied && cli.migration && !cli.force) {
       continue;
     }
 
@@ -452,13 +455,20 @@ async function main() {
     try {
       const result = await migration.apply({ pmFolder, ctx });
       if (cli.dryRun) {
-        process.stdout.write(`(dry run) Would record ${migration.id} as applied.\n`);
+        process.stdout.write(
+          alreadyApplied
+            ? `(dry run) Would reapply ${migration.id} and preserve its existing ledger record.\n`
+            : `(dry run) Would record ${migration.id} as applied.\n`
+        );
+      } else if (alreadyApplied) {
+        process.stdout.write(`Reapplied ${migration.id}; existing ledger record preserved.\n`);
       } else {
         ledger.applied.push({
           id: migration.id,
           applied_at: new Date().toISOString(),
           skill_version: migration.to,
         });
+        appliedIds.add(migration.id);
         writeLedger(pmFolder, ledger);
         process.stdout.write(`Recorded ${migration.id} as applied.\n`);
         if (result && Array.isArray(result.suggestedHistory)) {

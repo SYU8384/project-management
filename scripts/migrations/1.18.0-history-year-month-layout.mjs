@@ -15,8 +15,10 @@ import {
   historyMonthIndexRel,
   historyMonthRel,
   historyYearIndexRel,
+  isMigrationCompatibilityLine,
   legacyHistoryMonthRel,
   MONTH_NAMES,
+  rewriteStaleHistoryGuidance,
 } from "../lib/history-paths.mjs";
 import { findVaultRoot } from "../lib/paths.mjs";
 import { projectPathFromVault } from "../lib/obsidian-links.mjs";
@@ -54,10 +56,14 @@ function listLegacyLinkMonths(pmFolder) {
   const re = /history[\/\\](\d{4}-\d{2})[\/\\]/g;
   for (const file of walkMarkdown(pmFolder)) {
     const content = readFileSync(file, "utf8");
-    let match;
-    while ((match = re.exec(content))) {
-      const parts = legacyMonthParts(match[1]);
-      if (parts) byYearMonth.set(parts.yearMonth, parts);
+    for (const line of content.split(/\r?\n/)) {
+      if (isMigrationCompatibilityLine(line)) continue;
+      re.lastIndex = 0;
+      let match;
+      while ((match = re.exec(line))) {
+        const parts = legacyMonthParts(match[1]);
+        if (parts) byYearMonth.set(parts.yearMonth, parts);
+      }
     }
   }
   return [...byYearMonth.values()].sort((a, b) => a.yearMonth.localeCompare(b.yearMonth));
@@ -84,6 +90,33 @@ function walkMarkdown(root) {
   }
   walk(root);
   return files;
+}
+
+function walkLiveMarkdown(pmFolder) {
+  return walkMarkdown(pmFolder).filter((file) => {
+    const rel = normalizeSlashes(relative(pmFolder, file));
+    return !rel.startsWith("history/") && !rel.startsWith("archive/");
+  });
+}
+
+function listStaleGuidanceFiles(pmFolder) {
+  return walkLiveMarkdown(pmFolder).filter((file) => {
+    const original = readFileSync(file, "utf8");
+    return rewriteStaleHistoryGuidance(original) !== original;
+  });
+}
+
+function rewriteLegacyHistoryGuidance(pmFolder, ctx) {
+  let changedFiles = 0;
+  for (const file of listStaleGuidanceFiles(pmFolder)) {
+    const original = readFileSync(file, "utf8");
+    const updated = rewriteStaleHistoryGuidance(original);
+    if (updated === original) continue;
+    changedFiles += 1;
+    if (!ctx.dryRun) writeFileSync(file, updated);
+    ctx.log("done", relNoExt(pmFolder, file), "updated prescriptive legacy history guidance");
+  }
+  return { changedFiles };
 }
 
 function normalizeSlashes(value) {
@@ -116,14 +149,22 @@ function rewriteMovedHistoryLinks(pmFolder, months, ctx) {
   let changedLinks = 0;
   for (const file of walkMarkdown(pmFolder)) {
     const original = readFileSync(file, "utf8");
-    let updated = original;
-    for (const [from, to] of replacements) {
-      const before = updated;
-      updated = replaceAllLiteral(updated, from, to);
-      if (updated !== before) {
-        changedLinks += before.split(from).length - 1;
-      }
-    }
+    const eol = original.includes("\r\n") ? "\r\n" : "\n";
+    const updated = original
+      .split(/\r?\n/)
+      .map((line) => {
+        if (isMigrationCompatibilityLine(line)) return line;
+        let rewritten = line;
+        for (const [from, to] of replacements) {
+          const before = rewritten;
+          rewritten = replaceAllLiteral(rewritten, from, to);
+          if (rewritten !== before) {
+            changedLinks += before.split(from).length - 1;
+          }
+        }
+        return rewritten;
+      })
+      .join(eol);
     if (updated !== original) {
       changedFiles += 1;
       if (!ctx.dryRun) writeFileSync(file, updated);
@@ -138,6 +179,174 @@ function splitFrontmatter(content) {
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n?/);
   if (!match) return null;
   return { frontmatter: match[1], body: normalized.slice(match[0].length) };
+}
+
+function headingRanges(lines, level, start = 0, end = lines.length) {
+  const headingRe = new RegExp(`^#{${level}}\\s+(.+?)\\s*$`);
+  const boundaryRe = new RegExp(`^#{1,${level}}\\s+`);
+  const ranges = [];
+  for (let i = start; i < end; i++) {
+    const match = lines[i].match(headingRe);
+    if (!match) continue;
+    let sectionEnd = end;
+    for (let j = i + 1; j < end; j++) {
+      if (boundaryRe.test(lines[j])) {
+        sectionEnd = j;
+        break;
+      }
+    }
+    ranges.push({ title: match[1].trim(), start: i, end: sectionEnd });
+  }
+  return ranges;
+}
+
+function findUniqueHeading(lines, level, title, start = 0, end = lines.length) {
+  const matches = headingRanges(lines, level, start, end).filter((range) => range.title === title);
+  if (matches.length !== 1) return { range: null, ambiguous: matches.length > 1 };
+  return { range: matches[0], ambiguous: false };
+}
+
+function substantiveLines(lines) {
+  return lines.map((line) => line.trim()).filter((line) => line && !/^#{1,6}\s+/.test(line));
+}
+
+function isMergeableListLine(line) {
+  return /^[-*+]\s+(?:\[[ xX]\]\s+)?/.test(line);
+}
+
+function insertBlock(lines, index, block) {
+  const insert = [...block];
+  if (index > 0 && lines[index - 1].trim() && insert[0]?.trim()) insert.unshift("");
+  if (index < lines.length && lines[index]?.trim() && insert.at(-1)?.trim()) insert.push("");
+  lines.splice(index, 0, ...insert);
+}
+
+function mergeMissingListLines(targetLines, targetStart, targetEnd, sourceLines, label) {
+  const targetValues = new Set(substantiveLines(targetLines.slice(targetStart, targetEnd)));
+  const missing = substantiveLines(sourceLines).filter((line) => !targetValues.has(line));
+  const ambiguous = missing.filter((line) => !isMergeableListLine(line));
+  if (ambiguous.length > 0) {
+    return { ok: false, message: `${label}: non-list prose differs: ${ambiguous[0]}` };
+  }
+  if (missing.length === 0) return { ok: true, changed: false };
+  insertBlock(targetLines, targetEnd, missing);
+  return { ok: true, changed: true };
+}
+
+function mergeHistoryLogCollision(sourceContent, targetContent) {
+  const targetEol = String(targetContent).includes("\r\n") ? "\r\n" : "\n";
+  const sourceSplit = splitFrontmatter(sourceContent);
+  const targetSplit = splitFrontmatter(targetContent);
+  if (!sourceSplit || !targetSplit) {
+    return { ok: false, message: "both colliding history logs need parseable frontmatter" };
+  }
+
+  const sourceLines = sourceSplit.body.replace(/^\n+/, "").split("\n");
+  const targetLines = targetSplit.body.replace(/^\n+/, "").split("\n");
+  const sourceH2 = headingRanges(sourceLines, 2).filter((range) => range.title !== "Navigation");
+  const sourcePrefixEnd = sourceH2[0]?.start ?? sourceLines.length;
+  const unexpectedPrefix = substantiveLines(sourceLines.slice(0, sourcePrefixEnd)).filter(
+    (line) => !/^#\s+(?:history-)?\d{4}-\d{2}-\d{2}$/.test(line)
+  );
+  if (unexpectedPrefix.length > 0) {
+    return { ok: false, message: `unstructured content before the first H2: ${unexpectedPrefix[0]}` };
+  }
+
+  let changed = false;
+  for (const sourceSection of sourceH2) {
+    let targetMatch = findUniqueHeading(targetLines, 2, sourceSection.title);
+    if (targetMatch.ambiguous) {
+      return { ok: false, message: `duplicate target H2: ${sourceSection.title}` };
+    }
+    if (!targetMatch.range) {
+      const navigation = findUniqueHeading(targetLines, 2, "Navigation");
+      insertBlock(
+        targetLines,
+        navigation.range?.start ?? targetLines.length,
+        sourceLines.slice(sourceSection.start, sourceSection.end)
+      );
+      changed = true;
+      continue;
+    }
+
+    const sourceH3 = headingRanges(sourceLines, 3, sourceSection.start + 1, sourceSection.end);
+    if (sourceH3.length === 0) {
+      const merged = mergeMissingListLines(
+        targetLines,
+        targetMatch.range.start + 1,
+        targetMatch.range.end,
+        sourceLines.slice(sourceSection.start + 1, sourceSection.end),
+        `H2 ${sourceSection.title}`
+      );
+      if (!merged.ok) return merged;
+      changed ||= merged.changed;
+      continue;
+    }
+
+    const sourcePreambleEnd = sourceH3[0].start;
+    const targetH3 = headingRanges(
+      targetLines,
+      3,
+      targetMatch.range.start + 1,
+      targetMatch.range.end
+    );
+    const targetPreambleEnd = targetH3[0]?.start ?? targetMatch.range.end;
+    const preamble = mergeMissingListLines(
+      targetLines,
+      targetMatch.range.start + 1,
+      targetPreambleEnd,
+      sourceLines.slice(sourceSection.start + 1, sourcePreambleEnd),
+      `H2 ${sourceSection.title} preamble`
+    );
+    if (!preamble.ok) return preamble;
+    changed ||= preamble.changed;
+
+    for (const sourceSubsection of sourceH3) {
+      targetMatch = findUniqueHeading(targetLines, 2, sourceSection.title);
+      const targetSubsection = findUniqueHeading(
+        targetLines,
+        3,
+        sourceSubsection.title,
+        targetMatch.range.start + 1,
+        targetMatch.range.end
+      );
+      if (targetSubsection.ambiguous) {
+        return { ok: false, message: `duplicate target H3: ${sourceSubsection.title}` };
+      }
+      if (!targetSubsection.range) {
+        insertBlock(
+          targetLines,
+          targetMatch.range.end,
+          sourceLines.slice(sourceSubsection.start, sourceSubsection.end)
+        );
+        changed = true;
+        continue;
+      }
+      const merged = mergeMissingListLines(
+        targetLines,
+        targetSubsection.range.start + 1,
+        targetSubsection.range.end,
+        sourceLines.slice(sourceSubsection.start + 1, sourceSubsection.end),
+        `H3 ${sourceSubsection.title}`
+      );
+      if (!merged.ok) return merged;
+      changed ||= merged.changed;
+    }
+  }
+
+  const body = targetLines.join("\n").replace(/\n+$/, "\n");
+  const mergedContent = `---\n${targetSplit.frontmatter.trimEnd()}\n---\n${body}`;
+  return {
+    ok: true,
+    changed,
+    content: targetEol === "\r\n" ? mergedContent.replace(/\n/g, "\r\n") : mergedContent,
+  };
+}
+
+function isSafeLegacyMonthIndex(content) {
+  return /^---\n[\s\S]*?^pageType:\s*index\s*$[\s\S]*?\n---/m.test(String(content))
+    && String(content).includes("<!-- vault-maintain:index:start -->")
+    && String(content).includes("<!-- vault-maintain:index:end -->");
 }
 
 function setFrontmatterValue(frontmatter, key, value) {
@@ -331,7 +540,35 @@ function moveLegacyFolders(pmFolder, months, ctx) {
       if (entry.name === `${month.yearMonth}.md`) dstName = `${month.monthName}.md`;
       const dst = join(monthDir, dstName);
       if (existsSync(dst)) {
-        manualReview.push(`${normalizeSlashes(relative(pmFolder, src))}: target already exists at ${normalizeSlashes(relative(pmFolder, dst))}`);
+        const srcRel = normalizeSlashes(relative(pmFolder, src));
+        const dstRel = normalizeSlashes(relative(pmFolder, dst));
+        const sourceContent = readFileSync(src, "utf8");
+        if (entry.name === `${month.yearMonth}.md` && isSafeLegacyMonthIndex(sourceContent)) {
+          if (!ctx.dryRun) rmSync(src);
+          ctx.log("done", srcRel, `removed redundant legacy month index; canonical index remains at ${dstRel}`);
+          continue;
+        }
+        if (/^history-\d{4}-\d{2}-\d{2}(?:-archived-sections)?\.md$/.test(entry.name)) {
+          const targetContent = readFileSync(dst, "utf8");
+          const merged = mergeHistoryLogCollision(sourceContent, targetContent);
+          if (merged.ok) {
+            if (!ctx.dryRun) {
+              if (merged.changed) writeFileSync(dst, merged.content);
+              rmSync(src);
+            }
+            ctx.log(
+              "done",
+              srcRel,
+              merged.changed
+                ? `merged deterministic history sections into ${dstRel}`
+                : `removed duplicate history log already contained by ${dstRel}`
+            );
+            continue;
+          }
+          manualReview.push(`${srcRel}: cannot merge safely into ${dstRel}: ${merged.message}`);
+          continue;
+        }
+        manualReview.push(`${srcRel}: target already exists at ${dstRel}`);
         continue;
       }
       moved.push([src, dst]);
@@ -350,6 +587,7 @@ function moveLegacyFolders(pmFolder, months, ctx) {
 }
 
 function detect({ pmFolder }) {
+  if (listStaleGuidanceFiles(pmFolder).length > 0) return true;
   if (listLegacyLinkMonths(pmFolder).length > 0) return true;
   return listLegacyMonths(pmFolder).some((month) => {
     const dir = join(pmFolder, legacyHistoryMonthRel(month.sampleDate));
@@ -363,6 +601,8 @@ function plan({ pmFolder }) {
     `Move ${months.length} legacy history month folder(s) from history/YYYY-MM to history/YYYY/<Month>.`,
     "Rename legacy month indexes from YYYY-MM.md to <Month>.md and create/update year indexes.",
     "Rewrite vault-relative links that target moved history files.",
+    "Rewrite prescriptive live guidance that still teaches history/YYYY-MM while preserving explicit migration-compatibility prose.",
+    "Merge colliding daily logs only when H2/H3 sections and exact list items can be preserved deterministically.",
   ];
 }
 
@@ -371,10 +611,11 @@ function apply({ pmFolder, ctx }) {
   const moved = moveLegacyFolders(pmFolder, months, ctx);
   ensureHistoryIndexes(pmFolder, months, ctx);
   const links = rewriteMovedHistoryLinks(pmFolder, months, ctx);
+  const guidance = rewriteLegacyHistoryGuidance(pmFolder, ctx);
 
   return {
     suggestedHistory: [
-      `- **History folders now use Journal-style year/month organization.** chore(pm): apply migration \`1.18.0-history-year-month-layout\` to move ${moved.moved.length} history file(s), refresh year/month indexes, and rewrite ${links.changedLinks} legacy history link(s).`,
+      `- **History folders now use Journal-style year/month organization.** chore(pm): apply migration \`1.18.0-history-year-month-layout\` to move ${moved.moved.length} history file(s), refresh year/month indexes, rewrite ${links.changedLinks} legacy history link(s), and repair ${guidance.changedFiles} live guidance file(s).`,
     ],
     manualReview: moved.manualReview,
   };
@@ -386,6 +627,7 @@ export default {
   to: "1.18.0",
   describe:
     "Move history logs from history/YYYY-MM/ into Journal-style history/YYYY/<Month>/ folders, with year/month folder notes and rewritten history links.",
+  reconcileOnDrift: true,
   detect,
   plan,
   apply,
@@ -396,4 +638,7 @@ export const __test = {
   listLegacyLinkMonths,
   listMigrationMonths,
   buildLinkReplacements,
+  listStaleGuidanceFiles,
+  mergeHistoryLogCollision,
+  rewriteLegacyHistoryGuidance,
 };

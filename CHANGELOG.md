@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.1] - 2026-07-10
+
+### Added
+
+- Opt-in `reconcileOnDrift: true` migration metadata. `check-pm.mjs --fix` re-detects and force-reapplies only migrations that explicitly declare deterministic recurring-repair safety.
+- Applied-migration drift reporting in `check-vault-structure.mjs`, distinct from pending migration debt and included in report-only failure status.
+- End-to-end coverage for an already-ledgered history migration with a recreated legacy folder, stale live guidance, a colliding canonical daily log, preserved ledger history, and no-op second reconciliation.
+
+### Changed
+
+- `migrate.mjs --list --json` now exposes `reconcileOnDrift`; successful forced reapplication preserves the existing ledger row instead of appending a duplicate.
+- Migration `1.18.0-history-year-month-layout` now opts into recurring drift repair, rewrites prescriptive live `history/YYYY-MM` guidance while preserving compatibility prose, and rebuilds canonical history indexes after repair.
+
+### Fixed
+
+- Reconciliation no longer skips deterministic history-layout drift merely because migration `1.18.0-history-year-month-layout` is already present in `.pm/migrations.json`.
+- Colliding legacy/canonical daily history logs now merge missing H2/H3 blocks and exact list items without duplicating existing content; differing free-form prose remains a manual-review failure.
+
 ## [1.19.0] - 2026-07-05
 
 ### Added

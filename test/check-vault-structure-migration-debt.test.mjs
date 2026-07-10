@@ -106,3 +106,20 @@ test("malformed .pm/migrations.json is treated as empty ledger (no crash)", () =
     rmSync(pm, { recursive: true, force: true });
   }
 });
+
+test("applied reconcile-on-drift migration is reported as applied migration drift", () => {
+  const pm = makeMinimalPmFolder();
+  writeLedger(pm, ["1.18.0-history-year-month-layout"]);
+  mkdirSync(join(pm, "history", "2026-07"), { recursive: true });
+  writeFileSync(join(pm, "history", "2026-07", "history-2026-07-03.md"), "# legacy\n");
+  try {
+    const result = spawnSync(process.execPath, [SCRIPT, pm], { encoding: "utf8" });
+    const out = result.stdout + result.stderr;
+    assert.equal(result.status, 1, out);
+    assert.match(out, /## Applied Migration Drift/);
+    assert.match(out, /1\.18\.0-history-year-month-layout/);
+    assert.match(out, /recorded as applied but matching drift has reappeared/);
+  } finally {
+    rmSync(pm, { recursive: true, force: true });
+  }
+});

@@ -21,6 +21,7 @@ import {
   routeRows,
 } from "./lib/convention.mjs";
 import { finding, renderFindings } from "./lib/findings.mjs";
+import { staleHistoryGuidanceLines } from "./lib/history-paths.mjs";
 import { unresolvedPlaceholders } from "./lib/template-renderer.mjs";
 
 const MODULE_PATH = fileURLToPath(import.meta.url);
@@ -192,16 +193,8 @@ function checkStalePhrases(findings) {
   }
 }
 
-function isMigrationCompatibilityLine(line) {
-  return /\b(legacy|migration|migrate|compatibility|compat)\b/i.test(line);
-}
-
 export function stalePublicHistoryPathLines(content) {
-  return String(content)
-    .split(/\r?\n/)
-    .map((line, index) => ({ line, lineNumber: index + 1 }))
-    .filter(({ line }) => /history\/YYYY-MM(?:\/history-YYYY-MM-DD(?:-archived-sections)?\.md|\/)/.test(line))
-    .filter(({ line }) => !isMigrationCompatibilityLine(line));
+  return staleHistoryGuidanceLines(content);
 }
 
 function checkHistoryPathDrift(findings) {

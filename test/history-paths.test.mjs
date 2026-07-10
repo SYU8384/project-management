@@ -11,6 +11,8 @@ import {
   isLegacyHistoryLogRel,
   isLegacyHistoryMonthRel,
   legacyHistoryDayRel,
+  rewriteStaleHistoryGuidance,
+  staleHistoryGuidanceLines,
 } from "../scripts/lib/history-paths.mjs";
 
 test("history path helpers resolve daily logs under year/month folders", () => {
@@ -37,4 +39,20 @@ test("history layout predicates distinguish canonical and migration-only legacy 
   assert.equal(isLegacyHistoryLogRel("history/2026-07/history-2026-07-02.md"), true);
   assert.equal(isLegacyHistoryLogRel("history/2026-07/history-2026-07-02-archived-sections.md"), true);
   assert.equal(isLegacyHistoryMonthRel("history/2026/July/history-2026-07-02.md"), false);
+});
+
+test("stale history guidance is rewritten while compatibility prose is preserved", () => {
+  const input = `Write new logs to history/YYYY-MM/history-YYYY-MM-DD.md.
+Legacy history/YYYY-MM/ folders are migration input only.
+├── history/
+│   ├── history.md
+│   └── YYYY-MM/
+│       └── history-YYYY-MM-DD.md
+`;
+
+  assert.deepEqual(staleHistoryGuidanceLines(input).map((row) => row.lineNumber), [1]);
+  const output = rewriteStaleHistoryGuidance(input);
+  assert.match(output, /history\/YYYY\/<Month>\/history-YYYY-MM-DD\.md/);
+  assert.match(output, /Legacy history\/YYYY-MM\/ folders are migration input only\./);
+  assert.match(output, /└── YYYY\/\n│       ├── YYYY\.md\n│       └── <Month>\//);
 });

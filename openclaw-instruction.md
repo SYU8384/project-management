@@ -374,7 +374,7 @@ node <skill_dir>/scripts/check-pm.mjs \
   --fix
 ```
 
-This all-project reconcile applies deterministic fixes, pending migrations, stale registered repo `AGENTS.md` PM-section repairs, and final re-validation across every registered project.
+This all-project reconcile applies deterministic fixes, pending migrations, explicitly opted-in applied-migration drift repairs, stale registered repo `AGENTS.md` PM-section repairs, and final re-validation across every registered project.
 
 Finish by reporting:
 
