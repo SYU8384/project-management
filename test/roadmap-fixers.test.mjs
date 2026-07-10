@@ -586,6 +586,10 @@ Relevant decisions: [[decisions/D-018_POL_bidirectional-plan-traceability|D-018]
     assert.match(plan, /## Related/);
     assert.match(plan, /Done-pending mirror: \[\[roadmap\/done-pending#traceability-plan\|done-pending#traceability-plan\]\]/);
     assert.match(plan, /Relevant decisions: \[\[decisions\/D-018_POL_bidirectional-plan-traceability\|D-018\]\]/);
+    assert.equal(plan.includes("# traceability-plan"), false);
+
+    const clean = spawnSync(process.execPath, [ROADMAP_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(clean.status, 0, clean.stdout + clean.stderr);
   } finally {
     rmSync(pm, { recursive: true, force: true });
   }

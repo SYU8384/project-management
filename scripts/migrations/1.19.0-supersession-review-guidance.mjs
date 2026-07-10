@@ -29,10 +29,13 @@ function appendConvention(content, bullet) {
   if (/^## Conventions\s*$/m.test(content)) {
     return content.replace(/^## Conventions\s*$/m, `## Conventions\n\n${bullet}`);
   }
+  const conventionHeading = (content.match(/^##\s+\S+/gm) ?? []).length >= 4
+    ? "### Conventions"
+    : "## Conventions";
   if (/^## Navigation\s*$/m.test(content)) {
-    return content.replace(/^## Navigation\s*$/m, `## Conventions\n\n${bullet}\n\n## Navigation`);
+    return content.replace(/^## Navigation\s*$/m, `${conventionHeading}\n\n${bullet}\n\n## Navigation`);
   }
-  return `${content.replace(/\s+$/g, "")}\n\n## Conventions\n\n${bullet}\n`;
+  return `${content.replace(/\s+$/g, "")}\n\n${conventionHeading}\n\n${bullet}\n`;
 }
 
 function updateReadme(content) {
@@ -117,6 +120,7 @@ export default {
 };
 
 export const __test = {
+  appendConvention,
   updateReadme,
   updatePlans,
   updateDecisions,

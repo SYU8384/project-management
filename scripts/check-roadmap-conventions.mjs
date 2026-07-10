@@ -844,9 +844,7 @@ function runFor(target) {
       if (content === null) continue;
       const status = planningNoteStatus(content);
       if (status !== "active" && status !== "proposed") continue;
-      const contentForTraceability = CLI.fix
-        ? content
-        : ensurePlanningNoteOpeningShape(content, { planRel: rel }).updated;
+      const contentForTraceability = ensurePlanningNoteOpeningShape(content, { planRel: rel }).updated;
 
       const trace = ensurePlanRelatedLinks(contentForTraceability, {
         planRel: rel,

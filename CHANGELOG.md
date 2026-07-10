@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.2] - 2026-07-10
+
+### Fixed
+
+- `check-roadmap-conventions.mjs --fix` now composes planning-note opening-shape and done-pending traceability repairs before writing, so the traceability pass cannot restore stale opening content and cause repeat report-only drift.
+- Migration `1.19.0-supersession-review-guidance` uses an H3 convention block when a folder note already has four H2 sections, preserving the folder-note shape limit.
+
 ## [1.19.1] - 2026-07-10
 
 ### Added
