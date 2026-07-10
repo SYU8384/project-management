@@ -245,6 +245,32 @@ Context note stays here.
   );
 });
 
+test("ensurePlanningNoteOpeningShape keeps managed TOC marker spacing stable", () => {
+  const input = `## Summary
+
+Plan summary.
+
+## Related
+
+Done-pending mirror: [[Projects/Example/roadmap/done-pending#traceability-plan|done-pending#traceability-plan]]
+
+<!-- vault-maintain:toc:start -->
+## Contents
+
+- [[#Summary]]
+- [[#Related]]
+<!-- vault-maintain:toc:end -->
+
+## Navigation
+`;
+  const result = ensurePlanningNoteOpeningShape(input, {
+    planRel: "roadmap/plans/2026-06-23_traceability-plan",
+  });
+
+  assert.equal(result.changes.length, 0);
+  assert.equal(result.updated, input);
+});
+
 test("ensurePlanRelatedLinks adds done-pending mirror and relevant links", () => {
   const plan = `---
 title: plan

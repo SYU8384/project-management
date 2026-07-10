@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.3] - 2026-07-10
+
+### Fixed
+
+- Planning-note `## Related` normalization now preserves managed TOC marker spacing, preventing the roadmap and Obsidian-link fixers from alternating one blank line on repeated reconciliations.
+
 ## [1.19.2] - 2026-07-10
 
 ### Fixed

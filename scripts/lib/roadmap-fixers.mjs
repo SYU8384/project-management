@@ -353,7 +353,9 @@ function insertRelatedSection(content, body) {
   const index = relatedInsertionIndex(content);
   const before = joinBeforeRelated(content.slice(0, index));
   const after = content.slice(index).replace(/^\n+/, "");
-  return `${before}${block}${after}`.replace(/\n{3,}/g, "\n\n");
+  return `${before}${block}${after}`
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/(<!--\s*vault-maintain:toc:start\s*-->)\n\n+(?=## Contents)/g, "$1\n");
 }
 
 function placeRelatedSection(content, body) {
