@@ -14,7 +14,7 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
@@ -53,14 +53,19 @@ function usage() {
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
     [--team-note skip|placeholder] \\
+    [--icon <LiIconName>] \\
+    [--icon-color <#hex>] \\
     [--dry-run] \\
     [--yes] \\
     [--sync]
 
   --team-note placeholder: create optional root TEAM.md from the template if absent.
   --team-note skip: default; do not create TEAM.md during bootstrap.
+  --icon / --icon-color: optional frontmatter for the project's root folder note.
+  Omit both to leave the root note without an icon. The icon slot accepts any
+  Lucide icon name (e.g. LiMusic); the color slot accepts a CSS hex string.
   --sync: re-read projects.json and rewrite the phase/notes lines in
-  CURRENT_STATUS.md, PRODUCT.md, and <Project>.md to match. Idempotent.
+  CURRENT_STATUS.md and PRODUCT.md to match. Idempotent.
   Use after editing phase/notes in projects.json so the documents stay
   in sync. Skips the scaffold (no new files; only edits existing ones).
 `);
@@ -77,7 +82,9 @@ function parseArgs(argv) {
     access: "authoritative",
     vaultRoot: null,
     date: localDate(),
-    teamNote: "skip",
+teamNote: "skip",
+    icon: null,
+    iconColor: null,
     dryRun: false,
     yes: false,
     sync: false,
@@ -110,8 +117,10 @@ function parseArgs(argv) {
     else if (arg === "--config") out.config = value;
     else if (arg === "--access") out.access = value;
     else if (arg === "--vault-root") out.vaultRoot = value;
-    else if (arg === "--date") out.date = value;
+else if (arg === "--date") out.date = value;
     else if (arg === "--team-note") out.teamNote = value;
+    else if (arg === "--icon") out.icon = value;
+    else if (arg === "--icon-color") out.iconColor = value;
     else {
       console.error(`Unknown argument: ${arg}`);
       usage();
@@ -410,17 +419,39 @@ function fm(fields, { history = false } = {}) {
   return `${lines.join("\n")}\n`;
 }
 
+// Canonical frontmatter shape used by `baseFm()` and the root note
+// generator. Field order matters for human readability and aligns with
+// the canonical root folder note format documented in
+// `templates/root-note.md` and the project's `## Folder Note Contract`
+// in REFERENCE.md. The order is:
+//
+//   title, tags, pageType, created, owner, icon, iconColor,
+//   updated, last_reviewed, status
+//
+// `extra` slots in at the end so callers can append (e.g. `aliases`,
+// project-specific tags). When you need to inject `icon`/`iconColor`,
+// pass them via `extra` and they will be picked up out-of-order — to
+// keep them in their canonical slots, prefer the dedicated `icon` /
+// `iconColor` parameters below.
 function baseFm(title, pageType, owner = "PM", extra = {}) {
+  const {
+    icon = null,
+    iconColor = null,
+    tags = null,
+    ...rest
+  } = extra;
   return fm({
     title: yamlScalar(title),
-    tags: [projectSlug],
+    tags: tags ?? [projectSlug],
+    pageType,
     created: date,
+    owner,
+    icon: icon ? JSON.stringify(icon) : null,
+    iconColor: iconColor ? JSON.stringify(iconColor) : null,
     updated: date,
     last_reviewed: date,
-    pageType,
     status: "active",
-    owner,
-    ...extra,
+    ...rest,
   });
 }
 
@@ -466,6 +497,71 @@ function historyPage(title, body, extra = {}) {
 
 function substituteTemplate(name, replacements) {
   return renderTemplateFile(TEMPLATE_DIR, name, replacements);
+}
+
+// Adaptive navigation for the root folder note. Each link is emitted
+// only when its target file actually exists in the vault, so the
+// generated note is portable across vault layouts. The PM folder's
+// parent folder note is the conventional "Back to <Parent>" target
+// (e.g. `Projects/Projects.md` for a project under a `Projects/`
+// parent). The "Back to Home" link is emitted only when the vault
+// root contains `Home.md`.
+function adaptiveNavLinks() {
+  const items = [[`${linkRoot}/README`, "README"]];
+  const parentDir = dirname(pmFolder);
+  const parentName = basename(parentDir);
+  const parentIndexPath = join(parentDir, `${parentName}.md`);
+  if (
+    parentName &&
+    parentName !== "." &&
+    parentDir !== vaultRoot &&
+    existsSync(parentIndexPath)
+  ) {
+    items.push([projectPathFromVault(vaultRoot, parentIndexPath), `Back to ${parentName}`]);
+  }
+  if (existsSync(join(vaultRoot, "Home.md"))) {
+    items.push(["Home", "Back to Home"]);
+  }
+  return items;
+}
+
+// Build the canonical root folder note (`<Project>/<Project>.md`).
+// Mirrors `templates/root-note.md`. The body shape is the
+// standardized format used by every project root note in the
+// vault: blockquote description → vault-maintain index block
+// (Subfolders + Notes) → adaptive Navigation. The `## Features`
+// section is intentionally omitted at bootstrap because no feature
+// notes exist yet; agents add it once feature notes appear under
+// `features/`. The icon / iconColor frontmatter is included only
+// when the caller passed `--icon` / `--icon-color`.
+function rootNote() {
+  const lanes = ["archive", "decisions", "docs", "features", "history", "inbox", "roadmap", "system"];
+  const subfolderLines = lanes
+    .map((lane) => `- [[${linkRoot}/${lane}/${lane}|${lane}]]`)
+    .join("\n");
+  const notesLines = [
+    `- [[${linkRoot}/CURRENT_STATUS|CURRENT_STATUS]]`,
+    `- [[${linkRoot}/PRODUCT|PRODUCT]]`,
+    `- [[${linkRoot}/README|README]]`,
+  ].join("\n");
+  const navBlock = adaptiveNavLinks()
+    .map(([target, label]) => `- [[${target}|${label}]]`)
+    .join("\n");
+  const frontmatter = baseFm(project, "index", "PM", {
+    tags: ["project", "folder-note", projectSlug],
+    icon: cli.icon,
+    iconColor: cli.iconColor,
+  });
+  const blockquote = notes || `${project} project.`;
+  return (
+    `${frontmatter}# ${project}\n\n` +
+    `> ${blockquote}\n\n` +
+    `<!-- vault-maintain:index:start -->\n` +
+    `## Subfolders\n\n${subfolderLines}\n\n` +
+    `## Notes\n\n${notesLines}\n` +
+    `<!-- vault-maintain:index:end -->\n\n` +
+    `## Navigation\n\n${navBlock}\n`
+  );
 }
 
 function loadConfig() {
@@ -579,8 +675,7 @@ function scaffold() {
   for (const dir of dirs) ensureDir(join(pmFolder, dir));
 
   const rootNav = nav([`${linkRoot}/${project}`, `Back to ${project}`]);
-  writeCreateOnly(join(pmFolder, `${project}.md`), page(project, "index",
-    `${notes}\n\n## Start Here\n\n- [[${linkRoot}/README|README]] - PM folder routing map.\n- [[${linkRoot}/PRODUCT|PRODUCT]] - Product context.\n- [[${linkRoot}/CURRENT_STATUS|CURRENT_STATUS]] - Current snapshot.\n\n${nav([`${linkRoot}/README`, "README"])}`));
+  writeCreateOnly(join(pmFolder, `${project}.md`), rootNote());
 
   writeCreateOnly(join(pmFolder, "README.md"), page(`${project} Project Docs`, "index",
     `This README is the routing map for ${project} project notes, PM logs, system docs, and product docs.\n\n## What Goes Where\n\n| File / Folder | What to write there |\n|---|---|\n| \`PRODUCT.md\` | Product vision, target users, current product shape, principles, boundaries, future goals |\n| \`TEAM.md\` | Optional root roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases |\n| \`system/\` | Current architecture, behavior, data flow, runtime, auth, database, integrations, deployment |\n| \`docs/User Guide/\` | End-user behavior and product reference |\n| \`docs/Admin Guide/\` | Live product operations and admin workflows |\n| \`docs/Developer Guide/\` | Engineering workflows, implementation notes, and known bugs |\n| \`docs/Quick Commands/\` | Copy-pasteable commands |\n| \`features/\` | Per-feature context indexes |\n| \`inbox/\` | Raw owner/collaborator intake notes before owner triage |\n| \`roadmap/\` | Milestones, known issues, done/pending, ideas, and scoped plans under \`roadmap/plans/\` |\n| \`roadmap/milestones/\` | Agent-maintained phase strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans/decisions/features/issues/docs |\n| \`roadmap/plans/\` | Concrete plans (mirrored into \`roadmap/done-pending.md\` when in flight, with near-top plan-side \`## Related\` backlinks) |\n| \`decisions/\` | Typed decision log (architecture, product, market, vendor, policy, rejection, experiment) |\n| \`history/\` | Completed work logs |\n| \`archive/\` | Superseded material |\n\n## Quick Rules

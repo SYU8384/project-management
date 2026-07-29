@@ -165,8 +165,10 @@ const CANONICAL_DOCS_GUIDE_DIRS = docsGuideDirMap();
 // The body may hold the index block plus a small set of optional `##`
 // sections: a per-lane `## Conventions` block is allowed (and recommended
 // for lanes with lane-specific rules, e.g. `roadmap/plans/`, `features/`,
-// `decisions/`). The shape check counts `##` headings outside frontmatter
-// and fails if a folder note has accumulated more than 4.
+// `decisions/`), and the project root folder note may include a
+// `## Features` block in place of `## Conventions`. The shape check
+// counts `##` headings outside frontmatter and fails if a folder note
+// has accumulated more than 4.
 const IGNORED_DIR_NAMES = new Set([".git", ".obsidian", "node_modules"]);
 const FOLDER_NOTE_MAX_SECTIONS = 4;
 
@@ -183,7 +185,8 @@ const FOLDER_NOTE_MAX_SECTIONS = 4;
 // docs/Developer Guide/known-bugs.md `## Fixed Bugs`.
 const FOLDER_NOTE_BODY_LIMITS = {
   standardSectionFail: 50,   // Subfolders / Notes / Navigation
-  conventionsFail: 50,       // Optional ## Conventions block
+  conventionsFail: 50,       // Optional ## Conventions block (lane folder notes)
+  featuresFail: 50,          // Optional ## Features block (root folder notes only)
   docsGuideTotalFail: 60,    // Total meaningful lines in a docs-guide folder note
   docsGuideSectionFail: 20,  // Per-section limit in a docs-guide folder note (## Navigation exempt)
 };
@@ -513,6 +516,16 @@ function checkFolderNoteBodyBloat() {
             reason: `## Conventions in a folder note exceeded ${FOLDER_NOTE_BODY_LIMITS.conventionsFail} meaningful lines; move to a separate note or a lane spec under \`system/\``,
           });
         }
+      } else if (name === "Features") {
+        if (lc > FOLDER_NOTE_BODY_LIMITS.featuresFail) {
+          findings.folderNotes.bodyBloat.push({
+            path: indexRel,
+            section: name,
+            lines: lc,
+            threshold: FOLDER_NOTE_BODY_LIMITS.featuresFail,
+            reason: `## Features in a folder note exceeded ${FOLDER_NOTE_BODY_LIMITS.featuresFail} meaningful lines; move per-feature detail into a separate note under \`features/\``,
+          });
+        }
       }
     }
   }
@@ -793,7 +806,7 @@ function emit() {
   if (findings.folderNotes.violations.length > 0) {
     lines.push("## Folder Note Shape Violations");
     lines.push("");
-    lines.push(`Folder notes follow \`templates/folder-note.md\`: at most ${FOLDER_NOTE_MAX_SECTIONS} \`##\` sections (Subfolders, Notes, Navigation, + optional 1 extra such as a per-lane \`## Conventions\` block).`);
+    lines.push(`Folder notes follow \`templates/folder-note.md\`: at most ${FOLDER_NOTE_MAX_SECTIONS} \`##\` sections (Subfolders, Notes, Navigation, + optional 1 extra such as a per-lane \`## Conventions\` block on lane folder notes, or a \`## Features\` block on the project root folder note).`);
     lines.push("");
     for (const v of findings.folderNotes.violations) {
       lines.push(`- \`${v.path}\`: ${v.sections} sections — strip non-essential sections.`);
@@ -829,7 +842,7 @@ function emit() {
   if (findings.folderNotes.bodyBloat.length > 0) {
     lines.push("## Folder Note Body Bloat");
     lines.push("");
-    lines.push("A folder note is an index, not a content document. Substantive content belongs in a separate note under the folder (e.g. `system/<topic>.md`, `features/<feature>.md`, `docs/<Guide>/<topic>.md`). Standard sections (Subfolders / Notes / Navigation) exceed " + FOLDER_NOTE_BODY_LIMITS.standardSectionFail + " meaningful lines; `## Conventions` exceeds " + FOLDER_NOTE_BODY_LIMITS.conventionsFail + ".");
+    lines.push("A folder note is an index, not a content document. Substantive content belongs in a separate note under the folder (e.g. `system/<topic>.md`, `features/<feature>.md`, `docs/<Guide>/<topic>.md`). Standard sections (Subfolders / Notes / Navigation) exceed " + FOLDER_NOTE_BODY_LIMITS.standardSectionFail + " meaningful lines; `## Conventions` exceeds " + FOLDER_NOTE_BODY_LIMITS.conventionsFail + "; `## Features` (root note) exceeds " + FOLDER_NOTE_BODY_LIMITS.featuresFail + ".");
     lines.push("");
     for (const v of findings.folderNotes.bodyBloat) {
       lines.push(`- \`${v.path}\` \`## ${v.section}\`: ${v.lines} meaningful lines (threshold ${v.threshold}). ${v.reason}.`);

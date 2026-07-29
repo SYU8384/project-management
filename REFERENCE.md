@@ -403,6 +403,47 @@ Create this default tree for new app projects:
 
 Both `README.md` and `PRODUCT.md` must have accurate TOCs or structured headings. `README.md` is the source of truth for logging routes.
 
+### Root Folder Note Shape (`<Project>.md`)
+
+The project root folder note is the canonical landing page for the PM folder. `scripts/bootstrap-pm.mjs` generates it in the canonical shape, and `templates/root-note.md` is the matching exemplar. Update both together if the shape changes.
+
+Canonical frontmatter key order: `title`, `tags` (including `project` and `folder-note`, plus an optional per-project slug), `pageType: index`, `created`, `owner`, optional `icon`, optional `iconColor`, `updated`, `last_reviewed`, `status: active`. The icon and color slots accept `--icon <LiIconName>` and `--icon-color <#hex>` at bootstrap; otherwise the fields are omitted.
+
+Canonical body shape:
+
+```markdown
+# <Project>
+
+> <One-line project description.>
+
+<!-- vault-maintain:index:start -->
+## Subfolders
+
+- [[<ProjectPath>/archive/archive|archive]]
+... (other lane folder notes)
+
+## Notes
+
+- [[<ProjectPath>/CURRENT_STATUS|CURRENT_STATUS]]
+- [[<ProjectPath>/PRODUCT|PRODUCT]]
+- [[<ProjectPath>/README|README]]
+<!-- vault-maintain:index:end -->
+
+## Features        (optional; add when feature notes exist)
+
+- <feature-slug> — <description>
+
+## Navigation
+
+- [[<ProjectPath>/README|README]]
+- Back to <Parent> link only when `<parent>/<parent>.md` exists in the vault.
+- Back to Home link only when `<vault>/Home.md` exists.
+```
+
+The blockquote is mandatory (it is the project's one-line description). The `vault-maintain:index` markers must bracket the Subfolders / Notes sections so the vault-maintain script can regenerate them. `## Features` is the +1 extra section permitted for root notes (mirroring `## Conventions` permitted for lane folder notes); it is omitted until the project has feature notes under `features/`. `## Navigation` always includes the README link; the parent and Home links are emitted only when their target notes exist, which keeps the generated root note portable across vault layouts.
+
+The body-bloat guard in `scripts/check-vault-structure.mjs` enforces that the root note stays an index — substantive content belongs in separate notes under the PM folder. Both the generated note and `check-vault-structure` agree on these limits.
+
 ### Optional Root Notes
 
 - `TEAM.md`: optional canonical roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases. It belongs at the PM project root because people and authority cut across repo, PM folder, inbox, PR, release, and archive workflows. It is not a contact database, does not replace local `projects.json`, and must not store private contact details, credentials, tokens, recovery codes, or secret-bearing links.
@@ -1165,6 +1206,7 @@ Template wikilinks use `<ProjectPath>` for the project folder path relative to t
 - `templates/TEAM.md` — optional root roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases
 - `templates/CURRENT_STATUS.md` — weekly snapshot at project root
 - `templates/folder-note.md` — universal folder note (one per visible PM folder: `archive/`, `docs/`, `features/`, `history/`, `inbox/`, `roadmap/`, `roadmap/plans/`, `decisions/`, `system/`, generated `history/YYYY/YYYY.md` year indexes, and generated `history/YYYY/<Month>/<Month>.md` month indexes)
+- `templates/root-note.md` — canonical exemplar for the project root folder note (`<Project>.md`); mirrors what `scripts/bootstrap-pm.mjs` generates
 - `templates/planning.md` — `roadmap/plans/` folder guide
 - `templates/features.md` — features folder guide
 - `templates/decision.md` — `decisions/D-NNN_<type>_<slug>.md` (typed decision record; ADRs are a `decision_type: ADR` instance)
