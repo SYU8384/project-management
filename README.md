@@ -4,9 +4,41 @@
 [![Install with bash or PowerShell](https://img.shields.io/badge/install-bash%20%2F%20PowerShell-0f766e.svg)](#quick-start)
 [![Markdown PM folders](https://img.shields.io/badge/docs-Markdown%20%2B%20Obsidian-2563eb.svg)](#pm-folder-model)
 
-A portable agent skill for keeping project-management notes, product docs, roadmap state, and code changes in sync.
+**A fluid brain for your project.** Your agent remembers the big plans, maps them to pending to-dos, records every decision, keeps manuals and feature specs current, and writes the history as work ships — all in plain Markdown, in a folder you own.
 
-It works especially well with an Obsidian vault, but the convention is plain Markdown plus a small local `projects.json` registry. The important part is behavioral: when meaningful project work happens, the agent updates the right current-state docs, indexes, roadmap notes, and history logs in the same session.
+The important part is behavioral: when meaningful work happens, the agent updates the right current-state docs, roadmap notes, and history logs *in the same session*. Six months later, a new session — or a new teammate, or a new agent — reads the folder and knows exactly where things stand. No archaeology through chat logs and PR threads.
+
+Used as an Obsidian vault, every folder is structured and interlinked — decisions, plans, features, manuals, and history point at each other, so agents retrieve exactly the relevant context instead of re-reading everything. But the convention is just Markdown plus a small local `projects.json` registry; it works anywhere.
+
+## 🧠 Why This Exists
+
+Coding agents have no memory beyond the session. As a project grows, past decisions, shipped specs, and future plans scatter across chat logs, PR threads, and half-finished notes — and every new session starts from zero. Beyond that, project memory decays in predictable ways:
+
+- Work ships, but user guides, admin runbooks, and developer docs lag behind.
+- Decisions are made and forgotten — nobody can say *why* six months later.
+- Roadmaps go stale because done/pending state isn't tied to implementation work.
+- Agents burn tokens rediscovering architecture, recurring bugs, and prior fixes.
+- Folder structures grow organically until nobody knows where new information belongs.
+
+This skill gives your project a memory that doesn't decay: big plans stay mapped to pending work, decisions stay typed and linked, manuals stay in sync with the code, and history writes itself as you ship. One strict, repeatable operating model — so any agent, on any machine, picks up exactly where the last session left off.
+
+## ✨ What It Does
+
+| Capability | What the agent does |
+|---|---|
+| 🧭 Guided setup | Lets users say `setup this repo` instead of knowing the bootstrap workflow. |
+| 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
+| 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
+| 🗜️ Reorganize grown folders | Detects tiny, stale, orphaned, and overlapping feature pages and manuals plus undeclared supersessions, then executes a human-approved merge/retire/combine/split plan under deprecate-and-redirect invariants. |
+| 🧭 Keep live routing current | Catches live notes that still point to retired PM lanes and repairs deterministic plan/decision link drift. |
+| 🔗 Keep Obsidian links navigable | Validates rendered wikilinks against the vault model and repairs deterministic PM-root-relative links, malformed links, and marked TOCs. |
+| ✅ Guard PM close-out | Checks whether meaningful local code changes in authoritative projects have matching current-state PM updates and a current-day history entry. |
+| 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
+| 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
+| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, keeps active/proposed plans linked back to their exact mirror section, and records typed decisions under `decisions/`. When a parent plan absorbs an older plan's scope, the older plan's `status` flips to `superseded` and the archive move cascades with the parent's close-out (D-020). |
+| 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
+| 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json`. |
+| 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
 
 <a id="quick-start"></a>
 
@@ -104,36 +136,6 @@ If you have code access but no PM folder, leave the "PM folder impact" section o
 The `access` field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this local field before every PM write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident. Projects with no PM access aren't registered in `projects.json` at all; if a cloned repo has a committed `AGENTS.md` PM section but no matching local config entry, the agent treats it as no PM access and ignores the PM section during normal coding.
 
 The full per-access-mode behavior (how the portable `AGENTS.md` section resolves local access, what trigger phrases fire, and what the contributor-vs-maintainer workflow looks like) is in `REFERENCE.md` → "Coding Agent Integration."
-
-## ✨ What It Does
-
-| Capability | What the agent does |
-|---|---|
-| 🧭 Guided setup | Lets users say `setup this repo` instead of knowing the bootstrap workflow. |
-| 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
-| 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
-| 🗜️ Reorganize grown folders | Detects tiny, stale, orphaned, and overlapping feature pages and manuals plus undeclared supersessions, then executes a human-approved merge/retire/combine/split plan under deprecate-and-redirect invariants. |
-| 🧭 Keep live routing current | Catches live notes that still point to retired PM lanes and repairs deterministic plan/decision link drift. |
-| 🔗 Keep Obsidian links navigable | Validates rendered wikilinks against the vault model and repairs deterministic PM-root-relative links, malformed links, and marked TOCs. |
-| ✅ Guard PM close-out | Checks whether meaningful local code changes in authoritative projects have matching current-state PM updates and a current-day history entry. |
-| 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
-| 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
-| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, keeps active/proposed plans linked back to their exact mirror section, and records typed decisions under `decisions/`. When a parent plan absorbs an older plan's scope, the older plan's `status` flips to `superseded` and the archive move cascades with the parent's close-out (D-020). |
-| 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
-| 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json`. |
-| 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
-
-## 🧠 Why This Exists
-
-Project memory usually decays in predictable ways:
-
-- Work ships, but user guides, admin runbooks, and developer docs lag behind.
-- Decisions are scattered across chats, PRs, issues, and half-finished plans.
-- Roadmaps become stale because done/pending state is not tied to implementation work.
-- Agents waste time rediscovering architecture, recurring bugs, and prior fixes.
-- Folder structures grow organically until nobody knows where new information belongs.
-
-This skill gives agents a strict, repeatable operating model for project memory.
 
 <a id="pm-folder-model"></a>
 
