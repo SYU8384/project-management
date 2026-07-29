@@ -135,6 +135,38 @@ Do not auto-invent product meaning. When the tools insert `TBD` or report ambigu
 
 ---
 
+## PM Folder Reorganization
+
+Use this when the user asks to "organize", "tidy", "reorganize", or "spring-clean" a PM folder, or when a project has grown enough that feature pages, manuals, and roadmap lanes need periodic consolidation. This workflow is **report-first**: the agent proposes a reorganization plan and executes only after the user approves it. Unlike the Quality Audit (which validates and compresses existing lanes), reorganization changes the lane structure itself: merging feature pages, retiring manuals, combining overlapping docs, and declaring supersessions.
+
+Read-only access: run the detector and present the plan, but do not edit the PM folder.
+
+### Workflow
+
+1. Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` to confirm structural health, then run `node <skill_dir>/scripts/check-reorg-candidates.mjs --project <name> --config <path>` for the candidate report. Read the PM folder `README.md` routing map first, as always.
+2. Cluster the candidates semantically. The detector finds deterministic signals (tiny/stale/orphan pages, similar pairs, undeclared-supersession hints, stale backlog); the agent decides what they mean. Typical clusters:
+   - **Merge family**: several small feature pages that describe one user-visible capability → one umbrella feature page.
+   - **Retire set**: manuals or feature pages whose subject no longer exists or is fully covered elsewhere.
+   - **Combine pair**: two manuals covering the same topic from slightly different angles → one canonical manual.
+   - **Split candidate**: one bloated page covering separable concerns → multiple focused pages (detected by reading, not by the script).
+   - **Supersession declarations**: plan/decision/feature pairs where one obsoletes the other but neither declares it.
+   - **Backlog digest**: stale inbox notes routed per inbox conventions; stale ideas/done-pending entries refreshed, routed, or dropped.
+3. Present the reorganization plan in chat and wait for approval. For every proposed action state: the type (merge / retire / combine / split / supersede / digest), the exact target files, the number of inbound live links that will be updated, and the destination. Do not execute before the user approves; adjust the plan if the user pushes back.
+4. Execute the approved plan under the invariants below.
+5. Refresh folder indexes and folder notes touched by the changes. Refresh `CURRENT_STATUS.md` and the active milestone only if priorities, features, or known issues actually changed.
+6. History last: append one outcome-first `chore(pm):` bullet listing what was merged, retired, combined, split, and superseded.
+
+### Safety invariants
+
+- `history/` and `archive/` are append-only. Never reorganize, rewrite, or move them during this workflow.
+- Merge means **deprecate-and-redirect**, never silent deletion: the absorbed page keeps its content history by moving through the normal lifecycle — set `status: deprecated`, prepend a bold "Deprecated by" wikilink line pointing at the umbrella page, update inbound live links to the umbrella page, and leave the archive move to the existing human-gated archive path. Reorganization never auto-archives.
+- Every merge or supersession is recorded per the supersession conventions: `supersedes:` frontmatter or `Supersedes:`/`Superseded by` body links, then `check-supersession-conventions.mjs --fix` flips the older note's status.
+- Preserve traceability: before retiring or merging any page, enumerate its inbound wikilinks from live lanes (the detector's orphan signal is the zero case; non-zero cases need a link sweep) and update every one of them.
+- Do not invent meaning. Missing summaries become `TBD` manual-review items; ambiguous merge calls stay in the plan as open questions rather than being guessed.
+- After execution, re-run `check-reorg-candidates.mjs` and `check-pm.mjs` to confirm the planned signals are resolved and no structural drift was introduced.
+
+---
+
 ## AGENTS.md PM Section Sync
 
 The `check-agents.mjs` validator does a strict normalized-string match of each registered code repo's `AGENTS.md` `## PM folder` section against the portable template. Any change to the template requires every registered project's AGENTS.md to be re-synced. To make that mechanical, the skill ships `scripts/sync-agents-section.mjs`.

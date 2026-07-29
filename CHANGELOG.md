@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-07-28
+
+### Added
+
+- Standardized project root folder note: `templates/root-note.md` defines the canonical `<Project>/<Project>.md` shape (fixed frontmatter order `title, tags, pageType, created, owner, icon, iconColor, updated, last_reviewed, status`, blockquote description, vault-maintain index block, `## Features` as the root note's allowed extra section). `bootstrap-pm.mjs` generates this shape with adaptive navigation (Back-to-Parent and Back-to-Home links only when the target note exists) and new `--icon` / `--icon-color` flags. `check-vault-structure.mjs` now permits `## Features` on root folder notes with a 50-line bloat guard, and `templates/folder-note.md` documents the canonical frontmatter and adaptive-nav contract. Focused coverage in `test/root-note-shape.test.mjs`.
+- PM Folder Reorganization workflow in `REFERENCE.md`: a report-first periodic consolidation pass for grown PM folders. The agent runs the candidate detector, clusters signals into a merge/retire/combine/split/supersede/digest plan, gets user approval, then executes under deprecate-and-redirect invariants (history/archive append-only, no auto-archive, supersession recorded per convention, inbound link sweeps before any merge or retirement).
+- `scripts/check-reorg-candidates.mjs`: read-only detector for reorganization candidates. Reports tiny/stale/orphan feature pages and manuals, similar merge/overlap pairs (slug-token gated to suppress template noise), undeclared-supersession hints across plans/decisions/features, stale inbox notes, and stale roadmap indexes. Human table by default, `--json` for machine-readable output; thresholds via `REORG_STALE_DAYS`, `REORG_TINY_LINES`, `REORG_SIMILARITY`, `REORG_INBOX_DAYS`. Exit 0 always; it never edits anything.
+- SKILL.md trigger-map row for "organize/tidy/reorganize PM folder" and "PM spring cleaning", plus the detector command entry and description triggers.
+
 ## [1.19.3] - 2026-07-10
 
 ### Fixed
