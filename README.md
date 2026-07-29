@@ -24,21 +24,33 @@ This skill gives your project a memory that doesn't decay: big plans stay mapped
 
 ## ✨ What It Does
 
-| Capability | What the agent does |
+### Getting started — *one-time setup*
+
+| Capability | What the agent does — and why it matters |
 |---|---|
-| 🧭 Guided setup | Lets users say `setup this repo` instead of knowing the bootstrap workflow. |
-| 🏗️ Bootstrap PM folders | Creates the standard project docs layout, indexes, root notes, roadmap notes, and code-repo `AGENTS.md` integration. |
-| 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, roadmap drift, folder-note problems, and stale registered `AGENTS.md` PM sections. |
-| 🗜️ Reorganize grown folders | Detects tiny, stale, orphaned, and overlapping feature pages and manuals plus undeclared supersessions, then executes a human-approved merge/retire/combine/split plan under deprecate-and-redirect invariants. |
-| 🧭 Keep live routing current | Catches live notes that still point to retired PM lanes and repairs deterministic plan/decision link drift. |
-| 🔗 Keep Obsidian links navigable | Validates rendered wikilinks against the vault model and repairs deterministic PM-root-relative links, malformed links, and marked TOCs. |
-| ✅ Guard PM close-out | Checks whether meaningful local code changes in authoritative projects have matching current-state PM updates and a current-day history entry. |
-| 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry with a bold human-readable sentence plus a concise type/scope token. |
-| 📚 Keep guides current | Routes user, admin, developer, and quick-command changes into the right docs guide. |
-| 🧩 Track plans and decisions | Creates planning notes under `roadmap/plans/`, mirrors active work into `roadmap/done-pending.md`, keeps active/proposed plans linked back to their exact mirror section, and records typed decisions under `decisions/`. When a parent plan absorbs an older plan's scope, the older plan's `status` flips to `superseded` and the archive move cascades with the parent's close-out (D-020). |
-| 🐞 Preserve bug knowledge | Keeps active issues in roadmap and root causes/solutions in `docs/Developer Guide/known-bugs.md`. |
-| 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json`. |
-| 🧑‍💼 Bootstrap OpenClaw PM agents | Gives OpenClaw a copy-paste prompt to install or discover the skill, set up its PM role, audit PM folders and `AGENTS.md`, and ask before edits. |
+| 🧭 Guided setup | Say `setup this repo`; the agent walks you through bootstrap and registration — productive in minutes, no workflow to learn. |
+| 🏗️ Bootstrap PM folders | Creates the standard docs layout, indexes, root notes, roadmap, and `AGENTS.md` integration — every project starts with the same navigable memory structure. |
+| 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json` — any agent, on any machine, knows how (and whether) it may touch the PM folder. |
+| 🧑‍💼 Bootstrap OpenClaw PM agents | A copy-paste prompt turns OpenClaw into an autonomous PM — brainstorms and decisions get captured even when you're not coding. |
+
+### Every session — *the memory loop*
+
+| Capability | What the agent does — and why it matters |
+|---|---|
+| 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry — the project always has an accurate "where are we" snapshot and a readable timeline of how it got there. |
+| 🧩 Track plans and decisions | Planning notes, done-pending mirrors, typed decisions; superseded plans flip status and cascade to archive — big plans stay mapped to pending to-dos, and "why we chose this" is never lost. |
+| 📚 Keep guides current | Routes changes into the right user/admin/developer guide — manuals stay in sync with the code instead of decaying into traps for the next reader. |
+| 🐞 Preserve bug knowledge | Active issues in roadmap; root causes and fixes in `known-bugs.md` — recurring bugs get solved in minutes by looking them up instead of re-debugging from scratch. |
+| ✅ Close the loop after coding | Before an agent signs off, it verifies meaningful code changes came with matching status, milestone, and history updates — no work silently disappears from the project's memory. |
+
+### Periodic hygiene — *keeping the brain clean*
+
+| Capability | What the agent does — and why it matters |
+|---|---|
+| 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, and drift — the folder stays trustworthy instead of slowly rotting. |
+| 🗜️ Reorganize grown folders | Detects tiny, stale, orphaned, or overlapping pages and executes a human-approved merge/retire/combine plan — a year of growth doesn't turn the memory into an unnavigable pile. |
+| 🚦 Keep live routing current | Catches live notes pointing at retired lanes and repairs link drift — agents never follow a map to a place that no longer exists. |
+| 🔗 Keep Obsidian links navigable | Validates rendered wikilinks and repairs malformed links and TOCs — the interlinked structure agents rely on for retrieval never breaks. |
 
 <a id="quick-start"></a>
 
