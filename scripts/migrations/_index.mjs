@@ -33,4 +33,5 @@ export default [
   "1.17.0-parent-workstream-supersede-flip.mjs",
   "1.18.0-history-year-month-layout.mjs",
   "1.19.0-supersession-review-guidance.mjs",
+  "1.21.0-project-visibility.mjs",
 ];

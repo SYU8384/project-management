@@ -45,6 +45,7 @@ import { isValidAccess } from "./lib/convention.mjs";
 import { historyDayRel } from "./lib/history-paths.mjs";
 import { normalizeMarkdownSection } from "./lib/markdown.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
+import { agentsSectionReplacements } from "./lib/agents-section.mjs";
 
 const SKILL_DIR = findSkillDir();
 const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
@@ -94,8 +95,7 @@ function renderSection(templateFile, project) {
   if (!TEMPLATE_DIR) {
     throw new Error("skill_dir not resolved; cannot locate templates/");
   }
-  return renderTemplateFile(TEMPLATE_DIR, templateFile, {
-  });
+  return renderTemplateFile(TEMPLATE_DIR, templateFile, agentsSectionReplacements(project));
 }
 
 function extractPmSection(content) {

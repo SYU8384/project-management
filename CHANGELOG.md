@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Folder index completeness enforcement. `scripts/check-vault-structure.mjs` now reports "Folder Index Completeness Violations" when a folder note's `## Notes` list is missing a direct child note, its `## Subfolders` list is missing a direct child folder note, or either list links a target that no longer exists. `--fix` regenerates marked `vault-maintain:index` blocks deterministically: stale lines dropped, surviving lines (including hand-written descriptions) preserved verbatim, missing children appended; indexes without markers are reported as manual-only. Focused coverage in `test/folder-index-completeness.test.mjs`.
+- `scripts/check-pm-closeout.mjs` fails close-out when a note changed in the session is missing from its folder index `## Notes` list, catching the "created a plan but forgot the index" case at session end.
+- Portable AGENTS PM section (`templates/AGENTS_PM_SECTION.md`) and `openclaw-instruction.md` now explicitly require updating the folder index `## Notes`/`## Subfolders` list in the same session whenever a PM note is created, moved, renamed, archived, or deleted. Re-synced to all registered repos via `sync-agents-section.mjs` and to OpenClaw workspaces via `sync-openclaw-pm-section.mjs`.
+- Repository visibility model. `projects.json` project entries carry `visibility: "public" | "private"`, documented in `REFERENCE.md` Configuration and asked/detected (`gh repo view --json visibility`) in Setup Intake. New `REFERENCE.md` section "Repository Visibility And Repo-Canonical Docs": on public repos ADRs (`docs/adr/D-NNN-slug.md`), `CONTEXT.md`, and contributor-facing architecture docs are repo-canonical; PM `decisions/` keeps registry stubs with frontmatter `repo_path:` so the PM folder stays the complete decision registry; PRD/MKT/VND/POL/NEG/EXP decisions, roadmap, history, TEAM, inbox, and known-issues detail never copy to public repos; links point PM → repo/GitHub only. Asymmetric visibility-switch flows: private→public requires a scrub review and repo bootstrap before flipping the field; public→private flips and re-syncs AGENTS.md.
+- `scripts/migrations/1.21.0-project-visibility.mjs`: backfills missing `visibility` with the safe default `"private"` and emits a manual-review reminder to flip open-source projects to `"public"` after scrub review.
+- `scripts/check-repo-docs.mjs` (registered validator): fails when `visibility` is missing/invalid, when a public project's ADR decision lacks `repo_path` or its target is missing, and when a repo `docs/adr/D-*.md` has no PM stub referencing it. Report-only.
+- `templates/AGENTS_PM_SECTION.md` gains a `{{PUBLIC_REPO_BLOCK}}` placeholder (rendered via `scripts/lib/agents-section.mjs` by `check-agents.mjs` and `sync-agents-section.mjs`) that adds repo-canonical-docs instructions to the AGENTS.md `## PM folder` section of public projects only.
+- Matt-pocock engineering skills integration. New `REFERENCE.md` section "Matt-Pocock Engineering Skills Integration": after `to-spec`/`to-tickets`/`wayfinder`/`triage`/`grill-with-docs`/`implement` publish artifacts, agents run the per-artifact PM integration step (spec→one PM plan with issue URLs, tickets→plan steps, wayfinder map→multi-session plan, triage rejections→NEG decision and bugs→known-issues, new ADR→decision stub/full entry by visibility). Tracker config is read from the repo's `docs/agents/issue-tracker.md`, never duplicated into `projects.json`; local-markdown tracker setups must record whether `.scratch/` is gitignored or committed. `check-pm-closeout.mjs` now suggests the matching PM lanes when a session diff touches `CONTEXT.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, or `.out-of-scope/`.
+- `templates/decision.md` gains the optional `repo_path:` frontmatter field (required for ADR decisions on public projects); `templates/projects.template.json` gains the `visibility` field.
+- README gains "Public vs private repos" and "Matt-Pocock engineering skills integration" sections explaining the visibility model and the artifact→PM mapping to GitHub readers, plus Repository Map rows for `check-repo-docs.mjs` and the visibility migration.
+
+### Fixed
+
+- `test/applied-migration-drift.test.mjs` no longer fails as calendar time passes: the fixture bootstraps with today's date instead of the hardcoded `2026-07-03`, so reconcile fixers (which refresh repaired files to real today) no longer make priority-bearing files newer than `CURRENT_STATUS.md` and trip the freshness check. The legacy-history collision fixture directories are now created explicitly rather than relying on the bootstrap date.
+
 ## [1.20.0] - 2026-07-28
 
 ### Added

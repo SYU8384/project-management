@@ -15,6 +15,7 @@ status: proposed
 owner: PM
 decision_date: <YYYY-MM-DD>
 supersedes: <D-id>
+repo_path: <repo-relative path; required for ADR decisions when the project is visibility: public — the repo body is canonical and this note is the registry stub>
 ---
 # D-NNN: <short title>
 

@@ -208,6 +208,7 @@ const findings = {
   appliedMigrationDrift: [],
   folderNames: { violations: [] },
   folderNotes: { present: [], missing: [], violations: [], parentLinkViolations: [], selfLinkViolations: [], bodyBloat: [], docsGuideBloat: [] },
+  indexCompleteness: { missing: [], stale: [] },
   unexpectedFolders: [],
   docsNames: { violations: [] },
   docsNameWarnings: { warnings: [] },
@@ -595,6 +596,168 @@ function containsSelfLink(content, indexRel) {
   return links.some((link) => link === target || link === projectTarget || link === vaultTarget);
 }
 
+// Folder index completeness. A folder note's `## Notes` list must link every
+// direct child .md note (except the index itself) and its `## Subfolders`
+// list must link every direct child folder note. Both live inside the
+// `vault-maintain:index` markers so `--fix` can regenerate them
+// deterministically: stale lines are dropped, surviving lines (including any
+// hand-written `- description` suffixes) are preserved verbatim, and missing
+// children are appended. Indexes without markers are checked but reported as
+// manual-review only (not auto-fixed).
+const INDEX_BLOCK_RE = /<!--\s*vault-maintain:index:start\s*-->([\s\S]*?)<!--\s*vault-maintain:index:end\s*-->/;
+
+function extractIndexSection(block, name) {
+  const re = new RegExp(`\\n## ${name}\\s*\\n([\\s\\S]*?)(?=\\n## |\\n<!--|$)`);
+  const match = block.match(re);
+  return match ? match[1] : null;
+}
+
+function linksInSection(text) {
+  if (!text) return [];
+  return [...text.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)].map((match) => match[1]);
+}
+
+// Resolve a wikilink target to a PM-relative path (without .md), stripping
+// the vault-relative project prefix or the conventional Projects/<Project>/
+// prefix when present. Returns null when the link cannot be mapped into the
+// PM folder.
+function resolveLinkTarget(target) {
+  const clean = target.replace(/\.md$/, "");
+  if (obsidianProjectPath && clean.startsWith(`${obsidianProjectPath}/`)) {
+    return clean.slice(obsidianProjectPath.length + 1);
+  }
+  const projectPrefix = `Projects/${basename(vaultRoot)}/`;
+  if (clean.startsWith(projectPrefix)) return clean.slice(projectPrefix.length);
+  if (clean.includes("/")) return clean;
+  return clean;
+}
+
+function hasLinkTo(links, relNoExt) {
+  return links.some((link) => resolveLinkTarget(link) === relNoExt);
+}
+
+function checkFolderIndexCompleteness() {
+  for (const { relDir, indexRel } of listVisibleFolderNotes()) {
+    const absIndex = join(vaultRoot, indexRel);
+    if (!existsSync(absIndex)) continue;
+    const content = readFileSync(absIndex, "utf8");
+    const blockMatch = content.match(INDEX_BLOCK_RE);
+    const block = blockMatch ? blockMatch[1] : stripFrontmatter(content);
+    const fixable = Boolean(blockMatch);
+    const notesBody = extractIndexSection(block, "Notes");
+    const subfoldersBody = extractIndexSection(block, "Subfolders");
+    const notesLinks = linksInSection(notesBody);
+    const subfolderLinks = linksInSection(subfoldersBody);
+
+    const absDir = join(vaultRoot, relDir);
+    const childNotes = [];
+    const childDirs = [];
+    for (const entry of readdirSync(absDir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.endsWith(".md")) {
+        const rel = `${relDir}/${entry.name}`;
+        if (rel === indexRel) continue;
+        if (isSkipped(skipSet, rel)) continue;
+        childNotes.push(rel);
+      } else if (entry.isDirectory() && !isIgnoredDirectory(entry.name)) {
+        const childIndex = `${relDir}/${entry.name}/${entry.name}.md`;
+        if (isFile(childIndex)) childDirs.push(childIndex);
+      }
+    }
+
+    for (const rel of childNotes) {
+      const noExt = rel.replace(/\.md$/, "");
+      if (!hasLinkTo(notesLinks, noExt)) {
+        findings.indexCompleteness.missing.push({ index: indexRel, section: "Notes", child: rel, fixable });
+      }
+    }
+    for (const childIndex of childDirs) {
+      const noExt = childIndex.replace(/\.md$/, "");
+      if (!hasLinkTo(subfolderLinks, noExt)) {
+        findings.indexCompleteness.missing.push({ index: indexRel, section: "Subfolders", child: childIndex, fixable });
+      }
+    }
+
+    for (const [section, body] of [["Notes", notesBody], ["Subfolders", subfoldersBody]]) {
+      for (const link of linksInSection(body)) {
+        const rel = resolveLinkTarget(link);
+        if (!rel.startsWith(`${relDir}/`)) continue;
+        const rest = rel.slice(relDir.length + 1);
+        if (rest.includes("/")) {
+          // direct-child folder note link: <dir>/<dir> form only
+          const parts = rest.split("/");
+          if (parts.length !== 2 || parts[0] !== parts[1]) continue;
+          if (!isDir(`${relDir}/${parts[0]}`)) {
+            findings.indexCompleteness.stale.push({ index: indexRel, section, link, fixable });
+          }
+        } else if (!exists(`${rel}.md`)) {
+          findings.indexCompleteness.stale.push({ index: indexRel, section, link, fixable });
+        }
+      }
+    }
+  }
+}
+
+function linkTargetFor(relNoExt) {
+  return obsidianProjectPath ? `${obsidianProjectPath}/${relNoExt}` : relNoExt;
+}
+
+function fixFolderIndexes() {
+  const touched = new Map();
+  for (const kind of ["missing", "stale"]) {
+    for (const finding of findings.indexCompleteness[kind]) {
+      if (!finding.fixable) continue;
+      if (!touched.has(finding.index)) touched.set(finding.index, { missing: [], staleLinks: new Set() });
+      const entry = touched.get(finding.index);
+      if (kind === "missing") entry.missing.push(finding);
+      else entry.staleLinks.add(finding.link);
+    }
+  }
+  let fixedCount = 0;
+  for (const [indexRel, entry] of touched) {
+    const absIndex = join(vaultRoot, indexRel);
+    const content = readFileSync(absIndex, "utf8");
+    const blockMatch = content.match(INDEX_BLOCK_RE);
+    if (!blockMatch) continue;
+    let block = blockMatch[1];
+    for (const section of ["Subfolders", "Notes"]) {
+      const missing = entry.missing.filter((m) => m.section === section);
+      const sectionRe = new RegExp(`(\\n## ${section}\\s*\\n)([\\s\\S]*?)(?=\\n## |\\n<!--|$)`);
+      const sectionMatch = block.match(sectionRe);
+      let body = sectionMatch ? sectionMatch[2] : "";
+      let lines = body.split("\n").filter((l) => l.trim() !== "");
+      lines = lines.filter((line) => {
+        if (/^\s*(?:-\s*)?\*\(no items\)\*\s*$/.test(line) && (missing.length > 0 || lines.length > 1)) return false;
+        const linkMatch = line.match(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/);
+        if (!linkMatch) return true;
+        return !entry.staleLinks.has(linkMatch[1]);
+      });
+      for (const m of missing) {
+        const noExt = m.child.replace(/\.md$/, "");
+        const label = noExt.split("/").pop();
+        lines.push(`- [[${linkTargetFor(noExt)}|${label}]]`);
+      }
+      if (lines.length === 0) lines = ["*(no items)*"];
+      const newBody = `${lines.join("\n")}\n`;
+      if (sectionMatch) {
+        block = block.replace(sectionRe, `$1${newBody}`);
+      } else if (missing.length > 0) {
+        block = `${block.replace(/\s*$/, "")}\n\n## ${section}\n\n${newBody}`;
+      }
+    }
+    const updated = content.replace(INDEX_BLOCK_RE, `<!-- vault-maintain:index:start -->${block}<!-- vault-maintain:index:end -->`);
+    if (updated !== content) {
+      writeFileSync(absIndex, updated);
+      fixedCount++;
+      process.stdout.write(`fixed: regenerated index block in ${indexRel}\n`);
+    }
+  }
+  if (fixedCount > 0) {
+    findings.indexCompleteness.missing = findings.indexCompleteness.missing.filter((m) => !m.fixable);
+    findings.indexCompleteness.stale = findings.indexCompleteness.stale.filter((m) => !m.fixable);
+    process.stdout.write(`--fix: regenerated ${fixedCount} folder index(es)\n`);
+  }
+}
+
 function listMarkdownFilesUnder(relDir) {
   const root = join(vaultRoot, relDir);
   if (!existsSync(root)) return [];
@@ -865,6 +1028,29 @@ function emit() {
     lines.push("");
   }
 
+  // --fix: regenerate folder index blocks with missing/stale entries.
+  // Re-check first: the missing-folder-note --fix above may have created
+  // fresh indexes whose completeness has not been evaluated yet.
+  if (CLI.fix) {
+    findings.indexCompleteness = { missing: [], stale: [] };
+    checkFolderIndexCompleteness();
+    fixFolderIndexes();
+  }
+
+  if (findings.indexCompleteness.missing.length > 0 || findings.indexCompleteness.stale.length > 0) {
+    lines.push("## Folder Index Completeness Violations");
+    lines.push("");
+    lines.push("A folder note's `## Notes` list must link every direct child note and its `## Subfolders` list every direct child folder note. Update the index in the same session when adding, moving, archiving, or deleting notes. Run with `--fix` to regenerate marked index blocks automatically (indexes without `vault-maintain:index` markers need manual edits).");
+    lines.push("");
+    for (const v of findings.indexCompleteness.missing) {
+      lines.push(`- \`${v.index}\`: add a ${v.section} link to \`${v.child}\`${v.fixable ? "" : " (manual: no index markers)"}.`);
+    }
+    for (const v of findings.indexCompleteness.stale) {
+      lines.push(`- \`${v.index}\`: remove stale ${v.section} link \`[[${v.link}]]\` (target no longer exists)${v.fixable ? "" : " (manual: no index markers)"}.`);
+    }
+    lines.push("");
+  }
+
   if (findings.unexpectedFolders.length > 0) {
     lines.push("## Unexpected Top-Level Folders");
     lines.push("");
@@ -934,6 +1120,8 @@ function issueTotal() {
     + findingsRef.folderNotes.selfLinkViolations.length
     + findingsRef.folderNotes.bodyBloat.length
     + findingsRef.folderNotes.docsGuideBloat.length
+    + findingsRef.indexCompleteness.missing.length
+    + findingsRef.indexCompleteness.stale.length
     + findingsRef.unexpectedFolders.length
     + findingsRef.docsNames.violations.length
     + findingsRef.historyNames.violations.length
@@ -957,6 +1145,7 @@ async function runFor(target) {
   findings.appliedMigrationDrift = [];
   findings.folderNames = { violations: [] };
   findings.folderNotes = { present: [], missing: [], violations: [], parentLinkViolations: [], selfLinkViolations: [], bodyBloat: [], docsGuideBloat: [] };
+  findings.indexCompleteness = { missing: [], stale: [] };
   findings.unexpectedFolders = [];
   findings.docsNames = { violations: [] };
   findings.docsNameWarnings = { warnings: [] };
@@ -968,6 +1157,7 @@ async function runFor(target) {
   await checkMigrations();
   checkFolderNames();
   checkFolderNotes();
+  checkFolderIndexCompleteness();
   checkFolderNoteBodyBloat();
   checkUnexpectedFolders();
   checkDocsNames();

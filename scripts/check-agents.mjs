@@ -11,9 +11,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
-import { isValidAccess } from "./lib/convention.mjs";
+import { isValidAccess, isValidVisibility } from "./lib/convention.mjs";
 import { normalizeMarkdownSection } from "./lib/markdown.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
+import { agentsSectionReplacements } from "./lib/agents-section.mjs";
 
 const SKILL_DIR = findSkillDir();
 const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
@@ -69,7 +70,7 @@ function templateForAccess(access) {
 }
 
 function substituteTemplate(filename, project) {
-  return renderTemplateFile(TEMPLATE_DIR, filename, {});
+  return renderTemplateFile(TEMPLATE_DIR, filename, agentsSectionReplacements(project));
 }
 
 function extractPmSection(content) {
@@ -101,6 +102,13 @@ function validateProject(name, project) {
   const templateName = templateForAccess(project.access);
   if (!templateName) {
     issues.push(`invalid access '${project.access ?? ""}' in projects.json`);
+    return { name, status: "FAIL", detail: "", issues };
+  }
+
+  if (project.visibility !== undefined && !isValidVisibility(project.visibility)) {
+    issues.push(
+      `invalid visibility '${project.visibility}' in projects.json; expected 'public' or 'private'`
+    );
     return { name, status: "FAIL", detail: "", issues };
   }
 

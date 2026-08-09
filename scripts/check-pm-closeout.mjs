@@ -240,6 +240,32 @@ function linkedMilestoneRels(pmFolder, relPaths) {
   return [...out].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
 }
 
+// A current-state note modified this session must be linked from its folder
+// index's `## Notes` list. Folder index notes themselves and root-level notes
+// are exempt. Returns [{ note, index }] violations.
+function folderIndexViolations(pmFolder, relPaths) {
+  const violations = [];
+  for (const relPath of relPaths) {
+    const parts = relPath.split("/");
+    if (parts.length < 2) continue;
+    const dir = parts.slice(0, -1).join("/");
+    const stem = parts.at(-1).replace(/\.md$/, "");
+    if (stem === parts.at(-2)) continue;
+    const indexRel = `${dir}/${parts.at(-2)}.md`;
+    const indexAbs = join(pmFolder, indexRel);
+    if (!existsSync(indexAbs)) continue;
+    const content = readFileSync(indexAbs, "utf8");
+    const relNoExt = relPath.replace(/\.md$/, "");
+    const linked = [...content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)]
+      .some((m) => {
+        const target = m[1].replace(/\.md$/, "");
+        return target === relNoExt || target.endsWith(`/${relNoExt}`) || target === stem || target.endsWith(`/${stem}`);
+      });
+    if (!linked) violations.push({ note: relPath, index: indexRel });
+  }
+  return violations;
+}
+
 function findPmEvidence(pmFolder, baseline, { projectName = null, configPath = null } = {}) {
   const modifiedCurrentState = walkMarkdown(pmFolder)
     .filter(isCurrentStatePmRel)
@@ -307,6 +333,18 @@ function suggestPmLanes(changes) {
     }
     if (path.startsWith("templates/")) {
       suggestions.add("features/pm-folder-bootstrap.md");
+    }
+    if (path === "CONTEXT.md" || path === "CONTEXT-MAP.md" || path.startsWith("docs/adr/")) {
+      suggestions.add("decisions/ (ADR stub with repo_path on public projects)");
+    }
+    if (path.startsWith("docs/agents/")) {
+      suggestions.add("system/ or README routing map (tracker/domain config changed)");
+    }
+    if (path.startsWith(".scratch/")) {
+      suggestions.add("roadmap/plans/ + roadmap/done-pending.md (spec/tickets published to local tracker)");
+    }
+    if (path.startsWith(".out-of-scope/")) {
+      suggestions.add("decisions/ (NEG) or the active plan's NOT-in-scope section");
     }
   }
   suggestions.add("history/YYYY/<Month>/history-YYYY-MM-DD.md");
@@ -407,6 +445,7 @@ const needsCurrentStatus = evidence.priorityBearing.length > 0;
 const hasCurrentStatus = evidence.currentStatusUpdated;
 const needsMilestone = evidence.priorityBearing.some((relPath) => !relPath.startsWith("roadmap/milestones/"));
 const hasMilestone = evidence.activeMilestoneUpdated || evidence.linkedMilestonesUpdated.length > 0;
+const indexViolations = folderIndexViolations(pmFolder, evidence.currentState);
 
 lines.push(`Baseline: ${baseline.toISOString()}`);
 lines.push("");
@@ -447,7 +486,13 @@ if (needsCurrentStatus) {
 }
 lines.push("");
 
-if (hasCurrentState && hasHistory && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
+if (indexViolations.length > 0) {
+  lines.push("Folder index violations (modified notes missing from their folder index `## Notes`):");
+  for (const v of indexViolations) lines.push(`- ${v.note} is not linked from ${v.index}`);
+  lines.push("");
+}
+
+if (indexViolations.length === 0 && hasCurrentState && hasHistory && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
   lines.push("**Status:** PASS");
   lines.push("");
   lines.push("PM close-out evidence found: current-state docs and current-day history were updated.");
@@ -459,7 +504,9 @@ if (hasCurrentState && hasHistory && (!needsCurrentStatus || hasCurrentStatus) &
 
 lines.push("**Status:** FAIL");
 lines.push("");
-if (needsCurrentStatus && !hasCurrentStatus) {
+if (indexViolations.length > 0) {
+  lines.push("PM close-out required. Notes changed this session are missing from their folder index `## Notes` list — update the index in the same session (see list above).");
+} else if (needsCurrentStatus && !hasCurrentStatus) {
   lines.push("PM close-out required. Priority-bearing PM files changed, so refresh `CURRENT_STATUS.md` before history.");
 } else if (needsMilestone && !hasMilestone) {
   lines.push("PM close-out required. Priority-bearing PM files changed, so refresh the active or explicitly linked `roadmap/milestones/*.md` note before history.");

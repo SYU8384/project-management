@@ -21,6 +21,12 @@ const BOOTSTRAP = join(SKILL_DIR, "scripts", "bootstrap-pm.mjs");
 const CHECK_PM = join(SKILL_DIR, "scripts", "check-pm.mjs");
 const MIGRATE = join(SKILL_DIR, "scripts", "migrate.mjs");
 
+// Bootstrap scaffolds carry this date; reconcile fixers refresh repaired
+// files to real (UTC) today. Pinning the scaffold date to today keeps the
+// CURRENT_STATUS freshness comparison time-invariant — a hardcoded past
+// date makes the fixture go stale the day after it was written.
+const TODAY = new Date().toISOString().slice(0, 10);
+
 function historyLog(date, productBullet, verificationTitle, verificationLines) {
   return `---
 title: history-${date}
@@ -110,7 +116,7 @@ test("check-pm --fix repairs applied history drift without duplicating the ledge
       "--notes", "Applied migration drift fixture.",
       "--config", config,
       "--vault-root", vault,
-      "--date", "2026-07-03",
+      "--date", TODAY,
       "--yes",
     ], { encoding: "utf8" });
     assert.equal(bootstrap.status, 0, bootstrap.stdout + bootstrap.stderr);
@@ -119,6 +125,7 @@ test("check-pm --fix repairs applied history drift without duplicating the ledge
     const legacyDir = join(pm, "history", "2026-07");
     const legacy = join(legacyDir, "history-2026-07-03.md");
     mkdirSync(legacyDir, { recursive: true });
+    mkdirSync(dirname(canonical), { recursive: true });
     writeFileSync(canonical, historyLog("2026-07-03", "Shared outcome", "Existing check", ["PASS: shared"]));
     writeFileSync(legacy, historyLog("2026-07-03", "Shared outcome", "Recovered check", ["PASS: recovered"]));
     writeFileSync(join(legacyDir, "2026-07.md"), `---\npageType: index\n---\n<!-- vault-maintain:index:start -->\n<!-- vault-maintain:index:end -->\n`);

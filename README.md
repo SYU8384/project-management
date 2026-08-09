@@ -149,6 +149,35 @@ The `access` field is set when you first run `setup this repo` or `setup as coll
 
 The full per-access-mode behavior (how the portable `AGENTS.md` section resolves local access, what trigger phrases fire, and what the contributor-vs-maintainer workflow looks like) is in `REFERENCE.md` → "Coding Agent Integration."
 
+## 🔓 Public vs private repos
+
+Access mode answers *who may edit the PM folder*. A second, independent axis answers *does the repo have outside readers*: every project registers `visibility: "public" | "private"` in `~/.config/project-management/projects.json`. Setup detects it from the git remote (`gh repo view --json visibility`) and confirms with you, and you can ask an agent to change it later ("make this project open source").
+
+On **public** (open-source) repos, contributor-facing knowledge is canonical *in the repo*, where contributors and coding agents actually look:
+
+- Architecture decisions live at `docs/adr/D-NNN-slug.md` — one identifier everywhere.
+- The domain glossary lives at `CONTEXT.md`; contributor-facing architecture overviews live under `docs/`.
+- The PM folder keeps a **registry stub** per ADR in `decisions/` — status, supersedes, a 2-3 sentence summary, and a `repo_path:` frontmatter link — so the PM folder stays the complete decision registry without holding a second writable copy that could drift.
+
+Everything else **never copies into a public repo**: PRD/market/vendor/policy/rejection decisions, roadmap plans and priorities, history, `TEAM.md`, inbox, and known-issues detail stay PM-only. Links point PM → repo/GitHub, never the other way. Switching visibility is asymmetric: **private → public** runs a scrub review (the agent lists what becomes repo-canonical, flags private-adjacent content, you approve) and bootstraps the repo docs *before* the field flips; **public → private** just flips the field and re-syncs `AGENTS.md`.
+
+The `AGENTS.md` PM section of a public repo gains a repo-canonical-docs block automatically (rendered from the template only for `visibility: "public"`), and `scripts/check-repo-docs.mjs` enforces both link directions: every stub's `repo_path` must exist, and every `docs/adr/D-*.md` must have a stub. On **private** repos nothing changes — full decision bodies live in the PM folder as before. The model is recorded in [`docs/adr/D-025-repository-visibility-and-repo-canonical-docs.md`](./docs/adr/D-025-repository-visibility-and-repo-canonical-docs.md); full flows in `REFERENCE.md` → "Repository Visibility And Repo-Canonical Docs."
+
+## 🧩 Matt-Pocock engineering skills integration
+
+This skill composes with the [matt-pocock engineering skills](https://github.com/mattpocock/skills) (`to-spec`, `to-tickets`, `triage`, `wayfinder`, `grill-with-docs`, `implement`). Those skills plan and track work in the repo and its issue tracker; this skill keeps the PM folder in sync with what they publish. Artifacts stay where those skills put them — the PM folder registers and links them, and absorbs the management state:
+
+| Skill publishes | PM folder integration |
+|---|---|
+| `to-spec` → spec issue on the tracker | One plan in `roadmap/plans/` with the issue URL(s) in frontmatter and `## Related`; mirrored once in `roadmap/done-pending.md`. |
+| `to-tickets` → ticket issues (or `.scratch/` files on the local tracker) | Tickets become the plan's step list with issue links — never per-ticket done-pending mirrors. |
+| `wayfinder` → a map issue of decision tickets | One multi-session PM plan linked to the map; closing the map closes out the plan. |
+| `triage` → labels, comments, `.out-of-scope/` files | A `wontfix`-rejected enhancement becomes a `NEG` decision (or a plan's `NOT in scope` line); verified bugs go to `roadmap/known-issues.md`. |
+| `grill-with-docs` / `domain-modeling` → `CONTEXT.md`, `docs/adr/` | A new ADR gets a PM decision stub (public repos) or full entry (private repos); the glossary is linked from the PM routing map. |
+| `implement` → code + commits | Normal PM close-out, plus flipping the linked plan steps. |
+
+Tracker configuration is read from the repo's `docs/agents/issue-tracker.md` (written once by `setup-matt-pocock-skills`) — it is never duplicated into `projects.json`. On the local-markdown tracker, specs and tickets live in `.scratch/` inside the repo, so setup records whether `.scratch/` is gitignored or committed — on public repos that decides whether tickets are contributor-visible. `check-pm-closeout.mjs` surfaces the matching PM lane suggestions whenever a session diff touches `CONTEXT.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, or `.out-of-scope/`.
+
 <a id="pm-folder-model"></a>
 
 ## 🗂️ PM Folder Model
@@ -205,11 +234,12 @@ History is written last because it records what changed after the durable docs h
 | [`templates/projects.template.json`](./templates/projects.template.json) | Starter for `projects.json`; the bootstrap script copies it to `~/.config/project-management/projects.json` on first run. |
 | [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
 | [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation/reconcile entry point that runs all PM checks and coordinates `--fix`. |
-| [`scripts/check-pm-closeout.mjs`](./scripts/check-pm-closeout.mjs) | Non-mutating worktree/session guard that checks whether meaningful code changes have PM close-out evidence. |
+| [`scripts/check-pm-closeout.mjs`](./scripts/check-pm-closeout.mjs) | Non-mutating worktree/session guard that checks whether meaningful code changes have PM close-out evidence, including folder-index coverage for notes changed in the session. |
 | [`scripts/check-reorg-candidates.mjs`](./scripts/check-reorg-candidates.mjs) | Read-only reorganization candidate detector: tiny/stale/orphan feature pages and manuals, slug-gated similarity pairs, undeclared-supersession hints, and stale backlog. Report only; never edits. |
 | [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator and `--fix` repair path for missing/stale PM sections. |
+| [`scripts/check-repo-docs.mjs`](./scripts/check-repo-docs.mjs) | Repo-canonical docs validator: every project carries `visibility`, and on public repos every ADR stub's `repo_path` exists and every `docs/adr/D-*.md` has a PM stub. Report-only. |
 | [`scripts/sync-agents-section.mjs`](./scripts/sync-agents-section.mjs) | Targeted AGENTS PM-section sync utility for re-rendering registered repos from the latest portable template. |
-| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; reports pending migration debt and separately reports opted-in applied migration drift when a repaired structure reappears after ledger application. |
+| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; reports pending migration debt and separately reports opted-in applied migration drift when a repaired structure reappears after ledger application. Also enforces folder index completeness: every direct child note must be linked from the folder note's `## Notes` list (and child folder notes from `## Subfolders`); `--fix` regenerates marked index blocks. |
 | [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner; `--fix` refreshes deterministic `last_reviewed` / `updated` dates when frontmatter is present. |
 | [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator; `--fix` repairs deterministic frontmatter, page-type, history-shape, and archive-marker drift. |
 | [`scripts/check-inbox-conventions.mjs`](./scripts/check-inbox-conventions.mjs) | Inbox raw-intake validator for filename shape, lifecycle metadata, destination routing, and placeholder-name handling. |
@@ -224,7 +254,7 @@ History is written last because it records what changed after the durable docs h
 | [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
 | [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
 | [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
-| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, vault-relative Obsidian link normalization, inbox lane creation, planning-note opening shape, plan-side mirror traceability, parent-workstream supersede status flip, and supersession-review guidance. |
+| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, vault-relative Obsidian link normalization, inbox lane creation, planning-note opening shape, plan-side mirror traceability, parent-workstream supersede status flip, supersession-review guidance, and the `visibility` backfill. |
 | [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
 | [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
 | [`scripts/lib/frontmatter-fixers.mjs`](./scripts/lib/frontmatter-fixers.mjs) | Shared deterministic PM frontmatter repairs used by reconcile. |

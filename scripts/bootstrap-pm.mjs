@@ -18,12 +18,13 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
-import { ACCESS_VALUES } from "./lib/convention.mjs";
+import { ACCESS_VALUES, VISIBILITY_VALUES } from "./lib/convention.mjs";
 import { replaceSectionBody as replaceMarkdownSectionBody } from "./lib/markdown.mjs";
 import { milestoneNoteContent, milestoneSlugForPhase } from "./lib/milestones.mjs";
 import { findVaultRoot } from "./lib/paths.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
+import { agentsSectionReplacements } from "./lib/agents-section.mjs";
 import { summarizeScaffoldCounts } from "./lib/scaffold-plan.mjs";
 import {
   historyDateParts,
@@ -49,7 +50,8 @@ function usage() {
     --phase <phase> \\
     --notes <one-line description> \\
     --config <path> \\
-    [--access authoritative|read-only] \\
+    [--access authoritative|read-only] \
+    [--visibility public|private] \\
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
     [--team-note skip|placeholder] \\
@@ -80,6 +82,7 @@ function parseArgs(argv) {
     notes: "",
     config: null,
     access: "authoritative",
+    visibility: "private",
     vaultRoot: null,
     date: localDate(),
 teamNote: "skip",
@@ -116,6 +119,7 @@ teamNote: "skip",
     else if (arg === "--notes") out.notes = value;
     else if (arg === "--config") out.config = value;
     else if (arg === "--access") out.access = value;
+    else if (arg === "--visibility") out.visibility = value;
     else if (arg === "--vault-root") out.vaultRoot = value;
 else if (arg === "--date") out.date = value;
     else if (arg === "--team-note") out.teamNote = value;
@@ -143,6 +147,12 @@ else if (arg === "--date") out.date = value;
   if (!VALID_ACCESS_VALUES.includes(out.access)) {
     console.error(
       `Invalid --access: ${out.access}. Expected one of: ${VALID_ACCESS_VALUES.join(", ")}.`
+    );
+    process.exit(2);
+  }
+  if (!VISIBILITY_VALUES.includes(out.visibility)) {
+    console.error(
+      `Invalid --visibility: ${out.visibility}. Expected one of: ${VISIBILITY_VALUES.join(", ")}.`
     );
     process.exit(2);
   }
@@ -219,6 +229,7 @@ const historyMonthIndexPath = historyMonthIndexRel(date);
 const historyDayPath = historyDayRel(date);
 const notes = cli.notes || `${project} project.`;
 const access = cli.access;
+const visibility = cli.visibility;
 const linkRoot = projectPathFromVault(vaultRoot, pmFolder);
 const linkOptions = { pmFolder, vaultRoot };
 const initialMilestone = milestoneSlugForPhase(cli.phase);
@@ -625,6 +636,7 @@ function writeConfig() {
     phase: cli.phase,
     notes,
     access,
+    visibility,
   };
   writeReplace(configPath, `${JSON.stringify(cfg, null, 2)}\n`, existsSync(configPath) ? "update" : "write");
 }
@@ -642,7 +654,7 @@ function replacePmSection(existing, section) {
 function writeAgents() {
   if (!codeRepo) return;
   const agentsPath = join(codeRepo, "AGENTS.md");
-  const section = substituteTemplate("AGENTS_PM_SECTION.md", {});
+  const section = substituteTemplate("AGENTS_PM_SECTION.md", agentsSectionReplacements({ visibility }));
   const existing = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : "";
   const next = replacePmSection(existing, section);
   if (existing === next) {

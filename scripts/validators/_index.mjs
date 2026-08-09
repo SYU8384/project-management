@@ -34,6 +34,7 @@ const validators = [
   { file: "check-obsidian-links.mjs",        label: "Obsidian links (D-014)" },
   { file: "check-backticked-wikilinks.mjs",  label: "Backticked wikilinks" },
   { file: "check-agents.mjs",                label: "AGENTS.md integration" },
+  { file: "check-repo-docs.mjs",             label: "Repo-canonical docs (visibility)" },
 ];
 
 export default validators;

@@ -500,7 +500,7 @@ Every folder must have an index note whose filename matches the folder name:
 - `roadmap/roadmap.md`
 - `system/system.md`
 
-Update folder indexes in the same session when adding, moving, archiving, or deleting notes.
+Update folder indexes in the same session when adding, moving, archiving, or deleting notes. `check-vault-structure.mjs` enforces this: it FAILs on child notes missing from `## Notes`, child folder notes missing from `## Subfolders`, and stale links to deleted targets, and `--fix` regenerates the marked index block (indexes without `vault-maintain:index` markers are reported for manual repair). `check-pm-closeout.mjs` independently fails session close-out when a note changed in the session is missing from its folder index.
 
 ### Index And Navigation Rules
 
@@ -669,6 +669,73 @@ For projects with an external issue tracker (GitHub Issues, GitLab Issues, Linea
 - Bugs the team is fixing in the current sprint
 
 The full backlog lives in the external tracker; the PM folder entry is a curated subset.
+
+---
+
+## Repository Visibility And Repo-Canonical Docs
+
+Every registered project records `visibility: "public" | "private"` in `projects.json`. Visibility answers one question: **does the repo have outside readers (contributors)?** It is separate from `access` (which governs who may edit the PM folder) and from the issue tracker (which lives in the repo's `docs/agents/issue-tracker.md` when the matt-pocock engineering skills are set up).
+
+### What is repo-canonical on public repos
+
+On `visibility: "public"` projects, contributor-facing info has **one canonical home: the repo**. The PM folder never holds a second writable copy — it holds a registry stub with a link.
+
+| Info | Canonical home (public repos) | PM folder keeps |
+|---|---|---|
+| Architecture decisions (ADR) | `docs/adr/D-NNN-slug.md` in the repo | `decisions/D-NNN_ADR_<slug>.md` stub |
+| Domain glossary | `CONTEXT.md` in the repo | Link from README routing map / `system/` |
+| Contributor-facing architecture overviews | repo `docs/` | Link from `system/` |
+| Public bugs | GitHub Issues (or the configured tracker) | Curated `roadmap/known-issues.md` index (existing convention) |
+
+**Everything else stays PM-only, always** — never copy it into a public repo: PRD/MKT/VND/POL/NEG/EXP decisions (pricing, vendor terms, strategy, rejections), roadmap plans and priorities, history, `TEAM.md`, `inbox/`, known-issues detail. Links point **PM → repo/GitHub only**; public artifacts never reference private vault paths.
+
+On `visibility: "private"` projects nothing changes: full decision bodies live in `decisions/` as before (a `repo_path` link is optional).
+
+### ADR stub shape
+
+The PM stub keeps every *management* field so `decisions/` remains the complete registry:
+
+- Frontmatter: the standard decision fields (`pageType: decision`, `decision_type: ADR`, `status`, `decision_date`, `supersedes`) **plus `repo_path: docs/adr/D-NNN-slug.md`**.
+- Body: 2-3 sentence summary of the decision, any private context that cannot go public, and the usual `## Related` links.
+
+One identifier everywhere: the repo file carries the PM id (`docs/adr/D-007-capability-manifests.md`), not a separate `NNNN` sequence. `check-repo-docs.mjs` enforces both directions: every public-project ADR stub's `repo_path` must exist, and every `docs/adr/D-*.md` must be referenced by a stub.
+
+### Switching visibility
+
+Users can ask an agent to change visibility ("make this project open source", "take this repo private"). The flows are asymmetric:
+
+**private → public** (needs a scrub review; never just flip the field):
+1. List what would become repo-canonical: existing ADR-type decisions, glossary terms, architecture docs.
+2. Flag anything private-adjacent (MKT/VND/POL context embedded in ADRs, internal URLs, ops detail) and get explicit human approval of the final list.
+3. Bootstrap the repo side: create `docs/adr/` ADR bodies from the approved decisions (PM id in the filename), `CONTEXT.md` if a glossary exists, and re-render the AGENTS.md `## PM folder` section (it gains the repo-canonical block automatically once visibility flips).
+4. Convert the PM decision notes to stubs (`repo_path:` frontmatter + summary; move the full prose to the repo).
+5. Only then set `visibility: "public"` in `projects.json`, run `check-repo-docs.mjs` (and `sync-agents-section.mjs`), and log to history.
+
+**public → private** (trivial): flip `visibility` to `"private"` and re-sync the AGENTS.md section. Repo docs and PM stubs stay as-is — the repo simply stops being read by outsiders; nothing in the PM folder needs to move.
+
+---
+
+## Matt-Pocock Engineering Skills Integration
+
+The matt-pocock engineering skills (`setup-matt-pocock-skills`, `to-spec`, `to-tickets`, `triage`, `wayfinder`, `grill-with-docs`/`domain-modeling`, `implement`, `improve-codebase-architecture`, `ask-matt`) publish artifacts to the repo or its issue tracker. **Artifacts stay where those skills put them; the PM folder registers and links them and absorbs the management state.** The PM skill reads tracker config from the repo's `docs/agents/issue-tracker.md` — never duplicate tracker config into `projects.json`.
+
+After any matt-pocock skill publishes an artifact, run the PM integration step for its artifact type:
+
+| Skill | Artifact | PM integration step |
+|---|---|---|
+| `setup-matt-pocock-skills` | `docs/agents/*.md`, AGENTS.md block | Read `docs/agents/issue-tracker.md` when later hooks need tracker config. Setup time is also the moment to confirm/sync `visibility` in `projects.json`. |
+| `to-spec` | spec issue on the tracker | Create or update **one** PM plan (`roadmap/plans/YYYY-MM-DD_slug.md`): record issue URL(s) in frontmatter `issues:` and `## Related`; mirror once in `roadmap/done-pending.md`. Continue the session-referenced plan when one exists; otherwise create; ask when ambiguous. |
+| `to-tickets` | ticket issues, or `.scratch/<feature>/issues/*.md` on the local-markdown tracker | Tickets become the **plan's step list** with issue links — never individual done-pending mirrors. Local tracker: link repo-relative paths instead of URLs. |
+| `wayfinder` | map issue + child decision tickets | The map is a multi-session plan: one PM plan with the map URL in `issues:`. Closing the map closes out the plan; "Decisions so far" entries that graduate into ADRs get decision stubs. |
+| `triage` | labels/comments; `.out-of-scope/*.md` | `wontfix`-rejected enhancement → PM `NEG` decision (or the active plan's `NOT in scope` line) linking the issue and the `.out-of-scope/` file. Verified bugs → `roadmap/known-issues.md`. |
+| `grill-with-docs` / `domain-modeling` | `CONTEXT.md`, `docs/adr/*.md` | New ADR → PM decision entry: stub with `repo_path` on public projects, full body on private. Link `CONTEXT.md` from the PM README routing map or `system/`. |
+| `implement` | code + commits | Normal PM close-out, plus flipping the linked plan steps / done-pending bullets. |
+| `improve-codebase-architecture` | transient HTML report | No PM artifact by default; a spawned plan follows normal plan conventions. |
+| `ask-matt` | none | None. |
+
+**Local-markdown tracker caveat:** when `docs/agents/issue-tracker.md` selects the local tracker, specs/tickets live in `.scratch/` inside the repo. Setup must ask whether `.scratch/` is gitignored (private working files) or committed, and record the answer in `docs/agents/issue-tracker.md` — on public repos this decides whether tickets are contributor-visible.
+
+`check-pm-closeout.mjs` surfaces the matching PM lane suggestions whenever a session diff touches `CONTEXT.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, or `.out-of-scope/`.
 
 ---
 
@@ -866,7 +933,8 @@ The user's project paths live in a separate config file, not in the skill text. 
       "pm_folder": "/path/to/vault/Projects/<ProjectName>",
       "phase": "pre-alpha | alpha | beta | stable | deprecated",
       "notes": "one-line description",
-      "access": "authoritative | read-only"
+      "access": "authoritative | read-only",
+      "visibility": "public | private"
     }
   }
 }
@@ -879,6 +947,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `projects.<name>.phase` — current phase (pre-alpha, alpha, beta, stable, deprecated). Free-form string; helps the agent calibrate detail.
 - `projects.<name>.notes` — one-line description (optional).
 - `projects.<name>.access` — `"authoritative"` (you own the PM folder; the agent edits it directly when you change code, run setup, or reconcile) or `"read-only"` (you have the maintainer's PM folder mounted read-only; the agent never edits it and uses the PR body to signal PM changes). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). Projects with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.
+- `projects.<name>.visibility` — `"public"` (open-source repo; contributors read it) or `"private"`. Drives the repo-canonical docs convention (see "Repository Visibility And Repo-Canonical Docs" below): on public repos, ADRs/glossary/architecture docs are canonical in the repo and the PM folder keeps registry stubs. Missing on legacy entries; migration `1.21.0-project-visibility` backfills the safe default `"private"`. Users can ask an agent to change it ("make this project open source"); see the visibility-switch flows below.
 
 **Auto-bootstrap on first use.** v1.3.0+: if `~/.config/project-management/projects.json` is missing when the agent starts work, the bootstrap script (`scripts/bootstrap-pm.mjs`) copies `templates/projects.template.json` to the user location and walks the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
@@ -894,6 +963,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `pm_folder` (path to the project's PM folder inside the vault) — required
 - `phase` (pre-alpha | alpha | beta | stable | deprecated) — required
 - `access` (authoritative | read-only) — required
+- `visibility` (public | private) — required for code repos; detect first (see Setup Intake), ask only when ambiguous
 - `notes` (one-line description) — optional
 
 The agent reads the existing `projects.json` (if any), merges the new entry into `projects`, and writes back. **Never silently invent paths — ask the user for each field.** If the user is also bootstrapping the PM folder, this addition is Step 0 of the Bootstrap Workflow (see below).
@@ -963,6 +1033,11 @@ When the UI supports selectable answers, use the question tool. Otherwise, prese
 
    Both create choices map to a placeholder `TEAM.md` unless the user supplies concrete names or roles. Do not ask this for obvious solo/scratch projects unless the user mentions collaborators, access, roles, approvals, or inbox author names.
 
+6. **Repository visibility** (code-repo setups only)
+   - Detect first: `gh repo view --json visibility` (or `git remote -v` + platform knowledge). If detection is conclusive, record it without asking.
+   - `public` — open-source repo; contributors read it. Enables the repo-canonical docs convention (see "Repository Visibility And Repo-Canonical Docs").
+   - `private` — safe default when detection is unavailable or ambiguous.
+
 Ask free-text follow-ups only for values that cannot be selected:
 
 - Project name, if not clear.
@@ -992,6 +1067,7 @@ Never create a private "canonical" PM folder for a collaborator unless the user 
 - A project's phase changes (e.g., alpha → beta).
 - A project's one-line description should change.
 - A project's access level changes (e.g., promoting a read-only contributor to authoritative, or a collaborator's project becoming read-only because you no longer maintain it).
+- A project's visibility changes (e.g., private → public open-source launch). Use the visibility-switch flows in "Repository Visibility And Repo-Canonical Docs" — do not just flip the field.
 
 **Script auto-discovery.** v1.3.0+: the bundled validation scripts read `projects.json` from `~/.config/project-management/projects.json` by default. Path resolution precedence: `--config <path>` flag (highest) → user-specific `projects.json`. The skill-root `projects.json` is **not** read; pre-v1.3.0 installs must move their file once. An explicit PM-folder path scans that folder directly and bypasses config-based project discovery. Running `node <skill_dir>/scripts/check-pm.mjs` with no arguments validates every available project registered in the local config.
 
