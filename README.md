@@ -8,93 +8,55 @@
 
 The important part is behavioral: when meaningful work happens, the agent updates the right current-state docs, roadmap notes, and history logs *in the same session*. Six months later, a new session — or a new teammate, or a new agent — reads the folder and knows exactly where things stand. No archaeology through chat logs and PR threads.
 
-Used as an Obsidian vault, every folder is structured and interlinked — decisions, plans, features, manuals, and history point at each other, so agents retrieve exactly the relevant context instead of re-reading everything. But the convention is just Markdown plus a small local `projects.json` registry; it works anywhere.
-
 ## 🧠 Why This Exists
 
-Coding agents have no memory beyond the session. As a project grows, past decisions, shipped specs, and future plans scatter across chat logs, PR threads, and half-finished notes — and every new session starts from zero. Beyond that, project memory decays in predictable ways:
+Coding agents have no memory beyond the session. As a project grows, decisions scatter across chat logs and PR threads, docs lag behind the code, and every new session starts from zero. This skill gives your project a memory that doesn't decay — one strict, repeatable operating model, so any agent, on any machine, picks up exactly where the last session left off.
 
-- Work ships, but user guides, admin runbooks, and developer docs lag behind.
-- Decisions are made and forgotten — nobody can say *why* six months later.
-- Roadmaps go stale because done/pending state isn't tied to implementation work.
-- Agents burn tokens rediscovering architecture, recurring bugs, and prior fixes.
-- Folder structures grow organically until nobody knows where new information belongs.
+## ✨ Highlights
 
-This skill gives your project a memory that doesn't decay: big plans stay mapped to pending work, decisions stay typed and linked, manuals stay in sync with the code, and history writes itself as you ship. One strict, repeatable operating model — so any agent, on any machine, picks up exactly where the last session left off.
+- 🧭 **Productive in minutes** — say `setup this repo`; the agent bootstraps the folder, registers the project, and wires up `AGENTS.md`. No workflow to learn.
+- 📝 **The memory loop** — when work ships, the agent updates current-state docs, roadmap, and an outcome-first history entry in the same session. "Where are we?" is always answered.
+- 🧩 **Decisions stay typed and linked** — architecture, product, market, vendor, policy, rejection, experiment. "Why we chose this" is never lost, and superseded plans cascade to archive.
+- 📚 **Manuals stay honest** — changes route into the right user/admin/developer guide instead of decaying into traps for the next reader.
+- 🐞 **Recurring bugs solved in minutes** — active issues in the roadmap; root causes and fixes in `known-bugs.md`. Known issues, bugs, risks, blockers, limitations, and current gaps are always logged to `roadmap/known-issues.md` first, so nothing falls through.
+- 🧹 **Self-cleaning** — validators repair drift, broken links, and stale schemas; a human-approved reorganization flow keeps a year of growth navigable.
+- ✅ **Close-out guard** — before an agent signs off, it verifies meaningful code changes came with matching status, milestone, and history updates. No work silently disappears.
+- 🔗 **Obsidian-optional** — as an Obsidian vault, every note is structured and interlinked so agents retrieve exactly the relevant context. But the convention is just Markdown plus a small local `projects.json` registry; it works anywhere.
 
-## ✨ What It Does
+## 🔓 Open-source aware & plays well with others
 
-### Getting started — *one-time setup*
-
-| Capability | What the agent does — and why it matters |
-|---|---|
-| 🧭 Guided setup | Say `setup this repo`; the agent walks you through bootstrap and registration — productive in minutes, no workflow to learn. |
-| 🏗️ Bootstrap PM folders | Creates the standard docs layout, indexes, root notes, roadmap, and `AGENTS.md` integration — every project starts with the same navigable memory structure. |
-| 🤝 Integrate code repos | Adds a portable `AGENTS.md` PM section that resolves local PM access from `projects.json` — any agent, on any machine, knows how (and whether) it may touch the PM folder. |
-| 🧑‍💼 Bootstrap OpenClaw PM agents | A copy-paste prompt turns OpenClaw into an autonomous PM — brainstorms and decisions get captured even when you're not coding. |
-
-### Every session — *the memory loop*
-
-| Capability | What the agent does — and why it matters |
-|---|---|
-| 📝 Log completed work | Updates current-state docs first, then writes an outcome-first history entry — the project always has an accurate "where are we" snapshot and a readable timeline of how it got there. |
-| 🧩 Track plans and decisions | Planning notes, done-pending mirrors, typed decisions; superseded plans flip status and cascade to archive — big plans stay mapped to pending to-dos, and "why we chose this" is never lost. |
-| 📚 Keep guides current | Routes changes into the right user/admin/developer guide — manuals stay in sync with the code instead of decaying into traps for the next reader. |
-| 🐞 Preserve bug knowledge | Active issues in roadmap; root causes and fixes in `known-bugs.md` — recurring bugs get solved in minutes by looking them up instead of re-debugging from scratch. |
-| ✅ Close the loop after coding | Before an agent signs off, it verifies meaningful code changes came with matching status, milestone, and history updates — no work silently disappears from the project's memory. |
-
-### Periodic hygiene — *keeping the brain clean*
-
-| Capability | What the agent does — and why it matters |
-|---|---|
-| 🧹 Repair existing folders | Finds and fixes missing indexes, stale schemas, broken conventions, and drift — the folder stays trustworthy instead of slowly rotting. |
-| 🗜️ Reorganize grown folders | Detects tiny, stale, orphaned, or overlapping pages and executes a human-approved merge/retire/combine plan — a year of growth doesn't turn the memory into an unnavigable pile. |
-| 🚦 Keep live routing current | Catches live notes pointing at retired lanes and repairs link drift — agents never follow a map to a place that no longer exists. |
-| 🔗 Keep Obsidian links navigable | Validates rendered wikilinks and repairs malformed links and TOCs — the interlinked structure agents rely on for retrieval never breaks. |
+- **Public vs private repos.** Every project registers `visibility: public | private`. On open-source repos, contributor-facing knowledge is canonical *in the repo* — ADRs at `docs/adr/D-NNN-slug.md`, glossary at `CONTEXT.md` — while the PM folder keeps registry stubs with `repo_path:` links, staying the complete decision registry. Strategy, roadmap priorities, vendor calls, and history never leave the PM folder. Going public later? Say "make this project open source" — the agent runs a scrub review and bootstraps the repo docs before flipping. Details: `REFERENCE.md` → "Repository Visibility."
+- **Integrates with the [matt-pocock engineering skills](https://github.com/mattpocock/skills).** `to-spec` → a PM plan linked to the GitHub issue; `to-tickets` → plan steps; `wayfinder` → a multi-session plan; `triage` rejections → rejection decisions and verified bugs → known issues; new ADRs → decision stubs. Their artifacts stay in the repo/tracker; the PM folder registers and links them. Details: `REFERENCE.md` → "Matt-Pocock Engineering Skills Integration."
 
 <a id="quick-start"></a>
 
 ## 🚀 Quick Start
 
-Pick the path that matches how you use the skill and which shell you can run. OpenClaw can handle setup end to end; coding-agent installs need one project setup step after installation.
+Pick the path that matches how you use the skill and which shell you can run.
 
 ### Path A — OpenClaw PM agent (any OS; recommended for PM-domain work)
 
-OpenClaw PM agents live in your chat, not in your repo. Their job is the PM work itself — brainstorming, capturing decisions and meetings, tracking progress across projects, and keeping the PM folder current. This is *broader* than what a coding agent does as a side effect of code changes. Use OpenClaw when the work is PM-shaped.
-
-Use this path on any OS where OpenClaw can run the matching installer.
-
-Paste this to your OpenClaw agent:
+OpenClaw PM agents live in your chat, not in your repo — brainstorming, capturing decisions and meetings, tracking progress across projects. Use this path on any OS where OpenClaw can run the matching installer. Paste this to your OpenClaw agent:
 
 ```text
 Read https://raw.githubusercontent.com/SYU8384/project-management/main/openclaw-instruction.md and follow its instructions.
 ```
 
-The OpenClaw instruction is OS-aware: it uses the bash installer on macOS, Linux, WSL, or Git Bash, and the PowerShell installer on native Windows. The OpenClaw agent handles the rest — installing or updating the skill, creating `~/.config/project-management/projects.json`, running a guided setup for each project, and auditing everything else. **You don't need to say `setup this repo` afterward**; OpenClaw runs setup autonomously.
+The OpenClaw instruction is OS-aware: it uses the bash installer on macOS, Linux, WSL, or Git Bash, and the PowerShell installer on native Windows. The agent handles the rest — installing the skill, creating `~/.config/project-management/projects.json`, and running guided setup for each project.
 
 ### Path B — Coding agent on macOS / Linux / WSL / Git Bash
 
 Use this path for Codex, Claude, or another coding agent when your shell can run POSIX `bash`. These `curl | bash` commands do **not** run in native Windows PowerShell or `cmd.exe`; use [Path C](#path-c--coding-agent-on-native-windows-powershell) there.
 
-**Interactive installer (recommended for first-time installs):**
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash
 ```
 
-With a TTY attached, the installer shows an interactive menu of four targets plus a custom-directory option. Without a TTY (CI, scripts, `ssh -T`), it defaults to `--target agents` (the most portable target).
-
-**Non-interactive (CI / scripts):** pass `--target <name> --yes`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/SYU8384/project-management/main/install.sh | bash -s -- --target agents --yes
-```
-
-Targets: `agents` (`~/.agents/skills/project-management`), `codex`, `claude`, `openclaw`, or `--dest <path>` for a custom directory.
+With a TTY, the installer shows an interactive menu; without one (CI, scripts, `ssh -T`), it defaults to `--target agents`. Non-interactive: `bash -s -- --target agents --yes`. Targets: `agents`, `codex`, `claude`, `openclaw`, or `--dest <path>`.
 
 ### Path C — Coding agent on native Windows PowerShell
 
-Use this path from PowerShell 5.1 (Windows 10 default) or PowerShell 7+. It is the native-Windows equivalent of Path B:
+Use this path from PowerShell 5.1 (Windows 10 default) or PowerShell 7+:
 
 ```powershell
 $installer = Join-Path $env:TEMP "project-management-install.ps1"
@@ -102,237 +64,63 @@ Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/SYU83
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer -Target agents -Yes
 ```
 
-The installer needs `git` on PATH (ships with Git for Windows,
-GitHub Desktop, or VS Code). If `git.exe` isn't found, the installer
-will tell you to install Git for Windows and exit.
+The installer needs `git` on PATH (ships with Git for Windows). The temp-file path keeps the command working even if PowerShell opens in `C:\WINDOWS\system32`; the process-scoped execution-policy bypass is only for this run. Targets are `agents` (`%USERPROFILE%\.agents\skills\project-management`), `codex`, `claude`, `openclaw`, or `-Dest <skills-dir>` for a custom parent skills directory.
 
-The temp-file path keeps the command working even if PowerShell opens in
-`C:\WINDOWS\system32` or another directory you cannot write to. The
-process-scoped execution-policy bypass is only for this installer run.
+## 🎯 Triggers
 
-Targets are `agents` (`%USERPROFILE%\.agents\skills\project-management`), `codex`, `claude`, `openclaw`, or `-Dest <skills-dir>` for a custom parent skills directory. Keep `-Target agents` unless your agent expects a different skill root.
+If you went through Path A (OpenClaw), the agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B or Path C, after install + first setup the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`. Restart your coding agent and say:
 
-## 🎯 Triggers (coding-agent users)
-
-If you went through Path A (OpenClaw), the OpenClaw agent handles setup, repair, and migration autonomously — you don't need any of these. If you went through Path B or Path C, after install + first setup the project lives at `<pm_folder>` and `projects.json` lives at `~/.config/project-management/projects.json`. Restart your coding agent and use these phrases.
-
-The order below follows a new user's natural flow: **register your project first** (`setup this repo` or `setup as collaborator`), then use verify / reconcile to clean state, and reserve migrate for the narrow case of migrations-only. Use `log this` after code changes in authoritative projects.
-
-| You want to | Say | When to use | What happens |
-|---|---|---|---|
-| Bootstrap a new project's PM folder | `setup this repo` | First time you set up a project. | Creates PM folder + registers project as `access: authoritative`. |
-| Register as a collaborator | `setup as collaborator` | When you have the PM folder mounted read-only (e.g., OneDrive read-link, Syncthing read-only mirror). | Registers `access: read-only` (you can read the PM folder but cannot edit it). |
-| Just see what's wrong | `verify setup` | When you want a report without any changes. | Runs the registered validators. No mutation. |
-| Fix one project's PM state | `reconcile this project` *(or* `repair and migrate` */* `fix everything` */* `reconcile the PM folder`*) | After setup, or periodically. | Runs validators with `--fix` for the resolved project, repairs its registered repo `AGENTS.md` PM section, applies pending migrations and explicitly opted-in applied-drift repairs, then re-validates. Idempotent. |
-| Consolidate a grown PM folder | `organize PM folder` *(or* `tidy PM folder` */* `reorganize PM folder` */* `PM spring cleaning`*) | Periodically, as feature pages and manuals accumulate. | Runs the read-only candidate detector, then proposes an approval-gated plan to merge small features, retire or combine manuals, declare supersessions, and digest stale backlog. Nothing merges or archives without your approval. |
-| Update all registered projects | `reconcile all projects` *(or* `reconcile existing projects` */* `reconcile outdated projects` */* `update projects with latest skill changes`*) | When the skill changed and registered projects may be stale. | Runs all registered projects with no `--project` filter: deterministic fixes, pending migrations, opted-in applied-drift repairs, stale registered repo `AGENTS.md` repairs, then re-validation. |
-| Apply pending migrations only | `migrate this project` | Rare. Use when you specifically want migration without validation. | Runs `migrate.mjs` for unapplied migrations. |
-| Log a code change | `log this` | After finishing a code change in an authoritative project. | Updates affected current-state docs + history. If the logged item is a known issue, bug, risk, blocker, limitation, or current gap, records it in `roadmap/known-issues.md` first. |
-| Record a known issue | `record this known issue`, `log this bug`, `record this limitation`, or `record this current gap` | When you discover an observed bug, risk, blocker, product limitation, or current gap. | Adds or updates the canonical `roadmap/known-issues.md` entry, then refreshes current status, milestone, mirrors, indexes, and history as needed. |
-| Create or update the team roster | `create a team note`, `record project people`, `add collaborators`, `who owns this project`, or `setup team/roles` | When maintainers, collaborators, PM access, approval rules, or inbox author names need a canonical place. | Creates or updates optional root `TEAM.md`. |
-| Check code-work PM close-out | run `check-pm-closeout.mjs` | Before a coding agent gives its final response after meaningful code work. | Verifies local access, worktree changes, current-state PM updates, milestone refreshes for priority-bearing work, and the current-day history log; allows explicit no-impact reasons. |
-| Get a one-paragraph overview of a project | `summarize this project` *(or* `summarize <ProjectName>` *)* | When you open a PM folder you don't recognize (e.g., a friend's, or your own after a long break). | Reads `README.md`, `CURRENT_STATUS.md`, `PRODUCT.md`, active roadmap state, known issues, and recent history; produces a 1-paragraph summary pointing to the right files. |
-
-If you have code access but no PM folder at all, none of these apply — see **Access model** below.
-
-## 🛡️ Access model
-
-The skill behaves differently depending on whether you own the PM folder or are a collaborator on a project whose PM folder is maintained by someone else. Pick your path at setup time; the agent uses the access mode you register to decide which files to write and which trigger phrases to expose. Code repos get one portable `AGENTS.md` PM section; local `projects.json` decides what that section means on each machine.
-
-- **Owner / maintainer** (`access: authoritative`): you own the PM folder for the project. The agent edits the PM folder directly when you change code, run setup, or reconcile. Use `setup this repo` to bootstrap a new project, `reconcile this project` to fix one existing project, or `reconcile all projects` to update every registered project after skill changes.
-- **Collaborator with PM access** (`access: read-only`): you can read the owner's PM folder for context but cannot edit it. When you change code, the agent fills in a "PM folder impact" section in your PR body instead of editing the PM folder. The maintainer applies the PM updates after merge. Use `setup as collaborator` to register this mode. You need the PM folder mounted read-only (e.g., via OneDrive read-link, Syncthing read-only mirror) to use this mode.
-- **Contributor (no PM access)** — the skill is not really for you. You have code access but no PM folder: either the maintainer doesn't share the PM folder with you, or the maintainer doesn't use the skill at all. Don't run `setup as collaborator` — there's nothing to register on your side.
-
-If you have code access but no PM folder, leave the "PM folder impact" section of your PR body empty. The maintainer's agent reads the code diff and applies PM updates on their side. (A read-only collaborator with PM folder read access should fill in the per-lane checkboxes in the same section — they can see the PM folder, so they can be specific.)
-
-The `access` field is set when you first run `setup this repo` or `setup as collaborator`, and recorded in `~/.config/project-management/projects.json`. The agent checks this local field before every PM write, so a coding agent on a read-only project will *never* edit the PM folder directly — even by accident. Projects with no PM access aren't registered in `projects.json` at all; if a cloned repo has a committed `AGENTS.md` PM section but no matching local config entry, the agent treats it as no PM access and ignores the PM section during normal coding.
-
-The full per-access-mode behavior (how the portable `AGENTS.md` section resolves local access, what trigger phrases fire, and what the contributor-vs-maintainer workflow looks like) is in `REFERENCE.md` → "Coding Agent Integration."
-
-## 🔓 Public vs private repos
-
-Access mode answers *who may edit the PM folder*. A second, independent axis answers *does the repo have outside readers*: every project registers `visibility: "public" | "private"` in `~/.config/project-management/projects.json`. Setup detects it from the git remote (`gh repo view --json visibility`) and confirms with you, and you can ask an agent to change it later ("make this project open source").
-
-On **public** (open-source) repos, contributor-facing knowledge is canonical *in the repo*, where contributors and coding agents actually look:
-
-- Architecture decisions live at `docs/adr/D-NNN-slug.md` — one identifier everywhere.
-- The domain glossary lives at `CONTEXT.md`; contributor-facing architecture overviews live under `docs/`.
-- The PM folder keeps a **registry stub** per ADR in `decisions/` — status, supersedes, a 2-3 sentence summary, and a `repo_path:` frontmatter link — so the PM folder stays the complete decision registry without holding a second writable copy that could drift.
-
-Everything else **never copies into a public repo**: PRD/market/vendor/policy/rejection decisions, roadmap plans and priorities, history, `TEAM.md`, inbox, and known-issues detail stay PM-only. Links point PM → repo/GitHub, never the other way. Switching visibility is asymmetric: **private → public** runs a scrub review (the agent lists what becomes repo-canonical, flags private-adjacent content, you approve) and bootstraps the repo docs *before* the field flips; **public → private** just flips the field and re-syncs `AGENTS.md`.
-
-The `AGENTS.md` PM section of a public repo gains a repo-canonical-docs block automatically (rendered from the template only for `visibility: "public"`), and `scripts/check-repo-docs.mjs` enforces both link directions: every stub's `repo_path` must exist, and every `docs/adr/D-*.md` must have a stub. On **private** repos nothing changes — full decision bodies live in the PM folder as before. The model is recorded in [`docs/adr/D-025-repository-visibility-and-repo-canonical-docs.md`](./docs/adr/D-025-repository-visibility-and-repo-canonical-docs.md); full flows in `REFERENCE.md` → "Repository Visibility And Repo-Canonical Docs."
-
-## 🧩 Matt-Pocock engineering skills integration
-
-This skill composes with the [matt-pocock engineering skills](https://github.com/mattpocock/skills) (`to-spec`, `to-tickets`, `triage`, `wayfinder`, `grill-with-docs`, `implement`). Those skills plan and track work in the repo and its issue tracker; this skill keeps the PM folder in sync with what they publish. Artifacts stay where those skills put them — the PM folder registers and links them, and absorbs the management state:
-
-| Skill publishes | PM folder integration |
+| Say | What happens |
 |---|---|
-| `to-spec` → spec issue on the tracker | One plan in `roadmap/plans/` with the issue URL(s) in frontmatter and `## Related`; mirrored once in `roadmap/done-pending.md`. |
-| `to-tickets` → ticket issues (or `.scratch/` files on the local tracker) | Tickets become the plan's step list with issue links — never per-ticket done-pending mirrors. |
-| `wayfinder` → a map issue of decision tickets | One multi-session PM plan linked to the map; closing the map closes out the plan. |
-| `triage` → labels, comments, `.out-of-scope/` files | A `wontfix`-rejected enhancement becomes a `NEG` decision (or a plan's `NOT in scope` line); verified bugs go to `roadmap/known-issues.md`. |
-| `grill-with-docs` / `domain-modeling` → `CONTEXT.md`, `docs/adr/` | A new ADR gets a PM decision stub (public repos) or full entry (private repos); the glossary is linked from the PM routing map. |
-| `implement` → code + commits | Normal PM close-out, plus flipping the linked plan steps. |
+| `setup this repo` | Bootstraps the PM folder and registers the project. |
+| `log this` | Updates current-state docs and history after a code change. If the logged item is a known issue, bug, risk, blocker, limitation, or current gap, records it in `roadmap/known-issues.md` first. |
+| `verify setup` | Reports problems without changing anything. |
+| `reconcile this project` | Repairs drift, applies pending migrations, re-validates. Idempotent. |
+| `organize PM folder` | Detects tiny/stale/overlapping pages and proposes an approval-gated merge/retire plan. |
+| `summarize this project` | One-paragraph overview pointing at the right files. |
 
-Tracker configuration is read from the repo's `docs/agents/issue-tracker.md` (written once by `setup-matt-pocock-skills`) — it is never duplicated into `projects.json`. On the local-markdown tracker, specs and tickets live in `.scratch/` inside the repo, so setup records whether `.scratch/` is gitignored or committed — on public repos that decides whether tickets are contributor-visible. `check-pm-closeout.mjs` surfaces the matching PM lane suggestions whenever a session diff touches `CONTEXT.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, or `.out-of-scope/`.
+The full table — including collaborator setup, visibility switching, and all aliases — is in `REFERENCE.md` → "Trigger Phrases."
+
+## 🛡️ Access & visibility at a glance
+
+- **Owner** (`access: authoritative`): the agent edits your PM folder directly.
+- **Collaborator** (`access: read-only`): the agent reads the PM folder but suggests PM updates in the PR body instead of editing it.
+- **Contributor (no PM access)**: nothing to register; the maintainer's agent backfills PM updates from the code diff.
+
+Independently, `visibility: public | private` controls whether contributor-facing docs (ADRs, glossary) are canonical in the repo — see "Open-source aware" above. The `AGENTS.md` PM section is portable and committed; each machine resolves what it may do from its local `projects.json`.
 
 <a id="pm-folder-model"></a>
 
-## 🗂️ PM Folder Model
+## 🗂️ The PM Folder at a Glance
 
-Each project gets a Markdown folder with stable lanes:
+`PRODUCT.md` vision · `TEAM.md` roster (optional) · `CURRENT_STATUS.md` live snapshot · `system/` architecture · `docs/User Guide/` · `docs/Admin Guide/` · `docs/Developer Guide/` · `docs/Quick Commands/` manuals · `features/` per-feature context · `inbox/` raw intake · `roadmap/` + `roadmap/milestones/` + `roadmap/plans/` plans, known issues, ideas · `decisions/` typed decision log · `history/` chronological work logs · `archive/` superseded material.
 
-| Path | Purpose |
-|---|---|
-| `PRODUCT.md` | Product vision, target users, current product shape, principles, and boundaries. |
-| `TEAM.md` | Optional root roster for maintainers, collaborators, PM access, approval rules, and inbox author aliases. |
-| `CURRENT_STATUS.md` | Current snapshot: phase, priorities, blockers, recent wins, risks, and stale-doc state. Refresh whenever priority-bearing roadmap, decision, feature, issue, or milestone state changes. |
-| `system/` | Current architecture, behavior, runtime, auth, database, integrations, and deployment. |
-| `docs/User Guide/` | End-user manual, FAQ, and product reference notes. |
-| `docs/Admin Guide/` | Live product operations: support, feedback, admin workflows, monitoring, statistics, jobs, access, incident response, and data repair. |
-| `docs/Developer Guide/` | Engineering workflows: local setup, codebase structure, APIs, schemas, migrations, prompts, tests, release mechanics, and `known-bugs.md`. |
-| `docs/Quick Commands/` | Copy-pasteable commands; longer explanations link back to Admin or Developer Guide. |
-| `features/` | Curated "tell me everything about this feature" pages that point into `system/`, `decisions/`, and `roadmap/plans/` docs. |
-| `inbox/` | Raw owner/collaborator intake notes before owner triage. Not a backlog; digested items move to canonical lanes. |
-| `roadmap/` | Milestones, known issues, ideas, active done/pending work, and scoped plans under `roadmap/plans/`. |
-| `roadmap/milestones/` | Agent-maintained phase-level milestone strategy, priorities, major steps, exit criteria, update triggers, and inline evidence links to specific plans, decisions, features, known issues, or docs. The active milestone is derived from `CURRENT_STATUS.md` `## Current Phase`. |
-| `roadmap/plans/` | Concrete plans and design strategies not fully shipped yet. Mirrored into `roadmap/done-pending.md` when in flight, with plan-side `## Related` links near the top back to the mirror. |
-| `decisions/` | First-class PM lane at the project root. Typed record of decisions *made* across architecture, product, market, vendor, policy, rejection, and experiment types. Type codes: `ADR / PRD / MKT / VND / POL / NEG / EXP`. |
-| `history/` | Human-readable chronological logs of completed work, organized by year-month. |
-| `archive/` | Superseded material replaced by current docs. |
+Every folder has an index note; every note links to its neighbors. Full lane descriptions: `REFERENCE.md` and the generated project README.
 
-Every visible folder has a folder-note index named after the folder, including history year/month folders such as `history/2026/2026.md` and `history/2026/June/June.md`.
-
-## 🔄 Workflow
-
-The workflow has three branches — one per access mode. The owner's path is the only one that writes the PM folder directly; collaborators and contributors route their work through the PR body.
-
-| Step | `access: authoritative` | `access: read-only` | No PM access |
-|---|---|---|---|
-| 1. Read the project's PM README | Yes (routing map) | Yes (context only) | (skip — no PM folder) |
-| 2. Update current-state docs (`system/`, `docs/`, `features/`, `roadmap/`, `decisions/`) | Yes | No | No |
-| 3. Update folder-note indexes and navigation | Yes | No | No |
-| 4. Write `history/YYYY/<Month>/history-YYYY-MM-DD.md` | Yes | No | No |
-| 5. Run close-out guard / PR impact check | `check-pm-closeout.mjs` should pass, or the agent states an explicit no-impact reason | Fill in the per-lane checkboxes (be specific) | Leave the section empty |
-| After merge | (done) | Maintainer applies PM updates from the PR body | Maintainer inspects the code diff and infers PM updates |
-
-History is written last because it records what changed after the durable docs have already been updated. The close-out guard is a worktree/session check, not a replacement for `check-pm.mjs` structural validation.
-
-## 🧰 Repository Map
+## 🧰 Maintainer Corner
 
 | Path | Purpose |
 |---|---|
-| [`SKILL.md`](./SKILL.md) | Agent entry point: concise trigger router and highest-risk PM rules. |
-| [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, bootstrap, AGENTS.md integration, and pitfalls. |
-| [`install.sh`](./install.sh) | Bash installer for macOS, Linux, WSL, Git Bash, Codex, agent skills, Claude, OpenClaw, or a custom skills directory; rerun it to update. |
-| [`install.ps1`](./install.ps1) | Native Windows PowerShell installer for the same standard targets and custom skills directories. |
+| [`SKILL.md`](./SKILL.md) | Agent entry point: trigger router and highest-risk PM rules. |
+| [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, pitfalls. |
+| [`install.sh`](./install.sh) / [`install.ps1`](./install.ps1) | Bash and native PowerShell installers; rerun to update. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
-| [`templates/`](./templates/) | Reusable templates for project READMEs, folder notes, roadmap notes, decisions, features, known-bugs notes, PR bodies, and AGENTS.md sections. |
-| Generated PM `decisions/` lane | Runtime PM folders own live decision records; the skill repo does not ship root `decisions/D-*.md` files. |
-| [`templates/projects.template.json`](./templates/projects.template.json) | Starter for `projects.json`; the bootstrap script copies it to `~/.config/project-management/projects.json` on first run. |
-| [`scripts/bootstrap-pm.mjs`](./scripts/bootstrap-pm.mjs) | Deterministic owner setup scaffold for PM folders and code repo `AGENTS.md`. |
-| [`scripts/check-pm.mjs`](./scripts/check-pm.mjs) | Primary validation/reconcile entry point that runs all PM checks and coordinates `--fix`. |
-| [`scripts/check-pm-closeout.mjs`](./scripts/check-pm-closeout.mjs) | Non-mutating worktree/session guard that checks whether meaningful code changes have PM close-out evidence, including folder-index coverage for notes changed in the session. |
-| [`scripts/check-reorg-candidates.mjs`](./scripts/check-reorg-candidates.mjs) | Read-only reorganization candidate detector: tiny/stale/orphan feature pages and manuals, slug-gated similarity pairs, undeclared-supersession hints, and stale backlog. Report only; never edits. |
-| [`scripts/check-agents.mjs`](./scripts/check-agents.mjs) | Code repo `AGENTS.md` integration validator and `--fix` repair path for missing/stale PM sections. |
-| [`scripts/check-repo-docs.mjs`](./scripts/check-repo-docs.mjs) | Repo-canonical docs validator: every project carries `visibility`, and on public repos every ADR stub's `repo_path` exists and every `docs/adr/D-*.md` has a PM stub. Report-only. |
-| [`scripts/sync-agents-section.mjs`](./scripts/sync-agents-section.mjs) | Targeted AGENTS PM-section sync utility for re-rendering registered repos from the latest portable template. |
-| [`scripts/check-vault-structure.mjs`](./scripts/check-vault-structure.mjs) | Structure and convention validator; reports pending migration debt and separately reports opted-in applied migration drift when a repaired structure reappears after ledger application. Also enforces folder index completeness: every direct child note must be linked from the folder note's `## Notes` list (and child folder notes from `## Subfolders`); `--fix` regenerates marked index blocks. |
-| [`scripts/check-stale-docs.mjs`](./scripts/check-stale-docs.mjs) | Stale documentation scanner; `--fix` refreshes deterministic `last_reviewed` / `updated` dates when frontmatter is present. |
-| [`scripts/check-pm-consistency.mjs`](./scripts/check-pm-consistency.mjs) | Strict visible-file consistency validator; `--fix` repairs deterministic frontmatter, page-type, history-shape, and archive-marker drift. |
-| [`scripts/check-inbox-conventions.mjs`](./scripts/check-inbox-conventions.mjs) | Inbox raw-intake validator for filename shape, lifecycle metadata, destination routing, and placeholder-name handling. |
-| [`scripts/check-roadmap-conventions.mjs`](./scripts/check-roadmap-conventions.mjs) | Content-level roadmap convention validator for done-pending, ideas, known-issues, milestone notes, plan-side mirror traceability, D-019 planning-note opening shape, and D-020 parent-workstream supersede status sync with parent-archive cascade. Includes the human archive-confirmation gate and `--fix` archive close-out for deterministic completed planning mirrors. |
-| [`scripts/check-content-semantics.mjs`](./scripts/check-content-semantics.mjs) | Semantic content validator for placeholders, dead links, plan status markers, and theoretical-risk wording. |
-| [`scripts/check-known-bugs-shape.mjs`](./scripts/check-known-bugs-shape.mjs) | Known-bugs shape validator for root-cause, solution, verification, and recurrence knowledge; `--fix` repairs sections/status placement while leaving `TBD` prose for review. |
-| [`scripts/check-supersession-conventions.mjs`](./scripts/check-supersession-conventions.mjs) | Declared supersession validator for plans, decisions, and feature pages; `--fix` only applies unambiguous decision status flips. |
-| [`scripts/check-live-routing.mjs`](./scripts/check-live-routing.mjs) | Live routing hygiene validator for retired lane references and deterministic decision-link repair. |
-| [`scripts/check-obsidian-links.mjs`](./scripts/check-obsidian-links.mjs) | Obsidian rendered-link validator for malformed wiki syntax, missing targets/headings, marked TOCs, and PM-root-relative slash links. |
-| [`scripts/check-backticked-wikilinks.mjs`](./scripts/check-backticked-wikilinks.mjs) | Backticked-wikilink validator for inline-code-wrapped links that Obsidian does not render as clickable; `--fix` strips the wrapping backticks when the span is just the wikilink. |
-| [`scripts/sync-openclaw-pm-section.mjs`](./scripts/sync-openclaw-pm-section.mjs) | OpenClaw workspace `## Project Management Skill` block sync utility with version+sha drift detection against the section-6 template in `openclaw-instruction.md`. |
-| [`scripts/check-skill.mjs`](./scripts/check-skill.mjs) | Skill-repo quality gate for stale public-doc phrases, template placeholders, and convention coverage. |
-| [`scripts/migrate.mjs`](./scripts/migrate.mjs) | Declarative migration runner for breaking PM-folder changes; applies registered migrations idempotently. |
-| [`scripts/validators/_index.mjs`](./scripts/validators/_index.mjs) | Validator registry used by `check-pm.mjs`; adding a validator is one new script plus one registry entry. |
-| [`scripts/migrations/`](./scripts/migrations/) | Registered migrations and the registry index (`_index.mjs`), including lane restructure, content conventions, known-bugs shape, human-readable PM notes, live-routing hygiene, vault-relative Obsidian link normalization, inbox lane creation, planning-note opening shape, plan-side mirror traceability, parent-workstream supersede status flip, supersession-review guidance, and the `visibility` backfill. |
-| [`scripts/lib/convention.mjs`](./scripts/lib/convention.mjs) | Canonical PM convention model: access values, lanes, required files, roadmap shapes, page-type inference, and route rows. |
-| [`scripts/lib/markdown.mjs`](./scripts/lib/markdown.mjs) | Shared Markdown/frontmatter/heading/wiki-link helpers. |
-| [`scripts/lib/frontmatter-fixers.mjs`](./scripts/lib/frontmatter-fixers.mjs) | Shared deterministic PM frontmatter repairs used by reconcile. |
-| [`scripts/lib/obsidian-links.mjs`](./scripts/lib/obsidian-links.mjs) | Shared Obsidian link helpers for vault-relative targets, rendered-link scanning, marked TOCs, and deterministic link normalization. |
-| [`scripts/lib/findings.mjs`](./scripts/lib/findings.mjs) | Shared finding shape and report renderer for newer checks. |
-| [`scripts/lib/template-renderer.mjs`](./scripts/lib/template-renderer.mjs) | Template substitution and unresolved-placeholder detection. |
-| [`scripts/lib/scaffold-plan.mjs`](./scripts/lib/scaffold-plan.mjs) | Shared scaffold-plan summary helpers. |
-| [`scripts/lib/live-routing-fixers.mjs`](./scripts/lib/live-routing-fixers.mjs) | Shared pure fixers for retired live-lane paths and unique decision links. |
-| [`scripts/lib/paths.mjs`](./scripts/lib/paths.mjs) | Shared path-resolution helpers: `findSkillDir()`, `resolveProjectsConfigPath()` (the XDG user-specific `projects.json` lookup all validators use), and `findVaultRoot()`. |
-| [`scripts/lib/skip.mjs`](./scripts/lib/skip.mjs) | Shared `.pm/skip` parser used by validators to ignore project-specific files. |
-| [`test/`](./test/) | Node built-in test suite for shared helpers plus AGENTS, roadmap, live-routing, and Obsidian-link behavior. |
-| [`LICENSE`](./LICENSE) | MIT license. |
+| [`scripts/`](./scripts/) | Dependency-free Node validators, fixers, and migrations; entry point is `check-pm.mjs`. |
+| [`templates/`](./templates/) | Templates for project READMEs, roadmap notes, decisions, features, PR bodies, and AGENTS.md sections. |
+| [`test/`](./test/) | Node built-in test suite. |
 
-## 📐 Design Principles
+<details>
+<summary>Versioning & releasing (maintainers)</summary>
 
-- **Current truth before history.** Update durable docs first; use history as the final human-readable chronological log.
-- **Milestones are live state.** Agents create and refresh the active `roadmap/milestones/<phase>.md` note before history whenever phase, priority, plan, decision, feature, known issue, blocker, or risk state changes.
-- **Milestone links are evidence, not a link dump.** Put specific plan, decision, feature, known-issue, or docs links inline inside the priority, major step, exit criterion, or deferred item they support; generic folder/index links belong in Navigation and folder notes.
-- **Indexes stay indexes.** Folder notes list subfolders and notes; manuals and runbooks live in independent notes.
-- **Known issues route first to roadmap.** Active bugs, risks, blockers, limitations, and current gaps stay in `roadmap/known-issues.md`; root causes, solutions, verification, and recurrence patterns live in `docs/Developer Guide/known-bugs.md`.
-- **Inbox is raw intake, not backlog.** `inbox/` captures owner/collaborator notes before triage; durable plans, ideas, decisions, issues, docs, and system truth move to their canonical lanes.
-- **Casing is semantic.** Top-level PM lanes are lowercase, docs guide folders use Title Case, content notes use lowercase slugs, and uppercase root docs stay reserved for `README.md`, `PRODUCT.md`, `CURRENT_STATUS.md`, and recognized optional root notes such as `TEAM.md`.
-- **Archive markers mean moved files.** `archived:` appears only on `archive/*-archived.md`, never on folder indexes like `archive/archive.md`.
-- **Plans do not become invisible backlog.** Approved planning work is mirrored into `roadmap/done-pending.md` with TOC links that match real H2 sections and plan/decision/feature links inside each section. Superseded-by pattern (D-020) keeps the parent workstream as the live checklist and demotes the older plan's frontmatter to `status: superseded` while the archive move waits for parent close-out + human verification.
-- **New durable artifacts check what they replace.** Before writing a plan, decision, or feature page, agents review active plans, done-pending, accepted/active decisions, related features, and source-of-truth system docs, then record `supersedes`, `related-not-superseded`, or `none found`.
-- **Planning notes open with context.** Obsidian/file title is the note title; plan bodies should not repeat it as a body H1. Start with useful content such as `## Summary`, then put `## Related` near the top for quick navigation.
-- **Live instructions route future agents.** README, current status, folder notes, and feature pages must point to current lanes and existing notes.
-- **Obsidian links follow the vault model.** Generated cross-note PM links use vault-relative targets derived from `vault_root`; same-note section links stay as `[[#Heading]]`.
-- **PM folders do not store secrets.** Keep account purpose and credential location in PM notes; keep plaintext credentials in external secret stores.
-- **Agents should not guess where things go.** The project `README.md` is the routing map for every PM update.
-- **Conventions have one model.** Reusable PM vocabulary lives in `scripts/lib/convention.mjs`; scripts and checks import it instead of copying lists.
-- **Quality gates are local.** The repo stays dependency-free; `node --test`, `scripts/check-skill.mjs`, and `scripts/check-pm-closeout.mjs` cover the internal model, public-doc drift, and coding-session PM close-out.
-- **The skill is portable.** `projects.json` lives at `~/.config/project-management/projects.json` (user-specific, gitignored); the repo itself contains only reusable conventions, templates, and scripts.
+Versioned with `VERSION` + `CHANGELOG.md`; tags follow `vMAJOR.MINOR.PATCH`.
 
-## 🏷️ Versioning
+- **Default install** pulls the moving `v1` branch (latest stable). `--channel main` follows bleeding edge; `--ref vX.Y.Z` pins an exact release.
+- **Update an install:** re-run the same install command (add `--force` to discard local changes).
+- **Check installed version:** `cat <skill_dir>/VERSION`.
 
-This skill is versioned with `VERSION` and `CHANGELOG.md` at the repo root. Tags follow `vMAJOR.MINOR.PATCH` (Semantic Versioning).
+To release: bump `VERSION`, move `## [Unreleased]` in `CHANGELOG.md` to the versioned heading, commit `release: vX.Y.Z`, push, tag `vX.Y.Z`, push the tag. Before tagging: `bash -n install.sh`, `node --check scripts/**/*.mjs`, `node --test`, `node scripts/check-skill.mjs`, and `node scripts/check-pm.mjs` against a fresh scaffold or the self-hosted PM folder.
 
-- **Default install:** pulls the moving `v1` branch, which points at the latest stable `v1.x.x` release. Use `--channel main` / `-Channel main` to follow the bleeding edge of `main` instead.
-- **Pinned install:** `curl -fsSL .../install.sh | bash -s -- --ref v1.6.0` pins to an exact release. Native PowerShell users can pass `-Ref v1.6.0` to `install.ps1`. To upgrade from a pin, re-run the installer without the ref flag.
-- **Release channel:** `curl -fsSL .../install.sh | bash -s -- --channel v1` resolves to the moving `v1` branch (latest stable). `curl -fsSL .../install.sh | bash -s -- --channel main` resolves to `main` (bleeding edge). Native PowerShell users can pass `-Channel v1` or `-Channel main`.
-- **The `v1` branch is a moving pointer.** It advances to each new `v1.x.x` release. Existing non-pinned installs fast-forward on the next update; pinned installs do not.
-- **Upgrading from a v1.6.0 (or earlier) pin:** if you previously installed with `--ref v1.6.0` (or any earlier tag), re-run `curl -fsSL .../install.sh | bash -s -- --target agents --yes` (drop the `--ref` flag) to advance to the latest `v1` channel.
-- **Update an existing install:** re-run the same install command; existing clones fetch and fast-forward to the selected ref. If the checkout has local changes, pass `--force` to discard them.
-- **Force update:** `curl -fsSL .../install.sh | bash -s -- --force --yes` resets the skill checkout to the selected ref and removes untracked files.
-
-The bash examples above are for Path B. Path C supports the same channel/ref/force concepts with PowerShell-style flags: `-Channel`, `-Ref`, and `-Force`.
-
-**Check the installed version** without re-running the installer:
-
-```bash
-cat <skill_dir>/VERSION
-```
-
-```powershell
-Get-Content <skill_dir>\VERSION
-```
-
-The version is printed after every install or update:
-
-```text
-==> Installed version: <version>
-```
-
-## 📦 Releasing (Maintainers)
-
-To cut a new release:
-
-1. Bump `VERSION` to the new `MAJOR.MINOR.PATCH`.
-2. Add a new top entry to `CHANGELOG.md` under `## [Unreleased]` (or rename `## [Unreleased]` to the versioned heading) with `Added / Changed / Deprecated / Removed / Fixed / Security` sections.
-3. Commit: `git commit -m "release: vX.Y.Z"`.
-4. Push: `git push origin main`.
-5. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary>"`.
-6. Push the tag: `git push origin vX.Y.Z`.
-
-That's it. `CHANGELOG.md` is the single source of truth for what changed in each version; `VERSION` and the git tag are the versioned snapshot. The skill is small enough that an additional release-notes layer (per-version prose files, GitHub Releases UI paste) doesn't pay for itself.
-
-Before tagging, sanity-check with `bash -n install.sh`, `node --check scripts/*.mjs scripts/lib/*.mjs scripts/migrations/*.mjs scripts/validators/*.mjs`, `node --test`, and `node scripts/check-skill.mjs`. For a full end-to-end check, invoke `node scripts/check-pm.mjs` against a fresh scaffold or the self-hosted Project Management PM folder.
+</details>
 
 ## 📄 License
 

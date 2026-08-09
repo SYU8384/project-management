@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `test/applied-migration-drift.test.mjs` no longer fails as calendar time passes: the fixture bootstraps with today's date instead of the hardcoded `2026-07-03`, so reconcile fixers (which refresh repaired files to real today) no longer make priority-bearing files newer than `CURRENT_STATUS.md` and trip the freshness check. The legacy-history collision fixture directories are now created explicitly rather than relying on the bootstrap date.
 
+### Changed
+
+- README rewritten as a feature-oriented landing page (339 → 127 lines): hero pitch, highlights, open-source/matt-pocock feature block, and Quick Start up front; PM Folder Model compressed to an at-a-glance lane list (all lanes still backticked for the route-row guard); Workflow table, Design Principles, and the full Repository Map removed (they live in `REFERENCE.md`/`AGENTS.md`); Versioning and Releasing folded into a `<details>` block. Install commands and test-pinned Quick Start wording are unchanged; `check-skill.mjs` allows the `<details>`/`<summary>` HTML tags.
+
 ## [1.20.0] - 2026-07-28
 
 ### Added

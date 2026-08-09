@@ -148,6 +148,9 @@ const ALLOWED_PLACEHOLDERS = new Set([
   "<vault_root>",
   "<version>",
   "<workspace>",
+  // HTML tags, not template placeholders (README maintainer-corner fold).
+  "<details>",
+  "<summary>",
 ]);
 
 const STALE_PUBLIC_PATTERNS = [
