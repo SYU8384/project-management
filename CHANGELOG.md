@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-08-27
+
 ### Added
+
+- Project-level commit_policy: requires-explicit | scoped-by-default. Setup asks code-repo owners which policy to use; bootstrap persists --commit-policy; migration 1.21.0-commit-policy conservatively backfills missing values to requires-explicit. Scoped default commits are verified, named, local, and separate for implementation versus authoritative PM documentation; they never imply push, merge, deployment, broad staging, or unrelated files.
+- Explicit commit-traceability backfill: later commit authority requires a verified narrow implementation commit before replacing pending PM markers; an already-committed claim requires relevance verification and never creates a duplicate commit. Templates, OpenClaw guidance, PR checklist, and tests cover both paths.
 
 - Folder index completeness enforcement. `scripts/check-vault-structure.mjs` now reports "Folder Index Completeness Violations" when a folder note's `## Notes` list is missing a direct child note, its `## Subfolders` list is missing a direct child folder note, or either list links a target that no longer exists. `--fix` regenerates marked `vault-maintain:index` blocks deterministically: stale lines dropped, surviving lines (including hand-written descriptions) preserved verbatim, missing children appended; indexes without markers are reported as manual-only. Focused coverage in `test/folder-index-completeness.test.mjs`.
 - `scripts/check-pm-closeout.mjs` fails close-out when a note changed in the session is missing from its folder index `## Notes` list, catching the "created a plan but forgot the index" case at session end.

@@ -9,7 +9,8 @@
       "phase": "",
       "notes": "",
       "access": "authoritative | read-only",
-      "visibility": "public | private"
+      "visibility": "public | private",
+      "commit_policy": "requires-explicit | scoped-by-default"
     }
   }
 }

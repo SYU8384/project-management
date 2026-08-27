@@ -948,6 +948,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `projects.<name>.notes` — one-line description (optional).
 - `projects.<name>.access` — `"authoritative"` (you own the PM folder; the agent edits it directly when you change code, run setup, or reconcile) or `"read-only"` (you have the maintainer's PM folder mounted read-only; the agent never edits it and uses the PR body to signal PM changes). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). Projects with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.
 - `projects.<name>.visibility` — `"public"` (open-source repo; contributors read it) or `"private"`. Drives the repo-canonical docs convention (see "Repository Visibility And Repo-Canonical Docs" below): on public repos, ADRs/glossary/architecture docs are canonical in the repo and the PM folder keeps registry stubs. Missing on legacy entries; migration `1.21.0-project-visibility` backfills the safe default `"private"`. Users can ask an agent to change it ("make this project open source"); see the visibility-switch flows below.
+- projects.<name>.commit_policy — requires-explicit or scoped-by-default. It governs only verified, narrow local commits in the registered code repo and authoritative PM Git worktree; it never grants push, merge, deployment, broad staging, or unrelated-file authority. Migration 1.21.0-commit-policy backfills the safe legacy default requires-explicit.
 
 **Auto-bootstrap on first use.** v1.3.0+: if `~/.config/project-management/projects.json` is missing when the agent starts work, the bootstrap script (`scripts/bootstrap-pm.mjs`) copies `templates/projects.template.json` to the user location and walks the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
@@ -964,6 +965,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `phase` (pre-alpha | alpha | beta | stable | deprecated) — required
 - `access` (authoritative | read-only) — required
 - `visibility` (public | private) — required for code repos; detect first (see Setup Intake), ask only when ambiguous
+- commit_policy (requires-explicit | scoped-by-default) — required for code repos; ask during setup
 - `notes` (one-line description) — optional
 
 The agent reads the existing `projects.json` (if any), merges the new entry into `projects`, and writes back. **Never silently invent paths — ask the user for each field.** If the user is also bootstrapping the PM folder, this addition is Step 0 of the Bootstrap Workflow (see below).
@@ -1037,6 +1039,10 @@ When the UI supports selectable answers, use the question tool. Otherwise, prese
    - Detect first: `gh repo view --json visibility` (or `git remote -v` + platform knowledge). If detection is conclusive, record it without asking.
    - `public` — open-source repo; contributors read it. Enables the repo-canonical docs convention (see "Repository Visibility And Repo-Canonical Docs").
    - `private` — safe default when detection is unavailable or ambiguous.
+
+7. **Commit policy** (code-repo setups only)
+   - requires-explicit — recommended general default; agents update PM records but need a commit request before creating Git history.
+   - scoped-by-default — owner-controlled projects; agents may commit verified, named, task-owned implementation files, then separately commit authoritative PM documentation when it is a Git worktree. Never permits push, merge, deploy, broad staging, or unrelated files.
 
 Ask free-text follow-ups only for values that cannot be selected:
 
@@ -1124,20 +1130,29 @@ The `access` field is set during Setup Intake or when the project is added to th
 
 **The pattern after a code change (authoritative):**
 
-1. Did current behavior, architecture, data flow, runtime, auth, database, integration, connector, deployment, or operational behavior change? If yes, update the relevant `system/<topic>.md`.
-2. Did user-facing behavior or UX change? If yes, update `docs/User Guide/` and the relevant `features/<feature>.md` when feature scope, behavior, known issues, or roadmap changed.
-3. Did live product operation change for admins/operators (support, feedback, admin panel workflow, monitoring, statistics, background job run, access, incident response, production verification, or data repair)? If yes, update `docs/Admin Guide/` and add or update `docs/Quick Commands/` for useful commands.
-4. Did a coding-engineer workflow change (local setup, codebase structure, API behavior, schema/prompt reference, testing, migration, build, release mechanics, adding/changing job code, or engineering bug knowledge)? If yes, update `docs/Developer Guide/` and add or update `docs/Quick Commands/` for useful commands.
-5. Did the change resolve or partially implement a `roadmap/plans/<date>_slug.md` plan? If yes, mark the relevant PENDING as DONE in `roadmap/done-pending.md`. If the plan is fully shipped, distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the plan to `archive/<slug>-archived.md`.
-6. Did a bug, risk, or blocker appear or change status? If yes, update `roadmap/known-issues.md`; if it has engineering symptoms, root cause, fix, verification, or recurrence value, also update `docs/Developer Guide/known-bugs.md`.
-7. Did a new idea, declined proposal, or backlog candidate appear? If yes, update `roadmap/ideas.md`.
-8. Did raw untriaged context need capture before owner review? If yes, create `inbox/YYYY-MM-DD_<name>_<title>.md` or use `NAME_PLACEHOLDER` when the creator name is not provided.
-9. Did the change introduce a new pattern, a non-obvious decision, or an architecture shift? If yes, write a new `decisions/D-NNN_<type>_<slug>.md`. Type codes: `ADR` (architecture), `PRD` (product), `MKT` (market/positioning), `VND` (vendor pick), `POL` (policy/operating rule), `NEG` (explicit rejection), `EXP` (time-boxed experiment). Architecture shifts default to `ADR`.
-10. Did any note get added, moved, renamed, archived, or deleted? If yes, update the affected folder indexes in the same session.
-11. Always add a `history/YYYY/<Month>/history-YYYY-MM-DD.md` bullet for what changed and why. Use the outcome-first history shape: bold human-readable sentence first, then the conventional type/scope token and concise detail.
-12. Run `node <skill_dir>/scripts/check-pm-closeout.mjs --project <ProjectName> --config ~/.config/project-management/projects.json` before the final response. Use `--since 2026-06-16T00:00:00+09:00` when you know the session start. Use `--allow-no-impact "reason"` only after inspecting the diff and confirming there is no PM-facing effect.
+1. Resolve commit authority from task restrictions, explicit task authorization, then the matched project commit_policy; missing policy is requires-explicit. Scoped-by-default never authorizes push, merge, deployment, broad staging, or files outside the registered code repo and authoritative PM Git worktree.
+2. Update the relevant system, user, admin, developer, feature, roadmap, issue, decision, inbox, and folder-index records for the implementation.
+3. When the resolved policy permits a commit, inspect git status --short, run verification, stage only named task-owned implementation files, review the staged diff, and commit the implementation. Never use git add -A, broad path staging, a commit that absorbs unrelated work, or PM-documentation files in the implementation commit. Capture full SHA and subject after the commit exists.
+4. Update current-state PM records before history. Add Implementation commits to each affected history, feature, status, milestone, or plan record. For a recognized GitHub or GitLab remote, use a verified Markdown commit URL with short SHA and subject; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending — explain why; never fabricate a SHA, subject, or URL.
+5. If commit authority is granted later, verify, narrowly commit the implementation, then replace every matching pending marker. If the user says it was already committed, verify its relevance before replacing markers and do not create another implementation commit. List multiple relevant commits in implementation order.
+6. Add the outcome-first history bullet. Commit PM documentation separately only when the resolved policy permits the authoritative PM Git worktree; otherwise report it as uncommitted.
+7. Run check-pm-closeout.mjs before the final response.
 
-**The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
+### Commit Traceability Examples
+
+| Situation | Required close-out behavior |
+|---|---|
+| Scoped default or explicit authority | Verify, inspect status, stage named task-owned files, commit implementation, then link it from PM records. Commit PM documentation separately only when allowed. |
+| Dirty worktree with unrelated changes | Preserve unrelated changes; stage and commit only verified task-owned scope. |
+| Multiple implementation commits | List each relevant commit in implementation order. |
+| Non-GitHub/GitLab remote | Record full SHA and subject; do not guess a browser URL. |
+| No commit authority | Record uncommitted / commit pending with the reason. |
+| Authority granted later | Verify and narrowly commit implementation, then replace every matching pending marker. |
+| User says already committed | Verify task relevance, replace markers, and do not create another implementation commit. |
+
+Recognize commit URLs only for GitHub and GitLab remotes that can be converted without guessing. Treat every other remote as full-SHA-plus-subject unless the task supplies a verified URL.
+
+**The pattern after a code change (read-only):****The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
 
 **The pattern after a code change (no PM access, contributor side):** the contributor leaves the "PM folder impact" section empty. The maintainer's agent reads the code diff and applies the PM folder updates on their side after merge.
 

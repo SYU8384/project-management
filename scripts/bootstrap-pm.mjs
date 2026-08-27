@@ -18,7 +18,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 
-import { ACCESS_VALUES, VISIBILITY_VALUES } from "./lib/convention.mjs";
+import { ACCESS_VALUES, COMMIT_POLICY_VALUES, VISIBILITY_VALUES } from "./lib/convention.mjs";
 import { replaceSectionBody as replaceMarkdownSectionBody } from "./lib/markdown.mjs";
 import { milestoneNoteContent, milestoneSlugForPhase } from "./lib/milestones.mjs";
 import { findVaultRoot } from "./lib/paths.mjs";
@@ -52,6 +52,7 @@ function usage() {
     --config <path> \\
     [--access authoritative|read-only] \
     [--visibility public|private] \\
+    [--commit-policy requires-explicit|scoped-by-default] \\
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
     [--team-note skip|placeholder] \\
@@ -83,6 +84,7 @@ function parseArgs(argv) {
     config: null,
     access: "authoritative",
     visibility: "private",
+    commitPolicy: "requires-explicit",
     vaultRoot: null,
     date: localDate(),
 teamNote: "skip",
@@ -120,6 +122,7 @@ teamNote: "skip",
     else if (arg === "--config") out.config = value;
     else if (arg === "--access") out.access = value;
     else if (arg === "--visibility") out.visibility = value;
+    else if (arg === "--commit-policy") out.commitPolicy = value;
     else if (arg === "--vault-root") out.vaultRoot = value;
 else if (arg === "--date") out.date = value;
     else if (arg === "--team-note") out.teamNote = value;
@@ -154,6 +157,10 @@ else if (arg === "--date") out.date = value;
     console.error(
       `Invalid --visibility: ${out.visibility}. Expected one of: ${VISIBILITY_VALUES.join(", ")}.`
     );
+    process.exit(2);
+  }
+  if (!COMMIT_POLICY_VALUES.includes(out.commitPolicy)) {
+    console.error("Invalid --commit-policy: " + out.commitPolicy + ". Expected one of: " + COMMIT_POLICY_VALUES.join(", ") + ".");
     process.exit(2);
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(out.date)) {
@@ -230,6 +237,7 @@ const historyDayPath = historyDayRel(date);
 const notes = cli.notes || `${project} project.`;
 const access = cli.access;
 const visibility = cli.visibility;
+const commitPolicy = cli.commitPolicy;
 const linkRoot = projectPathFromVault(vaultRoot, pmFolder);
 const linkOptions = { pmFolder, vaultRoot };
 const initialMilestone = milestoneSlugForPhase(cli.phase);
@@ -637,6 +645,7 @@ function writeConfig() {
     notes,
     access,
     visibility,
+    commit_policy: commitPolicy,
   };
   writeReplace(configPath, `${JSON.stringify(cfg, null, 2)}\n`, existsSync(configPath) ? "update" : "write");
 }

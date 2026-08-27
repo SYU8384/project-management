@@ -9,6 +9,11 @@ export const ACCESS_VALUES = Object.freeze(["authoritative", "read-only"]);
 
 export const VISIBILITY_VALUES = Object.freeze(["public", "private"]);
 
+export const COMMIT_POLICY_VALUES = Object.freeze([
+  "requires-explicit",
+  "scoped-by-default",
+]);
+
 // Decision types whose full body may live in the code repo (repo-canonical)
 // on public-visibility projects. All other types stay PM-folder-only.
 export const REPO_CANONICAL_DECISION_TYPES = Object.freeze(["ADR"]);
@@ -204,6 +209,10 @@ export function isValidAccess(value) {
 
 export function isValidVisibility(value) {
   return VISIBILITY_VALUES.includes(value);
+}
+
+export function isValidCommitPolicy(value) {
+  return COMMIT_POLICY_VALUES.includes(value);
 }
 
 export function docsGuideDirMap() {

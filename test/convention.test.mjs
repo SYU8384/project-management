@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   ACCESS_VALUES,
+  COMMIT_POLICY_VALUES,
   OPTIONAL_ROOT_NOTES,
   REQUIRED_DIRS,
   expectedPageTypeForPath,
@@ -12,6 +13,10 @@ import {
 
 test("access model remains the strict two-value model", () => {
   assert.deepEqual(ACCESS_VALUES, ["authoritative", "read-only"]);
+});
+
+test("commit policy values centralize the scoped-commit default contract", () => {
+  assert.deepEqual(COMMIT_POLICY_VALUES, ["requires-explicit", "scoped-by-default"]);
 });
 
 test("required PM lanes are centralized", () => {

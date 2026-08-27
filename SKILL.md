@@ -18,9 +18,11 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
    - `read-only`: read the PM folder, then fill the PR body's PM impact section; do not edit the PM folder.
    - no PM access: do not register the project locally; contributor workflow is PR-body-only.
 4. Update current-state docs before history. For code work, check `CURRENT_STATUS.md`, the active `roadmap/milestones/<phase>.md`, `system/`, `docs/`, `features/`, `roadmap/`, `decisions/`, folder indexes, then append `history/YYYY/<Month>/history-YYYY-MM-DD.md`. Refresh `CURRENT_STATUS.md` and the active or explicitly linked milestone whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, or phase/milestone state change.
-5. Before the final response after meaningful code work, run `scripts/check-pm-closeout.mjs` when possible, or explicitly state the no-impact reason. Validate when setup, repair, migration, or structural drift is in scope.
+5. Resolve the matched project commit_policy before closing out meaningful code work. Explicit task restrictions win; scoped-by-default permits verified, narrowly staged commits in the registered code repo and separately in an authoritative PM Git worktree; missing or requires-explicit policy needs an explicit request. Never push, merge, deploy, broadly stage, or commit unrelated work.
+6. Add Implementation commits only after the verified implementation commit exists. For GitHub/GitLab use a verified Markdown URL; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending with the reason. Later authority requires committing first and replacing pending markers; an already-committed claim requires relevance verification and no duplicate commit.
+7. Before the final response after meaningful code work, run scripts/check-pm-closeout.mjs when possible, or explicitly state the no-impact reason. Validate when setup, repair, migration, or structural drift is in scope.
 
-## Trigger Map
+## Trigger Map## Trigger Map
 
 | User says | Do this |
 |---|---|
@@ -48,6 +50,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 
 - `roadmap/known-issues.md` is for observed bugs, risks, and blockers only. Theoretical risks stay in the plan's risk/error map until they happen.
 - History bullets start with a bold human-readable outcome sentence, then keep a concise conventional type/scope token (`feat:`, `fix:`, `docs:`, etc.) in the detail text. Do not write history as raw commit-comment bullets.
+- Commit policy resolves locally from projects.json: scoped-by-default permits only verified, named, task-owned commits in the registered code repo and separately in an authoritative PM Git worktree; requires-explicit and missing policy require a request. Task restrictions win. Never push, merge, deploy, stage broadly, or invent traceability. Pending commit markers must be replaced after a relevant verified commit exists.
 - `roadmap/done-pending.md` Contents links point only to actual H2 headings inside the same note. Put planning-note, decision, feature, system, and docs links inside each section, not in the TOC.
 - Cross-note PM wikilinks are vault-relative when `vault_root` is known (for example `[[Projects/Example/roadmap/done-pending|done-pending]]`), never OS-absolute and never hardcoded to a specific user's folder layout. Same-note links stay as `[[#Heading]]`.
 - `inbox/` is raw intake, not backlog. Use it for untriaged owner/collaborator notes only; after owner review, digest durable content into ideas, plans, done-pending, decisions, system, features, docs, or known issues. When the owner digests an inbox note, flip `status` to `processed`, set `resolution` to the routing value (`idea / planning / done-pending / decision / feature / system / docs / known-issue / addressed-directly / no-action / multiple`), and set `destination` to the vault-relative wikilink of the canonical lane — body `Owner Triage` wikilinks alone do not satisfy `check-inbox-conventions.mjs`. If creating an inbox note without a provided creator name, use `NAME_PLACEHOLDER` in the filename, title/H1, and `author`, then ask the user what name should replace it.

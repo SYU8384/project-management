@@ -20,7 +20,7 @@ Coding agents have no memory beyond the session. As a project grows, decisions s
 - 📚 **Manuals stay honest** — changes route into the right user/admin/developer guide instead of decaying into traps for the next reader.
 - 🐞 **Recurring bugs solved in minutes** — active issues in the roadmap; root causes and fixes in `known-bugs.md`. Known issues, bugs, risks, blockers, limitations, and current gaps are always logged to `roadmap/known-issues.md` first, so nothing falls through.
 - 🧹 **Self-cleaning** — validators repair drift, broken links, and stale schemas; a human-approved reorganization flow keeps a year of growth navigable.
-- ✅ **Close-out guard** — before an agent signs off, it verifies meaningful code changes came with matching status, milestone, and history updates. No work silently disappears.
+- ✅ **Traceable close-out guard** — before an agent signs off, it verifies meaningful code changes came with matching status, milestone, history, and scoped implementation-commit references according to local commit_policy. No work silently disappears.
 - 🔗 **Obsidian-optional** — as an Obsidian vault, every note is structured and interlinked so agents retrieve exactly the relevant context. But the convention is just Markdown plus a small local `projects.json` registry; it works anywhere.
 
 ## 🔓 Open-source aware & plays well with others
@@ -88,6 +88,8 @@ The full table — including collaborator setup, visibility switching, and all a
 - **Contributor (no PM access)**: nothing to register; the maintainer's agent backfills PM updates from the code diff.
 
 Independently, `visibility: public | private` controls whether contributor-facing docs (ADRs, glossary) are canonical in the repo — see "Open-source aware" above. The `AGENTS.md` PM section is portable and committed; each machine resolves what it may do from its local `projects.json`.
+
+Commit policy is local: requires-explicit is the conservative default; scoped-by-default allows only verified, narrow local commits in the registered code repo and separately in an authoritative PM Git worktree. It never authorizes push, merge, deployment, broad staging, or unrelated files.
 
 <a id="pm-folder-model"></a>
 
