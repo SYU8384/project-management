@@ -343,10 +343,51 @@ function mergeHistoryLogCollision(sourceContent, targetContent) {
   };
 }
 
-function isSafeLegacyMonthIndex(content) {
-  return /^---\n[\s\S]*?^pageType:\s*index\s*$[\s\S]*?\n---/m.test(String(content))
-    && String(content).includes("<!-- vault-maintain:index:start -->")
-    && String(content).includes("<!-- vault-maintain:index:end -->");
+function frontmatterScalar(frontmatter, key) {
+  const match = String(frontmatter).match(new RegExp(`^${key}:\\s*(.*?)\\s*$`, "m"));
+  if (!match) return null;
+  return match[1].trim().replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, "$1$2");
+}
+
+function isGeneratedIndexSection(content) {
+  const lines = String(content)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines.length > 0 && lines.every((line) => (
+    line === "*(no items)*"
+    || line === "- *(no items)*"
+    || /^-\s+\[\[[^\]\n]+\]\](?:\s+-\s+[^\n]+)?$/.test(line)
+  ));
+}
+
+function isSafeLegacyMonthIndex(content, expectedTitle = null) {
+  const normalized = String(content).replace(/\r\n?/g, "\n");
+  const split = splitFrontmatter(normalized);
+  if (!split || frontmatterScalar(split.frontmatter, "pageType") !== "index") return false;
+
+  const startMarker = "<!-- vault-maintain:index:start -->";
+  const endMarker = "<!-- vault-maintain:index:end -->";
+  const start = split.body.indexOf(startMarker);
+  const end = split.body.indexOf(endMarker);
+  if (start < 0 || end < start || split.body.indexOf(startMarker, start + startMarker.length) >= 0
+    || split.body.indexOf(endMarker, end + endMarker.length) >= 0) return false;
+
+  const beforeIndex = split.body.slice(0, start).trim();
+  if (!/^#\s+[^\n]+$/.test(beforeIndex)) return false;
+  if (expectedTitle && beforeIndex !== `# ${expectedTitle}`) return false;
+
+  const indexBody = split.body.slice(start + startMarker.length, end);
+  const sections = indexBody.match(/^\s*## Subfolders\s*\n([\s\S]*?)\n## Notes\s*\n([\s\S]*?)\s*$/);
+  if (!sections || !isGeneratedIndexSection(sections[1]) || !isGeneratedIndexSection(sections[2])) {
+    return false;
+  }
+
+  const navigation = split.body.slice(end + endMarker.length).trim();
+  const navigationLines = navigation.split("\n").map((line) => line.trim()).filter(Boolean);
+  return navigationLines.length > 1
+    && navigationLines[0] === "## Navigation"
+    && navigationLines.slice(1).every((line) => /^-\s+\[\[[^\]\n]+\]\]$/.test(line));
 }
 
 function setFrontmatterValue(frontmatter, key, value) {
@@ -543,9 +584,13 @@ function moveLegacyFolders(pmFolder, months, ctx) {
         const srcRel = normalizeSlashes(relative(pmFolder, src));
         const dstRel = normalizeSlashes(relative(pmFolder, dst));
         const sourceContent = readFileSync(src, "utf8");
-        if (entry.name === `${month.yearMonth}.md` && isSafeLegacyMonthIndex(sourceContent)) {
-          if (!ctx.dryRun) rmSync(src);
-          ctx.log("done", srcRel, `removed redundant legacy month index; canonical index remains at ${dstRel}`);
+        if (entry.name === `${month.yearMonth}.md`) {
+          if (isSafeLegacyMonthIndex(sourceContent, month.yearMonth)) {
+            if (!ctx.dryRun) rmSync(src);
+            ctx.log("done", srcRel, `removed redundant legacy month index; canonical index remains at ${dstRel}`);
+            continue;
+          }
+          manualReview.push(`${srcRel}: canonical index already exists at ${dstRel}, but this legacy index contains content outside the generated index structure`);
           continue;
         }
         if (/^history-\d{4}-\d{2}-\d{2}(?:-archived-sections)?\.md$/.test(entry.name)) {
@@ -639,6 +684,9 @@ export const __test = {
   listMigrationMonths,
   buildLinkReplacements,
   listStaleGuidanceFiles,
+  frontmatterScalar,
+  isGeneratedIndexSection,
+  isSafeLegacyMonthIndex,
   mergeHistoryLogCollision,
   rewriteLegacyHistoryGuidance,
 };

@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Migration 1.22.0-auto-scoped-commit-policy rewrites registered legacy values.
 
+### Fixed
+
+- History-layout reconciliation now recognizes generated legacy month indexes with quoted `pageType: index` values and CRLF line endings. It removes only generated marker-backed indexes when the canonical month index exists; owner-authored content remains a manual-review item instead of being deleted.
+
 ## [1.21.0] - 2026-08-27
 
 ### Added
@@ -43,6 +47,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - README rewritten as a feature-oriented landing page (339 → 127 lines): hero pitch, highlights, open-source/matt-pocock feature block, and Quick Start up front; PM Folder Model compressed to an at-a-glance lane list (all lanes still backticked for the route-row guard); Workflow table, Design Principles, and the full Repository Map removed (they live in `REFERENCE.md`/`AGENTS.md`); Versioning and Releasing folded into a `<details>` block. Install commands and test-pinned Quick Start wording are unchanged; `check-skill.mjs` allows the `<details>`/`<summary>` HTML tags.
+=======
+### Added
+
+- Folder index completeness enforcement. `scripts/check-vault-structure.mjs` now reports "Folder Index Completeness Violations" when a folder note's `## Notes` list is missing a direct child note, its `## Subfolders` list is missing a direct child folder note, or either list links a target that no longer exists. `--fix` regenerates marked `vault-maintain:index` blocks deterministically: stale lines dropped, surviving lines (including hand-written descriptions) preserved verbatim, missing children appended; indexes without markers are reported as manual-only. Focused coverage in `test/folder-index-completeness.test.mjs`.
+- `scripts/check-pm-closeout.mjs` fails close-out when a note changed in the session is missing from its folder index `## Notes` list, catching the "created a plan but forgot the index" case at session end.
+- Portable AGENTS PM section (`templates/AGENTS_PM_SECTION.md`) and `openclaw-instruction.md` now explicitly require updating the folder index `## Notes`/`## Subfolders` list in the same session whenever a PM note is created, moved, renamed, archived, or deleted. Re-synced to all registered repos via `sync-agents-section.mjs` and to OpenClaw workspaces via `sync-openclaw-pm-section.mjs`.
+
+### Fixed
+
+- History-layout reconciliation now recognizes generated legacy month indexes with quoted `pageType: index` values and CRLF line endings. It removes only generated marker-backed indexes when the canonical month index exists; owner-authored content remains a manual-review item instead of being deleted.
 
 ## [1.20.0] - 2026-07-28
 

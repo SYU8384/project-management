@@ -20,12 +20,32 @@ const SKILL_DIR = dirname(TEST_DIR);
 const BOOTSTRAP = join(SKILL_DIR, "scripts", "bootstrap-pm.mjs");
 const CHECK_PM = join(SKILL_DIR, "scripts", "check-pm.mjs");
 const MIGRATE = join(SKILL_DIR, "scripts", "migrate.mjs");
+const FIXTURE_DATE = new Date().toISOString().slice(0, 10);
 
-// Bootstrap scaffolds carry this date; reconcile fixers refresh repaired
-// files to real (UTC) today. Pinning the scaffold date to today keeps the
-// CURRENT_STATUS freshness comparison time-invariant — a hardcoded past
-// date makes the fixture go stale the day after it was written.
-const TODAY = new Date().toISOString().slice(0, 10);
+function emptyLegacyMonthIndex({ pageType = "index", beforeIndex = "", notes = "*(no items)*", eol = "\n" } = {}) {
+  return [
+    "---",
+    'title: "2026-07"',
+    `pageType: ${pageType}`,
+    "---",
+    "# 2026-07",
+    beforeIndex,
+    "<!-- vault-maintain:index:start -->",
+    "## Subfolders",
+    "",
+    "*(no items)*",
+    "",
+    "## Notes",
+    "",
+    notes,
+    "<!-- vault-maintain:index:end -->",
+    "",
+    "## Navigation",
+    "",
+    "- [[Projects/Example/history/history|Back to history]]",
+    "",
+  ].join(eol);
+}
 
 function historyLog(date, productBullet, verificationTitle, verificationLines) {
   return `---
@@ -97,6 +117,22 @@ test("explicit legacy compatibility prose is not treated as concrete history dri
   }
 });
 
+test("quoted CRLF generated legacy month indexes are safe to remove", () => {
+  const index = emptyLegacyMonthIndex({ pageType: '"index"', eol: "\r\n" });
+  assert.equal(__test.isSafeLegacyMonthIndex(index), true);
+});
+
+test("legacy month indexes with owner content remain for manual review", () => {
+  assert.equal(
+    __test.isSafeLegacyMonthIndex(emptyLegacyMonthIndex({ beforeIndex: "Owner note: preserve this context." })),
+    false
+  );
+  assert.equal(
+    __test.isSafeLegacyMonthIndex(emptyLegacyMonthIndex({ notes: "- Owner note: preserve this linked decision." })),
+    false
+  );
+});
+
 test("check-pm --fix repairs applied history drift without duplicating the ledger", () => {
   const root = mkdtempSync(join(tmpdir(), "pm-applied-drift-"));
   try {
@@ -116,7 +152,7 @@ test("check-pm --fix repairs applied history drift without duplicating the ledge
       "--notes", "Applied migration drift fixture.",
       "--config", config,
       "--vault-root", vault,
-      "--date", TODAY,
+      "--date", FIXTURE_DATE,
       "--yes",
     ], { encoding: "utf8" });
     assert.equal(bootstrap.status, 0, bootstrap.stdout + bootstrap.stderr);
@@ -124,11 +160,12 @@ test("check-pm --fix repairs applied history drift without duplicating the ledge
     const canonical = join(pm, "history", "2026", "July", "history-2026-07-03.md");
     const legacyDir = join(pm, "history", "2026-07");
     const legacy = join(legacyDir, "history-2026-07-03.md");
-    mkdirSync(legacyDir, { recursive: true });
     mkdirSync(dirname(canonical), { recursive: true });
+    writeFileSync(join(dirname(canonical), "July.md"), emptyLegacyMonthIndex().replaceAll("2026-07", "July"));
+    mkdirSync(legacyDir, { recursive: true });
     writeFileSync(canonical, historyLog("2026-07-03", "Shared outcome", "Existing check", ["PASS: shared"]));
     writeFileSync(legacy, historyLog("2026-07-03", "Shared outcome", "Recovered check", ["PASS: recovered"]));
-    writeFileSync(join(legacyDir, "2026-07.md"), `---\npageType: index\n---\n<!-- vault-maintain:index:start -->\n<!-- vault-maintain:index:end -->\n`);
+    writeFileSync(join(legacyDir, "2026-07.md"), emptyLegacyMonthIndex({ pageType: '"index"', eol: "\r\n" }));
 
     const readme = join(pm, "README.md");
     writeFileSync(
