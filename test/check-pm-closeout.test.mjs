@@ -296,7 +296,7 @@ test("check-pm-closeout: auto-scoped rejects no-request closeout and verifies a 
     git(repo, ["commit", "-m", "feat: implementation"]);
     const sha = spawnSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
     mkdirSync(join(pmFolder, "system"), { recursive: true });
-    writeFileSync(join(pmFolder, "system", "overview.md"), "# overview\n\nImplementation commits: " + sha + "\n");
+    writeFileSync(join(pmFolder, "system", "overview.md"), "# overview\n\nImplementation commits: " + sha + "\nThe guard rejects no commit was requested when it is an uncommitted pending rationale.\n");
     const historyPath = todayHistoryPath(pmFolder);
     mkdirSync(dirname(historyPath), { recursive: true });
     writeFileSync(historyPath, "# Today\n\n- Linked " + sha + "\n");

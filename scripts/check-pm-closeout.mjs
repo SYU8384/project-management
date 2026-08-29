@@ -481,7 +481,7 @@ if (CLI.allowNoImpact) {
 
 const evidence = findPmEvidence(pmFolder, baseline, { projectName: project.name, configPath });
 const pmText = recentPmText(pmFolder, baseline);
-const noRequestPending = autoScoped && /no commit(?: was)? requested/i.test(pmText);
+const noRequestPending = autoScoped && /(?:uncommitted\s*\/\s*commit pending|uncommitted)[\s\S]{0,240}no commit(?: was)? requested/i.test(pmText);
 const hasCommitReference = !commitInfo || pmText.includes(commitInfo.sha);
 const hasCurrentState = evidence.currentState.length > 0;
 const hasHistory = evidence.historyUpdated;
