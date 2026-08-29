@@ -43,9 +43,13 @@ import { fileURLToPath } from "node:url";
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { isValidAccess } from "./lib/convention.mjs";
 import { historyDayRel } from "./lib/history-paths.mjs";
-import { normalizeMarkdownSection } from "./lib/markdown.mjs";
-import { renderTemplateFile } from "./lib/template-renderer.mjs";
-import { agentsSectionReplacements } from "./lib/agents-section.mjs";
+import {
+  findPortablePmSection,
+  portablePmSectionMatches,
+  portablePmSectionTemplate,
+  renderPortablePmSection,
+  replacePortablePmSection,
+} from "./lib/agents-section.mjs";
 
 const SKILL_DIR = findSkillDir();
 const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
@@ -86,29 +90,6 @@ function loadConfigPath() {
   return resolveProjectsConfigPath(CLI.config ? resolve(CLI.config) : null);
 }
 
-function templateForAccess(access) {
-  if (!isValidAccess(access)) return null;
-  return "AGENTS_PM_SECTION.md";
-}
-
-function renderSection(templateFile, project) {
-  if (!TEMPLATE_DIR) {
-    throw new Error("skill_dir not resolved; cannot locate templates/");
-  }
-  return renderTemplateFile(TEMPLATE_DIR, templateFile, agentsSectionReplacements(project));
-}
-
-function extractPmSection(content) {
-  const startMatch = content.match(/^## PM folder\s*$/m);
-  if (!startMatch) return null;
-  const start = startMatch.index;
-  const afterHeading = start + startMatch[0].length;
-  const rest = content.slice(afterHeading);
-  const nextMatch = rest.match(/\n## /);
-  const end = nextMatch ? afterHeading + nextMatch.index : content.length;
-  return { start, end, text: content.slice(start, end) };
-}
-
 function todayStamp() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -135,7 +116,7 @@ function syncProject(name, project) {
     result.detail = `unknown access '${project.access ?? ""}'`;
     return result;
   }
-  const templateFile = templateForAccess(project.access);
+  const templateFile = portablePmSectionTemplate(project.access);
   if (!templateFile) {
     result.status = "skipped";
     result.detail = `no template for access '${project.access}'`;
@@ -149,7 +130,7 @@ function syncProject(name, project) {
     return result;
   }
   const original = readFileSync(agentsPath, "utf8");
-  const section = extractPmSection(original);
+  const section = findPortablePmSection(original);
   if (!section) {
     result.status = "fail";
     result.detail = "no `## PM folder` section in AGENTS.md";
@@ -157,13 +138,13 @@ function syncProject(name, project) {
   }
   let rendered;
   try {
-    rendered = renderSection(templateFile, project);
+    rendered = renderPortablePmSection(TEMPLATE_DIR, project);
   } catch (err) {
     result.status = "fail";
     result.detail = `template render failed: ${err.message}`;
     return result;
   }
-  if (normalizeMarkdownSection(section.text) === normalizeMarkdownSection(rendered)) {
+  if (portablePmSectionMatches(section, rendered)) {
     result.status = "in-sync";
     result.detail = `${name}: ## PM folder is already in sync with ${templateFile}`;
     return result;
@@ -175,7 +156,7 @@ function syncProject(name, project) {
     result.detail = `${name}: would rewrite ## PM folder in ${agentsPath} (${oldLines} lines → ${newLines} lines)`;
     return result;
   }
-  const newContent = original.slice(0, section.start) + rendered + original.slice(section.end);
+  const newContent = replacePortablePmSection(original, section, rendered);
   writeFileSync(agentsPath, newContent);
   const oldLines = section.text.split("\n").length;
   const newLines = rendered.split("\n").length;

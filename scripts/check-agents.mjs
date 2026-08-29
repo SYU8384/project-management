@@ -11,10 +11,14 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
-import { isValidAccess, isValidCommitPolicy, isValidVisibility } from "./lib/convention.mjs";
-import { normalizeMarkdownSection } from "./lib/markdown.mjs";
-import { renderTemplateFile } from "./lib/template-renderer.mjs";
-import { agentsSectionReplacements } from "./lib/agents-section.mjs";
+import { isValidCommitPolicy, isValidVisibility } from "./lib/convention.mjs";
+import {
+  findPortablePmSection,
+  portablePmSectionMatches,
+  portablePmSectionTemplate,
+  renderPortablePmSection,
+  replacePortablePmSection,
+} from "./lib/agents-section.mjs";
 
 const SKILL_DIR = findSkillDir();
 const TEMPLATE_DIR = SKILL_DIR ? join(SKILL_DIR, "templates") : null;
@@ -64,31 +68,11 @@ function resolveProjects() {
   return { configPath, projects: Object.entries(cfg.projects ?? {}), cfg };
 }
 
-function templateForAccess(access) {
-  if (!isValidAccess(access)) return null;
-  return "AGENTS_PM_SECTION.md";
-}
-
-function substituteTemplate(filename, project) {
-  return renderTemplateFile(TEMPLATE_DIR, filename, agentsSectionReplacements(project));
-}
-
-function extractPmSection(content) {
-  const startMatch = content.match(/^## PM folder\s*$/m);
-  if (!startMatch) return null;
-  const start = startMatch.index;
-  const afterHeading = start + startMatch[0].length;
-  const rest = content.slice(afterHeading);
-  const nextMatch = rest.match(/\n## /);
-  const end = nextMatch ? afterHeading + nextMatch.index : content.length;
-  return { start, end, text: content.slice(start, end) };
-}
-
 function upsertPmSection(existing, section) {
   const normalized = section.trimEnd();
-  const current = extractPmSection(existing);
+  const current = findPortablePmSection(existing);
   if (current) {
-    return `${existing.slice(0, current.start)}${normalized}${existing.slice(current.end)}`.trimEnd() + "\n";
+    return replacePortablePmSection(existing, current, normalized).trimEnd() + "\n";
   }
   const trimmed = existing.trimEnd();
   return `${trimmed}${trimmed ? "\n\n" : ""}${normalized}\n`;
@@ -99,7 +83,7 @@ function validateProject(name, project) {
 
   // Validate access first. An unknown access value is always a FAIL —
   // we cannot pick a template, and the access enum is a strict 2-value list.
-  const templateName = templateForAccess(project.access);
+  const templateName = portablePmSectionTemplate(project.access);
   if (!templateName) {
     issues.push(`invalid access '${project.access ?? ""}' in projects.json`);
     return { name, status: "FAIL", detail: "", issues };
@@ -151,7 +135,7 @@ function validateProject(name, project) {
   }
 
   const agentsPath = join(repoPath, "AGENTS.md");
-  const expected = substituteTemplate(templateName, project);
+  const expected = renderPortablePmSection(TEMPLATE_DIR, project);
   let fixed = false;
   let content = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : null;
 
@@ -165,7 +149,7 @@ function validateProject(name, project) {
     content = readFileSync(agentsPath, "utf8");
   }
 
-  let section = extractPmSection(content);
+  let section = findPortablePmSection(content);
   if (!section) {
     if (!CLI.fix) {
       issues.push(`missing ## PM folder section in ${agentsPath}`);
@@ -174,7 +158,7 @@ function validateProject(name, project) {
     writeFileSync(agentsPath, upsertPmSection(content, expected));
     fixed = true;
     content = readFileSync(agentsPath, "utf8");
-    section = extractPmSection(content);
+    section = findPortablePmSection(content);
   }
 
   for (const placeholder of ["<pm_folder>", "<skill_dir>"]) {
@@ -183,19 +167,19 @@ function validateProject(name, project) {
     }
   }
 
-  if (normalizeMarkdownSection(section.text) !== normalizeMarkdownSection(expected)) {
+  if (!portablePmSectionMatches(section, expected)) {
     if (CLI.fix) {
       writeFileSync(agentsPath, upsertPmSection(content, expected));
       fixed = true;
       content = readFileSync(agentsPath, "utf8");
-      section = extractPmSection(content);
+      section = findPortablePmSection(content);
       issues.length = 0;
       for (const placeholder of ["<pm_folder>", "<skill_dir>"]) {
         if (section.text.includes(placeholder)) {
           issues.push(`${agentsPath} contains unresolved ${placeholder} placeholder`);
         }
       }
-      if (normalizeMarkdownSection(section.text) !== normalizeMarkdownSection(expected)) {
+      if (!portablePmSectionMatches(section, expected)) {
         issues.push(`## PM folder section does not match ${templateName}`);
       }
     } else {

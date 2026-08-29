@@ -24,7 +24,11 @@ import { milestoneNoteContent, milestoneSlugForPhase } from "./lib/milestones.mj
 import { findVaultRoot } from "./lib/paths.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { renderTemplateFile } from "./lib/template-renderer.mjs";
-import { agentsSectionReplacements } from "./lib/agents-section.mjs";
+import {
+  findPortablePmSection,
+  renderPortablePmSection,
+  replacePortablePmSection,
+} from "./lib/agents-section.mjs";
 import { summarizeScaffoldCounts } from "./lib/scaffold-plan.mjs";
 import {
   historyDateParts,
@@ -652,9 +656,11 @@ function writeConfig() {
 
 function replacePmSection(existing, section) {
   const normalized = section.trimEnd();
-  const match = existing.match(/^## PM folder\n[\s\S]*?(?=^## |\s*$)/m);
-  if (match) {
-    return `${existing.slice(0, match.index)}${normalized}\n\n${existing.slice(match.index + match[0].length).replace(/^\n+/, "")}`.trimEnd() + "\n";
+  const current = findPortablePmSection(existing);
+  if (current) {
+    const replaced = replacePortablePmSection(existing, current, normalized);
+    const afterStart = current.start + normalized.length;
+    return `${replaced.slice(0, afterStart)}\n\n${replaced.slice(afterStart).replace(/^\n+/, "")}`.trimEnd() + "\n";
   }
   const trimmed = existing.trimEnd();
   return `${trimmed}${trimmed ? "\n\n" : ""}${normalized}\n`;
@@ -663,7 +669,7 @@ function replacePmSection(existing, section) {
 function writeAgents() {
   if (!codeRepo) return;
   const agentsPath = join(codeRepo, "AGENTS.md");
-  const section = substituteTemplate("AGENTS_PM_SECTION.md", agentsSectionReplacements({ visibility }));
+  const section = renderPortablePmSection(TEMPLATE_DIR, { access, visibility });
   const existing = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : "";
   const next = replacePmSection(existing, section);
   if (existing === next) {
