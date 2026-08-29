@@ -26,7 +26,8 @@ test("portable AGENTS PM section documents all resolved access outcomes", () => 
   assert.match(content, /projects\.json/);
   assert.match(content, /check-pm-closeout\.mjs/);
   assert.match(content, /commit_policy/);
-  assert.match(content, /scoped-by-default/);
+  assert.match(content, /auto-scoped/);
+  assert.match(content, /no commit was requested is never valid/);
   assert.match(content, /Never push, merge, deploy/);
   assert.match(content, /Implementation commits/);
   assert.match(content, /uncommitted \/ commit pending/);

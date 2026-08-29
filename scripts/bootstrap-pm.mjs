@@ -52,7 +52,7 @@ function usage() {
     --config <path> \\
     [--access authoritative|read-only] \
     [--visibility public|private] \\
-    [--commit-policy requires-explicit|scoped-by-default] \\
+    [--commit-policy requires-explicit|auto-scoped] \\
     [--vault-root <path>] \\
     [--date YYYY-MM-DD] \\
     [--team-note skip|placeholder] \\
@@ -84,7 +84,7 @@ function parseArgs(argv) {
     config: null,
     access: "authoritative",
     visibility: "private",
-    commitPolicy: "requires-explicit",
+    commitPolicy: "auto-scoped",
     vaultRoot: null,
     date: localDate(),
 teamNote: "skip",

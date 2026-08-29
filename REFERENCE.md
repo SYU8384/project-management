@@ -948,7 +948,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `projects.<name>.notes` — one-line description (optional).
 - `projects.<name>.access` — `"authoritative"` (you own the PM folder; the agent edits it directly when you change code, run setup, or reconcile) or `"read-only"` (you have the maintainer's PM folder mounted read-only; the agent never edits it and uses the PR body to signal PM changes). Drives the `## PM folder` section written to the project's `AGENTS.md` (see "Coding Agent Integration" below). Projects with no PM access at all are not registered in `projects.json`; the maintainer registers the project on their side, and the contributor workflow is via PR body, not the skill.
 - `projects.<name>.visibility` — `"public"` (open-source repo; contributors read it) or `"private"`. Drives the repo-canonical docs convention (see "Repository Visibility And Repo-Canonical Docs" below): on public repos, ADRs/glossary/architecture docs are canonical in the repo and the PM folder keeps registry stubs. Missing on legacy entries; migration `1.21.0-project-visibility` backfills the safe default `"private"`. Users can ask an agent to change it ("make this project open source"); see the visibility-switch flows below.
-- projects.<name>.commit_policy — requires-explicit or scoped-by-default. It governs only verified, narrow local commits in the registered code repo and authoritative PM Git worktree; it never grants push, merge, deployment, broad staging, or unrelated-file authority. Migration 1.21.0-commit-policy backfills the safe legacy default requires-explicit.
+- projects.<name>.commit_policy — requires-explicit or auto-scoped. Auto-scoped is standing authorization to commit only verified, narrow task-owned implementation work in the registered code repo and authoritative PM Git worktree; it never grants push, merge, deployment, broad staging, or unrelated-file authority. Legacy scoped-by-default is accepted as auto-scoped until migration 1.22.0-auto-scoped-commit-policy rewrites it. Migration 1.21.0-commit-policy backfills the safe legacy default requires-explicit.
 
 **Auto-bootstrap on first use.** v1.3.0+: if `~/.config/project-management/projects.json` is missing when the agent starts work, the bootstrap script (`scripts/bootstrap-pm.mjs`) copies `templates/projects.template.json` to the user location and walks the user through filling in `vault_root`, `skill_dir`, and one entry per project. Do not silently invent paths; ask the user.
 
@@ -965,7 +965,7 @@ The user's project paths live in a separate config file, not in the skill text. 
 - `phase` (pre-alpha | alpha | beta | stable | deprecated) — required
 - `access` (authoritative | read-only) — required
 - `visibility` (public | private) — required for code repos; detect first (see Setup Intake), ask only when ambiguous
-- commit_policy (requires-explicit | scoped-by-default) — required for code repos; ask during setup
+- commit_policy (requires-explicit | auto-scoped) — required for code repos; ask during setup
 - `notes` (one-line description) — optional
 
 The agent reads the existing `projects.json` (if any), merges the new entry into `projects`, and writes back. **Never silently invent paths — ask the user for each field.** If the user is also bootstrapping the PM folder, this addition is Step 0 of the Bootstrap Workflow (see below).
@@ -1041,8 +1041,8 @@ When the UI supports selectable answers, use the question tool. Otherwise, prese
    - `private` — safe default when detection is unavailable or ambiguous.
 
 7. **Commit policy** (code-repo setups only)
-   - requires-explicit — recommended general default; agents update PM records but need a commit request before creating Git history.
-   - scoped-by-default — owner-controlled projects; agents may commit verified, named, task-owned implementation files, then separately commit authoritative PM documentation when it is a Git worktree. Never permits push, merge, deploy, broad staging, or unrelated files.
+   - requires-explicit — agents update PM records but need a commit request before creating Git history.
+   - auto-scoped — recommended for owner-controlled projects; agents must commit verified, named, task-owned implementation files without asking again, then separately commit authoritative PM documentation when it is a Git worktree. Never permits push, merge, deploy, broad staging, or unrelated files.
 
 Ask free-text follow-ups only for values that cannot be selected:
 
@@ -1130,10 +1130,10 @@ The `access` field is set during Setup Intake or when the project is added to th
 
 **The pattern after a code change (authoritative):**
 
-1. Resolve commit authority from task restrictions, explicit task authorization, then the matched project commit_policy; missing policy is requires-explicit. Scoped-by-default never authorizes push, merge, deployment, broad staging, or files outside the registered code repo and authoritative PM Git worktree.
+1. Resolve commit authority from task restrictions, explicit task authorization, then the matched project commit_policy; missing policy is requires-explicit. Auto-scoped (including legacy scoped-by-default) is standing authorization, not optional permission: do not say no commit was requested. It never authorizes push, merge, deployment, broad staging, or files outside the registered code repo and authoritative PM Git worktree.
 2. Update the relevant system, user, admin, developer, feature, roadmap, issue, decision, inbox, and folder-index records for the implementation.
-3. When the resolved policy permits a commit, inspect git status --short, run verification, stage only named task-owned implementation files, review the staged diff, and commit the implementation. Never use git add -A, broad path staging, a commit that absorbs unrelated work, or PM-documentation files in the implementation commit. Capture full SHA and subject after the commit exists.
-4. Update current-state PM records before history. Add Implementation commits to each affected history, feature, status, milestone, or plan record. For a recognized GitHub or GitLab remote, use a verified Markdown commit URL with short SHA and subject; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending — explain why; never fabricate a SHA, subject, or URL.
+3. Under auto-scoped, inspect git status --short, run verification, stage only named task-owned implementation files, review the staged diff, and commit the implementation without asking again. Never use git add -A, broad path staging, a commit that absorbs unrelated work, or PM-documentation files in the implementation commit. Capture full SHA and subject after the commit exists.
+4. Update current-state PM records before history. Add Implementation commits to each affected history, feature, status, milestone, or plan record. For a recognized GitHub or GitLab remote, use a verified Markdown commit URL with short SHA and subject; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending with a concrete blocker: task restriction, no meaningful implementation change, failed verification, inseparable unrelated changes, or a Git failure. Never use no commit was requested; never fabricate a SHA, subject, or URL.
 5. If commit authority is granted later, verify, narrowly commit the implementation, then replace every matching pending marker. If the user says it was already committed, verify its relevance before replacing markers and do not create another implementation commit. List multiple relevant commits in implementation order.
 6. Add the outcome-first history bullet. Commit PM documentation separately only when the resolved policy permits the authoritative PM Git worktree; otherwise report it as uncommitted.
 7. Run check-pm-closeout.mjs before the final response.
@@ -1142,7 +1142,7 @@ The `access` field is set during Setup Intake or when the project is added to th
 
 | Situation | Required close-out behavior |
 |---|---|
-| Scoped default or explicit authority | Verify, inspect status, stage named task-owned files, commit implementation, then link it from PM records. Commit PM documentation separately only when allowed. |
+| Auto-scoped or explicit authority | Verify, inspect status, stage named task-owned files, commit implementation without asking again, then link it from PM records. Commit PM documentation separately only when allowed. |
 | Dirty worktree with unrelated changes | Preserve unrelated changes; stage and commit only verified task-owned scope. |
 | Multiple implementation commits | List each relevant commit in implementation order. |
 | Non-GitHub/GitLab remote | Record full SHA and subject; do not guess a browser URL. |

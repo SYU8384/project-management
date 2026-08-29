@@ -35,4 +35,5 @@ export default [
   "1.19.0-supersession-review-guidance.mjs",
   "1.21.0-project-visibility.mjs",
   "1.21.0-commit-policy.mjs",
+  "1.22.0-auto-scoped-commit-policy.mjs",
 ];

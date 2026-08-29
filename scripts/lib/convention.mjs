@@ -11,8 +11,17 @@ export const VISIBILITY_VALUES = Object.freeze(["public", "private"]);
 
 export const COMMIT_POLICY_VALUES = Object.freeze([
   "requires-explicit",
+  "auto-scoped",
   "scoped-by-default",
 ]);
+
+export function normalizeCommitPolicy(value) {
+  return value === "scoped-by-default" ? "auto-scoped" : value;
+}
+
+export function isAutoScopedCommitPolicy(value) {
+  return normalizeCommitPolicy(value) === "auto-scoped";
+}
 
 // Decision types whose full body may live in the code repo (repo-canonical)
 // on public-visibility projects. All other types stay PM-folder-only.

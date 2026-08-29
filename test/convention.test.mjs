@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   ACCESS_VALUES,
   COMMIT_POLICY_VALUES,
+  isAutoScopedCommitPolicy,
+  normalizeCommitPolicy,
   OPTIONAL_ROOT_NOTES,
   REQUIRED_DIRS,
   expectedPageTypeForPath,
@@ -15,8 +17,12 @@ test("access model remains the strict two-value model", () => {
   assert.deepEqual(ACCESS_VALUES, ["authoritative", "read-only"]);
 });
 
-test("commit policy values centralize the scoped-commit default contract", () => {
-  assert.deepEqual(COMMIT_POLICY_VALUES, ["requires-explicit", "scoped-by-default"]);
+test("commit policy values centralize the two-mode auto-commit contract", () => {
+  assert.deepEqual(COMMIT_POLICY_VALUES, ["requires-explicit", "auto-scoped", "scoped-by-default"]);
+  assert.equal(normalizeCommitPolicy("scoped-by-default"), "auto-scoped");
+  assert.equal(isAutoScopedCommitPolicy("auto-scoped"), true);
+  assert.equal(isAutoScopedCommitPolicy("scoped-by-default"), true);
+  assert.equal(isAutoScopedCommitPolicy("requires-explicit"), false);
 });
 
 test("required PM lanes are centralized", () => {

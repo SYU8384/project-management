@@ -114,7 +114,7 @@ function validateProject(name, project) {
 
   if (project.commit_policy !== undefined && !isValidCommitPolicy(project.commit_policy)) {
     issues.push(
-      "invalid commit_policy " + JSON.stringify(project.commit_policy) + " in projects.json; expected requires-explicit or scoped-by-default"
+      "invalid commit_policy " + JSON.stringify(project.commit_policy) + " in projects.json; expected requires-explicit or auto-scoped (legacy scoped-by-default is accepted for migration)"
     );
     return { name, status: "FAIL", detail: "", issues };
   }

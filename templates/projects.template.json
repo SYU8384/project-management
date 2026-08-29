@@ -10,7 +10,7 @@
       "notes": "",
       "access": "authoritative | read-only",
       "visibility": "public | private",
-      "commit_policy": "requires-explicit | scoped-by-default"
+      "commit_policy": "requires-explicit | auto-scoped"
     }
   }
 }

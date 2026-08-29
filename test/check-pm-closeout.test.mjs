@@ -282,3 +282,34 @@ test("check-pm-closeout: changed skill files produce useful PM lane suggestions"
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("check-pm-closeout: auto-scoped rejects no-request closeout and verifies a referenced SHA", () => {
+  const dir = freshDir("pm-closeout-auto-");
+  try {
+    const repo = join(dir, "code");
+    const pmFolder = join(dir, "pm");
+    initRepo(repo);
+    git(repo, ["config", "user.email", "test@example.com"]);
+    git(repo, ["config", "user.name", "Test"]);
+    writeFileSync(join(repo, "src.txt"), "implemented\n");
+    git(repo, ["add", "src.txt"]);
+    git(repo, ["commit", "-m", "feat: implementation"]);
+    const sha = spawnSync("git", ["-C", repo, "rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim();
+    mkdirSync(join(pmFolder, "system"), { recursive: true });
+    writeFileSync(join(pmFolder, "system", "overview.md"), "# overview\n\nImplementation commits: " + sha + "\n");
+    const historyPath = todayHistoryPath(pmFolder);
+    mkdirSync(dirname(historyPath), { recursive: true });
+    writeFileSync(historyPath, "# Today\n\n- Linked " + sha + "\n");
+    const cfgPath = writeProjectsJson(dir, {
+      Auto: { code_repo: repo, pm_folder: pmFolder, access: "authoritative", commit_policy: "auto-scoped" },
+    });
+    const passing = run(["--config", cfgPath, "--since", "2000-01-01T00:00:00.000Z", "--implementation-commit", sha], repo);
+    assert.equal(passing.status, 0, passing.stderr + passing.stdout);
+    assert.match(passing.stdout, /Implementation commit:/);
+    const rejected = run(["--config", cfgPath, "--allow-no-impact", "no commit was requested"], repo);
+    assert.equal(rejected.status, 1, rejected.stderr + rejected.stdout);
+    assert.match(rejected.stdout, /does not accept no commit was requested/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -16,7 +16,8 @@ test("commit traceability guidance covers authority, scope, and honest fallbacks
   const reference = read("REFERENCE.md");
 
   assert.match(skill, /commit_policy/);
-  assert.match(skill, /scoped-by-default/);
+  assert.match(skill, /auto-scoped/);
+  assert.match(skill, /No commit was requested is never/);
   assert.match(skill, /Never push, merge, deploy/);
   assert.match(skill, /uncommitted \/ commit pending/);
   assert.match(reference, /Implementation commits/);
@@ -30,7 +31,7 @@ test("commit traceability reference documents each close-out scenario", () => {
   const reference = read("REFERENCE.md");
 
   for (const scenario of [
-    "Scoped default or explicit authority",
+    "Auto-scoped or explicit authority",
     "Dirty worktree with unrelated changes",
     "Multiple implementation commits",
     "Non-GitHub/GitLab remote",

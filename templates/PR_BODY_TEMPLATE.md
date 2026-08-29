@@ -43,7 +43,7 @@ Roadmap affected:
 - [ ] roadmap/done-pending.md — pending/done status changed: ...
 
 History entries needed:
-- [ ] Commit policy resolved: requires-explicit | scoped-by-default | task override
+- [ ] Commit policy resolved: requires-explicit | auto-scoped | task override
 - [ ] history/YYYY/<Month>/history-YYYY-MM-DD.md — bullet: ...
 - [ ] Implementation commits: `[<short SHA> <subject>](<verified GitHub/GitLab commit URL>)` or `<full SHA> <subject>` for another remote; if uncommitted, `uncommitted / commit pending — <reason>`
 

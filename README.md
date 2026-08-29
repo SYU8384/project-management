@@ -89,7 +89,7 @@ The full table — including collaborator setup, visibility switching, and all a
 
 Independently, `visibility: public | private` controls whether contributor-facing docs (ADRs, glossary) are canonical in the repo — see "Open-source aware" above. The `AGENTS.md` PM section is portable and committed; each machine resolves what it may do from its local `projects.json`.
 
-Commit policy is local: requires-explicit is the conservative default; scoped-by-default allows only verified, narrow local commits in the registered code repo and separately in an authoritative PM Git worktree. It never authorizes push, merge, deployment, broad staging, or unrelated files.
+Commit policy is local: requires-explicit waits for a request; auto-scoped automatically commits verified, narrow task-owned implementation work without another request. Legacy scoped-by-default is treated as auto-scoped during migration. It never authorizes push, merge, deployment, broad staging, or unrelated files.
 
 <a id="pm-folder-model"></a>
 

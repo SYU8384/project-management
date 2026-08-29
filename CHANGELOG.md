@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-08-29
+
+### Changed
+
+- Commit policy now has two clear modes: requires-explicit and auto-scoped. Auto-scoped is standing authorization: after verification, agents must narrowly commit meaningful task-owned implementation work without asking again. scoped-by-default remains a compatibility alias during migration.
+- Agent-facing instructions explicitly reject no commit was requested as an auto-scoped closeout reason and restrict pending markers to concrete blockers.
+
+### Added
+
+- Migration 1.22.0-auto-scoped-commit-policy rewrites registered legacy values.
+
 ## [1.21.0] - 2026-08-27
 
 ### Added

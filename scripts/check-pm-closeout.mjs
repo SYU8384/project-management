@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
-import { isValidAccess } from "./lib/convention.mjs";
+import { isAutoScopedCommitPolicy, isValidAccess } from "./lib/convention.mjs";
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import { activeMilestoneInfo } from "./lib/milestones.mjs";
 import { historyDayRel } from "./lib/history-paths.mjs";
@@ -23,6 +23,7 @@ Options:
   --project <name>             force a registered project instead of matching the current repo
   --repo <path>                repo to inspect (default: current git repo)
   --since <ISO datetime>       require PM files modified since this timestamp
+  --implementation-commit <SHA> prove and require the implementation commit in PM records
   --allow-no-impact <reason>   pass explicitly when changed files do not affect PM docs
   --help, -h                   show this help
 `;
@@ -34,6 +35,7 @@ function parseArgs(argv) {
     project: null,
     repo: null,
     since: null,
+    implementationCommit: null,
     allowNoImpact: null,
   };
   for (let i = 0; i < args.length; i++) {
@@ -42,6 +44,7 @@ function parseArgs(argv) {
     else if (a === "--project" || a === "-p") out.project = args[++i];
     else if (a === "--repo") out.repo = args[++i];
     else if (a === "--since") out.since = args[++i];
+    else if (a === "--implementation-commit") out.implementationCommit = args[++i];
     else if (a === "--allow-no-impact") out.allowNoImpact = args[++i];
     else if (a === "--help" || a === "-h") {
       process.stdout.write(USAGE + "\n");
@@ -55,6 +58,10 @@ function parseArgs(argv) {
     process.stderr.write("--allow-no-impact requires a non-empty reason.\n");
     process.exit(2);
   }
+  if (out.implementationCommit !== null && out.implementationCommit.trim() === "") {
+    process.stderr.write("--implementation-commit requires a non-empty SHA.\n");
+    process.exit(2);
+  }
   return out;
 }
 
@@ -62,6 +69,15 @@ const CLI = parseArgs(process.argv);
 
 function runGit(repo, args) {
   return spawnSync("git", ["-C", repo, ...args], { encoding: "utf8" });
+}
+
+function resolveCommit(repo, ref) {
+  if (!ref) return null;
+  const rev = runGit(repo, ["rev-parse", "--verify", ref + "^{commit}"]);
+  if (rev.status !== 0) return { error: (rev.stderr || rev.stdout || "unknown commit").trim() };
+  const sha = rev.stdout.trim();
+  const subject = runGit(repo, ["show", "-s", "--format=%s", sha]);
+  return { sha, subject: subject.status === 0 ? subject.stdout.trim() : "" };
 }
 
 function canonicalPath(value) {
@@ -266,6 +282,13 @@ function folderIndexViolations(pmFolder, relPaths) {
   return violations;
 }
 
+function recentPmText(pmFolder, baseline) {
+  return walkMarkdown(pmFolder)
+    .filter((relPath) => recentlyModified(join(pmFolder, relPath), baseline))
+    .map((relPath) => readFileSync(join(pmFolder, relPath), "utf8"))
+    .join("\n");
+}
+
 function findPmEvidence(pmFolder, baseline, { projectName = null, configPath = null } = {}) {
   const modifiedCurrentState = walkMarkdown(pmFolder)
     .filter(isCurrentStatePmRel)
@@ -407,6 +430,14 @@ if (gitError) {
 }
 
 const pmFolder = canonicalPath(project.entry.pm_folder);
+const baseline = parseBaseline();
+const autoScoped = isAutoScopedCommitPolicy(project.entry.commit_policy);
+const commitInfo = resolveCommit(repoRoot, CLI.implementationCommit);
+if (commitInfo?.error) {
+  lines.push("**Status:** FAIL", "", "Cannot verify implementation commit: " + commitInfo.error);
+  console.log(lines.join("\n"));
+  process.exit(2);
+}
 const { error: statusError, changes } = meaningfulChanges(repoRoot, pmFolder);
 if (statusError) {
   lines.push("**Status:** FAIL");
@@ -416,7 +447,7 @@ if (statusError) {
   process.exit(2);
 }
 
-if (changes.length === 0) {
+if (changes.length === 0 && !commitInfo && !CLI.allowNoImpact) {
   lines.push("**Status:** PASS");
   lines.push("");
   lines.push("No meaningful worktree changes found. PM close-out is not required.");
@@ -424,11 +455,22 @@ if (changes.length === 0) {
   process.exit(0);
 }
 
-lines.push("Changed repo files:");
-for (const change of changes) lines.push(`- ${change.status} ${change.path}`);
-lines.push("");
+if (changes.length > 0) {
+  lines.push("Changed repo files:");
+  for (const change of changes) lines.push(`- ${change.status} ${change.path}`);
+  lines.push("");
+}
+if (commitInfo) {
+  lines.push("Implementation commit: " + commitInfo.sha + (commitInfo.subject ? " " + commitInfo.subject : ""));
+  lines.push("");
+}
 
 if (CLI.allowNoImpact) {
+  if (autoScoped && /no commit(?: was)? requested/i.test(CLI.allowNoImpact)) {
+    lines.push("**Status:** FAIL", "", "auto-scoped does not accept no commit was requested as a no-impact reason.");
+    console.log(lines.join("\n"));
+    process.exit(1);
+  }
   lines.push("**Status:** PASS");
   lines.push("");
   lines.push(`No PM impact asserted: ${CLI.allowNoImpact}`);
@@ -437,8 +479,10 @@ if (CLI.allowNoImpact) {
   process.exit(0);
 }
 
-const baseline = parseBaseline();
 const evidence = findPmEvidence(pmFolder, baseline, { projectName: project.name, configPath });
+const pmText = recentPmText(pmFolder, baseline);
+const noRequestPending = autoScoped && /no commit(?: was)? requested/i.test(pmText);
+const hasCommitReference = !commitInfo || pmText.includes(commitInfo.sha);
 const hasCurrentState = evidence.currentState.length > 0;
 const hasHistory = evidence.historyUpdated;
 const needsCurrentStatus = evidence.priorityBearing.length > 0;
@@ -446,6 +490,11 @@ const hasCurrentStatus = evidence.currentStatusUpdated;
 const needsMilestone = evidence.priorityBearing.some((relPath) => !relPath.startsWith("roadmap/milestones/"));
 const hasMilestone = evidence.activeMilestoneUpdated || evidence.linkedMilestonesUpdated.length > 0;
 const indexViolations = folderIndexViolations(pmFolder, evidence.currentState);
+if (autoScoped && changes.length > 0 && !commitInfo) {
+  lines.push("**Status:** FAIL", "", "auto-scoped requires a verified implementation commit before PM close-out. Commit narrowly, then rerun with --implementation-commit <SHA>.");
+  console.log(lines.join("\n"));
+  process.exit(1);
+}
 
 lines.push(`Baseline: ${baseline.toISOString()}`);
 lines.push("");
@@ -492,7 +541,7 @@ if (indexViolations.length > 0) {
   lines.push("");
 }
 
-if (indexViolations.length === 0 && hasCurrentState && hasHistory && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
+if (indexViolations.length === 0 && hasCurrentState && hasHistory && hasCommitReference && !noRequestPending && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
   lines.push("**Status:** PASS");
   lines.push("");
   lines.push("PM close-out evidence found: current-state docs and current-day history were updated.");
@@ -504,7 +553,11 @@ if (indexViolations.length === 0 && hasCurrentState && hasHistory && (!needsCurr
 
 lines.push("**Status:** FAIL");
 lines.push("");
-if (indexViolations.length > 0) {
+if (noRequestPending) {
+  lines.push("PM close-out required. auto-scoped does not accept no commit was requested; commit or record a concrete blocker.");
+} else if (!hasCommitReference) {
+  lines.push("PM close-out required. The supplied implementation SHA is not referenced by current PM records.");
+} else if (indexViolations.length > 0) {
   lines.push("PM close-out required. Notes changed this session are missing from their folder index `## Notes` list — update the index in the same session (see list above).");
 } else if (needsCurrentStatus && !hasCurrentStatus) {
   lines.push("PM close-out required. Priority-bearing PM files changed, so refresh `CURRENT_STATUS.md` before history.");

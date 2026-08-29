@@ -121,7 +121,7 @@ owner: PM
 | New idea or declined proposal | `roadmap/ideas.md` |
 | Roadmap item completed | Mark the relevant roadmap item done and add a brief `history/` entry |
 | Entire `roadmap/done-pending.md` planning mirror implemented and user-approved for archival | Mark the human archive-confirmation checkbox done, distill durable behavior into `system/`, `docs/`, or `PRODUCT.md`, then archive the completed section and linked planning file |
-| Meaningful code work finished in an authoritative repo | Resolve commit_policy: scoped-by-default permits verified narrow implementation commits and a separate authoritative PM Git commit; requires-explicit or missing policy needs a request. Add Implementation commits only after the implementation commit exists; otherwise record uncommitted / commit pending with the reason, then backfill after a relevant verified commit. Run check-pm-closeout.mjs when available. |
+| Meaningful code work finished in an authoritative repo | Resolve commit_policy: auto-scoped (legacy scoped-by-default) requires verified narrow implementation commits without another request; requires-explicit or missing policy needs a request. Add Implementation commits only after the implementation commit exists; otherwise record uncommitted / commit pending with the reason, then backfill after a relevant verified commit. Run check-pm-closeout.mjs when available. |
 | Product positioning or target user changed | `PRODUCT.md`, then `history/` |
 | Credential, token, API key, recovery code, or private connection detail appears in notes | Redact it from PM notes. Keep only account purpose/status and where credentials live outside the PM folder |
 
