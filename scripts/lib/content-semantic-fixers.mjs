@@ -305,7 +305,7 @@ export function ensureParentLinksToChild(parentContent, childRel, opts = {}) {
   const childLink = pmWikiLink(childRel, childStem, { pmFolder, vaultRoot });
   const childVaultRel =
     pmFolder && vaultRoot
-      ? relative(vaultRoot, join(pmFolder, childRel)).replace(/\.md$/, "")
+      ? relative(vaultRoot, join(pmFolder, childRel)).replaceAll("\\", "/").replace(/\.md$/, "")
       : null;
   function matchesChild(target) {
     const t = target.replace(/\.md$/, "");

@@ -22,7 +22,7 @@ Use this skill when project work needs to be recorded, a PM folder needs to be c
 6. Add Implementation commits only after the verified implementation commit exists. For GitHub/GitLab use a verified Markdown URL; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending with the reason. Later authority requires committing first and replacing pending markers; an already-committed claim requires relevance verification and no duplicate commit.
 7. Before the final response after meaningful code work, run scripts/check-pm-closeout.mjs when possible, or explicitly state the no-impact reason. Validate when setup, repair, migration, or structural drift is in scope.
 
-## Trigger Map## Trigger Map
+## Trigger Map
 
 | User says | Do this |
 |---|---|

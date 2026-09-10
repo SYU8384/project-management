@@ -47,6 +47,12 @@ function emptyLegacyMonthIndex({ pageType = "index", beforeIndex = "", notes = "
   ].join(eol);
 }
 
+// Bootstrap scaffolds carry this date; reconcile fixers refresh repaired
+// files to real (UTC) today. Pinning the scaffold date to today keeps the
+// CURRENT_STATUS freshness comparison time-invariant — a hardcoded past
+// date makes the fixture go stale the day after it was written.
+const TODAY = new Date().toISOString().slice(0, 10);
+
 function historyLog(date, productBullet, verificationTitle, verificationLines) {
   return `---
 title: history-${date}
