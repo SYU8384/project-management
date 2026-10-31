@@ -91,6 +91,40 @@ test("marked TOC regenerates from actual H2 headings", () => {
   assert.equal(result.updated.includes("[[#Old]]"), false);
 });
 
+test("existing non-Markdown evidence links resolve and PM-relative assets preserve extensions", () => {
+  const root = mkdtempSync(join(tmpdir(), "pm-obsidian-assets-"));
+  try {
+    const vault = join(root, "Vault");
+    const pm = join(vault, "Projects", "Schophia");
+    const assets = join(pm, "roadmap", "plans", "assets", "case");
+    mkdirSync(join(vault, ".obsidian"), { recursive: true });
+    mkdirSync(assets, { recursive: true });
+    writeFileSync(join(assets, "report.json"), "{}\n");
+    writeFileSync(join(assets, "screen.png"), "png\n");
+    writeFileSync(join(pm, "README.md"), [
+      "[[Projects/Schophia/roadmap/plans/assets/case/report.json|report]]",
+      "![[Projects/Schophia/roadmap/plans/assets/case/screen.png]]",
+      "",
+    ].join("\n"));
+
+    const valid = spawnSync(process.execPath, [OBSIDIAN_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(valid.status, 0, valid.stdout + valid.stderr);
+
+    writeFileSync(join(pm, "README.md"), "[[roadmap/plans/assets/case/report.json|report]]\n[[roadmap/plans/assets/case/missing.png|missing]]\n");
+    const invalid = spawnSync(process.execPath, [OBSIDIAN_SCRIPT, pm], { encoding: "utf8" });
+    assert.equal(invalid.status, 1, invalid.stdout + invalid.stderr);
+    assert.match(invalid.stdout, /PM-relative slash link should be vault-relative .*report\.json/);
+    assert.match(invalid.stdout, /missing target .*missing\.png/);
+    assert.doesNotMatch(invalid.stdout, /missing target .*report\.json/);
+
+    const fixed = spawnSync(process.execPath, [OBSIDIAN_SCRIPT, pm, "--fix"], { encoding: "utf8" });
+    assert.equal(fixed.status, 1, fixed.stdout + fixed.stderr);
+    assert.match(readFileSync(join(pm, "README.md"), "utf8"), /\[\[Projects\/Schophia\/roadmap\/plans\/assets\/case\/report\.json\|report\]\]/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("check-obsidian-links --fix repairs OpenManager-style TOC and PM-relative links", () => {
   const root = mkdtempSync(join(tmpdir(), "pm-obsidian-check-"));
   try {

@@ -124,26 +124,6 @@ function checkTarget(targets, normalizedTarget) {
   return targets.has(normalizedTarget);
 }
 
-function isIsoDate(value) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function maxFrontmatterDate(fm) {
-  const dates = [fm?.updated, fm?.last_reviewed].filter(isIsoDate).sort();
-  return dates.at(-1) ?? null;
-}
-
-function isPriorityBearingRel(rel) {
-  return (
-    rel === "roadmap/done-pending.md" ||
-    rel === "roadmap/known-issues.md" ||
-    rel.startsWith("roadmap/plans/") ||
-    rel.startsWith("roadmap/milestones/") ||
-    rel.startsWith("decisions/") ||
-    rel.startsWith("features/")
-  );
-}
-
 const HISTORY_KINDS = new Set(["changelog", "worklog", "mixed"]);
 
 function runFor(target) {
@@ -305,47 +285,18 @@ function runFor(target) {
     }
   }
 
-  const currentStatusDate = maxFrontmatterDate(frontmatterByRel.get("CURRENT_STATUS.md"));
-  for (const [rel, fm] of frontmatterByRel.entries()) {
-    if (!isPriorityBearingRel(rel)) continue;
-    const priorityDate = maxFrontmatterDate(fm);
-    if (!priorityDate) continue;
-    if (!currentStatusDate) {
-      issues.push(`CURRENT_STATUS.md: cannot compare freshness because updated/last_reviewed is missing or invalid`);
-      break;
-    }
-    if (priorityDate > currentStatusDate) {
-      issues.push(
-        `CURRENT_STATUS.md: stale relative to ${rel} (${priorityDate}); refresh current priorities/blockers/risks before history`
-      );
-    }
-  }
-
+  // D-028: routine plan/feature/decision/issue timestamps do not prove a
+  // status or milestone semantic event. Explicit close-out flags and the
+  // live-state shape validator handle those events; do not require date-only
+  // freshness cascades here.
   const activeMilestone = activeMilestoneInfo({
     pmFolder: target.vault,
     project,
     configPath: target.configPath ?? configPath,
     fallbackPhase: expectedPhase,
   });
-  if (activeMilestone) {
-    const activeFm = frontmatterByRel.get(activeMilestone.rel);
-    const activeDate = maxFrontmatterDate(activeFm);
-    if (!existsSync(activeMilestone.abs)) {
-      issues.push(`${activeMilestone.rel}: active milestone for phase "${activeMilestone.phase}" is missing`);
-    } else if (!activeDate) {
-      issues.push(`${activeMilestone.rel}: cannot compare freshness because updated/last_reviewed is missing or invalid`);
-    } else {
-      for (const [rel, fm] of frontmatterByRel.entries()) {
-        if (!isPriorityBearingRel(rel) || rel === activeMilestone.rel) continue;
-        const priorityDate = maxFrontmatterDate(fm);
-        if (!priorityDate) continue;
-        if (priorityDate > activeDate) {
-          issues.push(
-            `${activeMilestone.rel}: stale relative to ${rel} (${priorityDate}); review/update active milestone before history`
-          );
-        }
-      }
-    }
+  if (activeMilestone && !existsSync(activeMilestone.abs)) {
+    issues.push(`${activeMilestone.rel}: active milestone for phase "${activeMilestone.phase}" is missing`);
   }
 
   console.log(`\n# PM Consistency Report — ${target.label}\n`);

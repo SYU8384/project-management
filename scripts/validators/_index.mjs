@@ -27,6 +27,7 @@ const validators = [
   { file: "check-pm-consistency.mjs",        label: "PM consistency" },
   { file: "check-inbox-conventions.mjs",     label: "Inbox conventions" },
   { file: "check-roadmap-conventions.mjs",   label: "Roadmap conventions (D-007/008/009/012/015/016)" },
+  { file: "check-live-state-shape.mjs",      label: "Live-state shape and duplication (D-028)" },
   { file: "check-supersession-conventions.mjs", label: "Supersession conventions" },
   { file: "check-content-semantics.mjs",     label: "Content semantics (A/B/C/D)" },
   { file: "check-known-bugs-shape.mjs",      label: "Known-bugs shape (D-021)" },

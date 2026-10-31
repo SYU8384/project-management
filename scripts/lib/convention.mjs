@@ -45,13 +45,32 @@ export const DECISION_STATUSES = Object.freeze([
   "deprecated",
 ]);
 
-export const PLANNING_STATUSES = Object.freeze([
+export const PLANNING_OPEN_STATUSES = Object.freeze([
   "proposed",
   "active",
+  "verifying",
+  "blocked",
+  "deferred",
+]);
+
+export const PLANNING_TERMINAL_STATUSES = Object.freeze([
   "shipped",
   "rejected",
   "superseded",
 ]);
+
+export const PLANNING_STATUSES = Object.freeze([
+  ...PLANNING_OPEN_STATUSES,
+  ...PLANNING_TERMINAL_STATUSES,
+]);
+
+export function isOpenPlanningStatus(value) {
+  return PLANNING_OPEN_STATUSES.includes(value);
+}
+
+export function isTerminalPlanningStatus(value) {
+  return PLANNING_TERMINAL_STATUSES.includes(value);
+}
 
 export const FEATURE_STATUSES = Object.freeze([
   "alpha",
@@ -200,6 +219,27 @@ export const MILESTONE_REQUIRED_SECTIONS = Object.freeze([
   "Update Triggers",
   "Navigation",
 ]);
+
+export const CURRENT_STATUS_SECTIONS = Object.freeze([
+  "Current Phase",
+  "Top Priorities",
+  "Blocked",
+  "Recent Wins",
+  "Major Risks",
+  "Stale Docs",
+  "Relevant Decisions",
+  "Relevant Features",
+  "Navigation",
+]);
+
+export const EVIDENCE_PATH_PREFIXES = Object.freeze([
+  "roadmap/plans/assets/",
+]);
+
+export function isEvidencePath(relPath) {
+  const normalized = String(relPath).replaceAll("\\", "/");
+  return EVIDENCE_PATH_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
 
 export const PAGE_TYPE_BY_PREFIX = Object.freeze([
   ["decisions/D-", "decision"],

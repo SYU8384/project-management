@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- D-028 single-owner live-state conventions and `check-live-state-shape.mjs`: bounded status/milestone sections, commit-ledger rejection, status/milestone and same-topic feature/system duplication findings, and non-blocking size-review warnings.
+- Explicit close-out `--priority-change` and `--milestone-change` declarations. Routine plan/feature/decision/issue edits no longer require timestamp-only status or milestone touches; declared events also reject live-state shape violations.
+- Open planning states `verifying`, `blocked`, and `deferred`, with mirror traceability preserved across every nonterminal state.
+- Lane-aware stale review: history/archive, terminal plans/decisions, and `roadmap/plans/assets/` evidence are excluded; live roadmap/inbox defaults to 30 days, docs/features/system to 60, and decisions to 90. Reports cap per-section detail at 50 items by default (`STALE_REPORT_LIMIT`).
+- Existing JSON, PNG, and other non-Markdown Obsidian targets now resolve by exact path, including PM-relative repair without losing the attachment extension. Planning evidence trees no longer require folder-note indexes.
+
+### Changed
+
+- History and owning plans now carry canonical implementation evidence and commit references; current status and milestones no longer accept duplicated implementation journals. Done-pending mirrors emphasize open next actions and short outcome links.
+- Feature/system pages, templates, bootstrap output, AGENTS/OpenClaw guidance, and the PR checklist follow D-028 single-owner lanes.
+
 ### Fixed
 
 - Normalize native Windows separators when comparing parent-folder links with vault-relative wikilinks. Existing links no longer produce false applied-migration drift or duplicate repair entries; regression tests cover no-op and repeated repair behavior.

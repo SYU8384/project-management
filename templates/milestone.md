@@ -42,17 +42,13 @@ owner: PM
 
 ## Update Triggers
 
-Agents must review and update this milestone before history whenever:
+Agents review this milestone's relevance during close-out but update it before history only when:
 
 - The current phase changes to or from this milestone.
-- An active plan is created, changed, shipped, rejected, or superseded.
-- `roadmap/done-pending.md` mirrors work that changes this milestone's priorities or steps.
-- A decision changes milestone scope, priorities, exit criteria, inline evidence links, or deferred scope.
-- A feature, system note, or docs note completes or changes a milestone step.
-- A known issue, blocker, or risk affects milestone priority order or exit criteria.
-- `CURRENT_STATUS.md` top priorities or current phase change.
+- Milestone scope, priorities, major steps, exit criteria, or deferred scope change.
+- A plan, decision, feature, issue, or blocker changes one of those phase-level items.
 
-If review finds no prose changes, refresh `updated` and `last_reviewed` to record the review.
+Routine implementation, verification, and evidence updates stay in history and the owning plan. Do not add dated implementation H2s or commit ledgers here. Declare actual milestone changes with `check-pm-closeout.mjs --milestone-change`; do not touch dates merely to certify review.
 
 ## Navigation
 

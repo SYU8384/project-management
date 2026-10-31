@@ -499,9 +499,12 @@ function processPlansFolderNote(file, ctx) {
 
 - **Filename:** \`YYYY-MM-DD_slug.md\` (date prefix from \`created:\` frontmatter). See \`templates/decision.md\` for decision filenames.
 - **H1:** the slug only (no number, no date prefix).
-- **Status:** five values, all from the planning lifecycle:
+- **Status:** open states are \`proposed\`, \`active\`, \`verifying\`, \`blocked\`, and \`deferred\`; terminal states are \`shipped\`, \`rejected\`, and \`superseded\`:
   - \`proposed\` — under discussion, not yet approved
-  - \`active\` — in flight
+  - \`active\` — implementation underway
+  - \`verifying\` — implementation exists; acceptance/release verification incomplete
+  - \`blocked\` — cannot progress
+  - \`deferred\` — intentionally paused
   - \`shipped\` — work done, file kept for historical reference
   - \`rejected\` — proposal declined
   - \`superseded\` — replaced by a newer plan or decision

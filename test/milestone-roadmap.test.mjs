@@ -583,7 +583,7 @@ owner: PM
 `;
 }
 
-test("check-pm-consistency flags active milestone stale relative to priority-bearing files", () => {
+test("check-pm-consistency does not infer milestone changes from routine decision timestamps", () => {
   const pm = freshDir("pm-milestone-consistency-");
   try {
     mkdirSync(join(pm, "roadmap", "milestones"), { recursive: true });
@@ -605,18 +605,9 @@ Ship beta.
     writeFileSync(join(pm, "decisions", "D-001_POL_scope.md"), `${noteFrontmatter({ title: "D-001", date: "2026-06-21", pageType: "decision", status: "accepted" })}# D-001
 `);
 
-    const failing = spawnSync(process.execPath, [PM_CONSISTENCY, pm], { encoding: "utf8" });
-    assert.equal(failing.status, 1, failing.stderr + failing.stdout);
-    assert.match(failing.stdout, /roadmap\/milestones\/beta\.md: stale relative to decisions\/D-001_POL_scope\.md/);
-
-    writeFileSync(join(pm, "roadmap", "milestones", "beta.md"), `${noteFrontmatter({ title: "beta", date: "2026-06-21", pageType: "roadmap" })}# beta
-
-## Goal
-
-Ship beta.
-`);
-    const passing = spawnSync(process.execPath, [PM_CONSISTENCY, pm], { encoding: "utf8" });
-    assert.equal(passing.status, 0, passing.stderr + passing.stdout);
+    const result = spawnSync(process.execPath, [PM_CONSISTENCY, pm], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.doesNotMatch(result.stdout, /stale relative to decisions\/D-001_POL_scope\.md/);
   } finally {
     rmSync(pm, { recursive: true, force: true });
   }

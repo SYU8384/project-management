@@ -2,15 +2,11 @@
 /**
  * check-stale-docs.mjs
  *
- * Walks a project-management PM folder, parses frontmatter from every .md
- * file, computes `today - last_reviewed` for each, and emits a markdown report
- * grouped by folder. Flags files as:
- *
- *   never-reviewed  — no last_reviewed field at all
- *   stale (30d)     — last_reviewed is more than 30 days old
- *   very-stale (90d)— last_reviewed is more than 90 days old
- *
- * Exits 0 if all files are under 30 days, exits 1 if any file is over.
+ * Walks live project-management notes and emits lane-aware review findings.
+ * Historical history/archive records, terminal plans/decisions, and planning
+ * evidence are excluded. Live roadmap/inbox defaults to 30 days,
+ * docs/features/system to 60, and decisions to 90; very-stale is 2x.
+ * Exits 1 when an included live note exceeds its threshold or lacks metadata.
  *
  * Usage:
  *   node scripts/check-stale-docs.mjs                                  # scan CWD
@@ -47,9 +43,19 @@ import { fileURLToPath } from "node:url";
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
 import { touchLastReviewed } from "./lib/frontmatter-fixers.mjs";
+import { isEvidencePath, isTerminalPlanningStatus } from "./lib/convention.mjs";
 
 const DEFAULT_STALE_DAYS = Number(process.env.STALE_DAYS ?? 30);
 const DEFAULT_VERY_STALE_DAYS = Number(process.env.VERY_STALE_DAYS ?? 90);
+const LANE_REVIEW_DAYS = Object.freeze({
+  roadmap: 30,
+  inbox: 30,
+  docs: 60,
+  features: 60,
+  system: 60,
+  decisions: 90,
+});
+const REPORT_LIMIT = Number(process.env.STALE_REPORT_LIMIT ?? 50);
 
 // Strict-mode thresholds (used when --strict is passed). CI uses these
 // tighter thresholds so a nightly run flags docs that have not been
@@ -190,10 +196,23 @@ async function walk(dir) {
 }
 
 /** Scan one file. */
+function reviewThresholds(top) {
+  if (strictModeActive) {
+    return { stale: STRICT_STALE_DAYS, veryStale: STRICT_VERY_STALE_DAYS };
+  }
+  const lane = LANE_REVIEW_DAYS[top];
+  if (!lane) return { stale: effectiveStaleDays, veryStale: effectiveVeryStaleDays };
+  const envKey = top.replace(/[^A-Za-z0-9]/g, "_").toUpperCase();
+  const stale = Number(process.env[`STALE_DAYS_${envKey}`] ?? lane);
+  const veryStale = Number(process.env[`VERY_STALE_DAYS_${envKey}`] ?? stale * 2);
+  return { stale, veryStale };
+}
+
 async function scan(filePath) {
-  const rel = relative(vaultRoot, filePath);
-  const top = rel.split(/[\\/]/, 1)[0];
-  if (SKIP_FILES.has(rel.split(/[\\/]/).pop())) {
+  const rel = relative(vaultRoot, filePath).split("\\").join("/");
+  const top = rel.split("/", 1)[0];
+  if (top === "history" || top === "archive" || isEvidencePath(rel)) return;
+  if (SKIP_FILES.has(rel.split("/").pop())) {
     return;
   }
   // skip index-like folder notes
@@ -208,6 +227,9 @@ async function scan(filePath) {
     findings.missingFrontmatter.push({ path: rel, top });
     return;
   }
+  if (fm.pageType === "planning" && isTerminalPlanningStatus(fm.status)) return;
+  if (fm.pageType === "decision" && ["superseded", "deprecated"].includes(fm.status)) return;
+  const thresholds = reviewThresholds(top);
   async function fixReviewed() {
     if (!CLI.fix) return false;
     const fixed = touchLastReviewed(content, today);
@@ -229,12 +251,12 @@ async function scan(filePath) {
     findings.unparseableLastReviewed.push({ path: rel, top, lastReviewed });
     return;
   }
-  if (age > effectiveVeryStaleDays) {
+  if (age > thresholds.veryStale) {
     if (await fixReviewed()) return;
-    findings.veryStale.push({ path: rel, top, age, lastReviewed });
-  } else if (age > effectiveStaleDays) {
+    findings.veryStale.push({ path: rel, top, age, lastReviewed, threshold: thresholds.veryStale });
+  } else if (age > thresholds.stale) {
     if (await fixReviewed()) return;
-    findings.stale.push({ path: rel, top, age, lastReviewed });
+    findings.stale.push({ path: rel, top, age, lastReviewed, threshold: thresholds.stale });
   } else {
     findings.ok += 1;
   }
@@ -269,16 +291,19 @@ function emit() {
   lines.push("");
   lines.push(`Generated: ${today}`);
   lines.push(`Vault root: \`${vaultRoot}\``);
-  const thresholdNote = strictModeActive ? " (--strict: tightened from 30/90 days)" : "";
-  lines.push(`Thresholds: stale > ${effectiveStaleDays} days, very-stale > ${effectiveVeryStaleDays} days${thresholdNote}`);
+  const thresholdNote = strictModeActive
+    ? `--strict: all live lanes > ${STRICT_STALE_DAYS}/${STRICT_VERY_STALE_DAYS} days`
+    : `base > ${effectiveStaleDays}/${effectiveVeryStaleDays} days; roadmap/inbox 30/60, docs/features/system 60/120, decisions 90/180 (stale/very-stale)`;
+  lines.push(`Thresholds: ${thresholdNote}`);
+  lines.push("Historical history/, archive/, terminal plans/decisions, and roadmap/plans/assets/ evidence are excluded.");
   lines.push("");
   const neverTotal = findings.missingFrontmatter.length + findings.missingLastReviewed.length + findings.unparseableLastReviewed.length;
   lines.push(`**Summary:** ${findings.ok} OK, ${findings.stale.length} stale, ${findings.veryStale.length} very-stale, ${neverTotal} with no parseable last_reviewed.`);
   lines.push("");
 
   for (const [label, items, format] of [
-    ["Very Stale (>90 days)", findings.veryStale, "stale"],
-    ["Stale (30-90 days)", findings.stale, "stale"],
+    ["Very Stale (lane thresholds)", findings.veryStale, "stale"],
+    ["Stale (lane thresholds)", findings.stale, "stale"],
     ["Missing frontmatter", findings.missingFrontmatter, "missing-fm"],
     ["Missing last_reviewed", findings.missingLastReviewed, "missing-lr"],
     ["Unparseable last_reviewed", findings.unparseableLastReviewed, "unparseable-lr"],
@@ -286,14 +311,17 @@ function emit() {
     if (items.length === 0) continue;
     lines.push(`## ${label} (${items.length})`);
     lines.push("");
-    for (const item of items) {
+    for (const item of items.slice(0, REPORT_LIMIT)) {
       if (format === "stale") {
-        lines.push(`- \`${item.path}\` — ${item.age} days (last_reviewed ${item.lastReviewed})`);
+        lines.push(`- \`${item.path}\` — ${item.age} days (last_reviewed ${item.lastReviewed}; lane threshold ${item.threshold})`);
       } else if (format === "unparseable-lr") {
         lines.push(`- \`${item.path}\` — last_reviewed value \`${item.lastReviewed}\` is not a YYYY-MM-DD date; fix the frontmatter.`);
       } else {
         lines.push(`- \`${item.path}\` — ${label.toLowerCase()}.`);
       }
+    }
+    if (items.length > REPORT_LIMIT) {
+      lines.push(`- … ${items.length - REPORT_LIMIT} more (set STALE_REPORT_LIMIT to expand)`);
     }
     lines.push("");
   }

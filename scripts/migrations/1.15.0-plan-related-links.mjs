@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 import { findVaultRoot } from "../lib/paths.mjs";
 import { parseFrontmatter } from "../lib/markdown.mjs";
 import { ensurePlanRelatedLinks } from "../lib/roadmap-fixers.mjs";
+import { isOpenPlanningStatus } from "../lib/convention.mjs";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -39,7 +40,7 @@ function listPlanRels(pmFolder) {
 
 function isActivePlan(content) {
   const status = parseFrontmatter(content)?.status;
-  return status === "active" || status === "proposed";
+  return isOpenPlanningStatus(status);
 }
 
 function setScalarLine(raw, key, value) {

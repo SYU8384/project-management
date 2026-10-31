@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 
 export function normalizeFsPath(value) {
@@ -28,7 +28,12 @@ export function projectPathFromVault(vaultRoot, pmFolder) {
 export function pmRelToVaultTarget(pmRel, { pmFolder = null, vaultRoot = null, linkRoot = null } = {}) {
   const rel = normalizeLinkPath(pmRel);
   if (!rel) return rel;
-  if (pmFolder && vaultRoot) return vaultRelativeTarget(vaultRoot, join(pmFolder, `${rel}.md`));
+  if (pmFolder && vaultRoot) {
+    const direct = join(pmFolder, rel);
+    const directIsFile = existsSync(direct) && statSync(direct).isFile();
+    const target = directIsFile && !existsSync(`${direct}.md`) ? direct : `${direct}.md`;
+    return vaultRelativeTarget(vaultRoot, target);
+  }
   if (linkRoot) return `${normalizeLinkPath(linkRoot)}/${rel}`;
   return rel;
 }
@@ -236,8 +241,10 @@ export function normalizePmRelativeWikiLinks(content, { pmFolder, vaultRoot }) {
       segment.replace(/(!?)\[\[([^\]\n]+)\]\]/g, (match, embed, body) => {
         const parsed = parseWikiLinkBody(body);
         if (!parsed.target.includes("/") || !pmFolder || !vaultRoot) return match;
+        const direct = join(pmFolder, parsed.target);
         const candidateAbs = join(pmFolder, `${parsed.target}.md`);
-        if (!existsSync(candidateAbs)) return match;
+        const directIsFile = existsSync(direct) && statSync(direct).isFile();
+        if (!directIsFile && !existsSync(candidateAbs)) return match;
         const target = pmRelToVaultTarget(parsed.target, { pmFolder, vaultRoot });
         if (target === parsed.target) return match;
         const rewritten = `${embed}[[${renderWikiLinkBody({ ...parsed, target })}]]`;

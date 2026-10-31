@@ -16,7 +16,7 @@
  * this property to be safe to re-apply.
  */
 
-import { MILESTONE_REQUIRED_SECTIONS } from "./convention.mjs";
+import { MILESTONE_REQUIRED_SECTIONS, isOpenPlanningStatus } from "./convention.mjs";
 import { milestoneRelatedNotesState } from "./milestones.mjs";
 import { pmRelToVaultTarget, pmWikiLink, wikiLink } from "./obsidian-links.mjs";
 
@@ -1330,7 +1330,7 @@ export function ensureSupersedeByMirrorSync(donePendingContent, planContentsByRe
       );
       continue;
     }
-    if (status !== "active" && status !== "proposed") {
+    if (!isOpenPlanningStatus(status)) {
       manualReview.push(
         `planning mirror \`## ${finding.heading}\` dependent ${rel} has unexpected status \`${status ?? "(unset)"}\``
       );

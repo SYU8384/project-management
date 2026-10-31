@@ -7,7 +7,7 @@
  * repairs and reports unresolved or ambiguous targets for manual review.
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 
 import { findVaultRoot } from "./lib/paths.mjs";
@@ -28,7 +28,7 @@ import {
 
 const CLI = parseProjectTargetArgs(process.argv, { allowFix: true, allowStrict: true });
 
-function collectMarkdownFiles(root, skipSet = null) {
+function collectFiles(root, skipSet = null, { markdownOnly = true } = {}) {
   const files = [];
   function walk(abs) {
     if (!existsSync(abs)) return;
@@ -38,7 +38,7 @@ function collectMarkdownFiles(root, skipSet = null) {
       const rel = relative(root, child).split("\\").join("/");
       if (skipSet && isSkipped(skipSet, rel)) continue;
       if (entry.isDirectory()) walk(child);
-      else if (entry.isFile() && entry.name.endsWith(".md")) files.push({ abs: child, rel });
+      else if (entry.isFile() && (!markdownOnly || entry.name.endsWith(".md"))) files.push({ abs: child, rel });
     }
   }
   walk(root);
@@ -46,12 +46,13 @@ function collectMarkdownFiles(root, skipSet = null) {
 }
 
 function buildVaultIndex(vaultRoot) {
-  const files = collectMarkdownFiles(vaultRoot);
+  const files = collectFiles(vaultRoot, null, { markdownOnly: false });
   const byVaultTarget = new Map();
   const byBase = new Map();
   for (const file of files) {
     const target = vaultRelativeTarget(vaultRoot, file.abs);
     byVaultTarget.set(target, file.abs);
+    if (!file.rel.endsWith(".md")) continue;
     const base = basenameNoExt(target);
     if (!byBase.has(base)) byBase.set(base, []);
     byBase.get(base).push(file.abs);
@@ -80,8 +81,12 @@ function resolveLink({ link, srcAbs, pmFolder, vaultRoot, index }) {
     else if (matches.length > 1) return { status: "manual", message: `line ${link.line}: [[${link.body}]] matches multiple notes named ${target}` };
     else return { status: "issue", message: `line ${link.line}: missing target [[${link.body}]]` };
   } else {
+    const pmAttachment = join(pmFolder, target);
     const pmCandidate = join(pmFolder, `${target}.md`);
-    if (existsSync(pmCandidate)) {
+    if (existsSync(pmAttachment) && statSync(pmAttachment).isFile()) {
+      candidates = [pmAttachment];
+      status = "pm-relative";
+    } else if (existsSync(pmCandidate)) {
       candidates = [pmCandidate];
       status = "pm-relative";
     } else {
@@ -91,7 +96,7 @@ function resolveLink({ link, srcAbs, pmFolder, vaultRoot, index }) {
 
   if (heading) {
     const headingOk = candidates.some((candidate) =>
-      headingMatches(markdownHeadings(readFileSync(candidate, "utf8")), heading),
+      candidate.endsWith(".md") && headingMatches(markdownHeadings(readFileSync(candidate, "utf8")), heading),
     );
     if (!headingOk) {
       return { status: "issue", message: `line ${link.line}: missing heading [[${link.body}]]` };
@@ -128,7 +133,7 @@ function runFor(target) {
   const configPath = target.configPath ?? null;
   const vaultRoot = findVaultRoot(pmFolder, configPath);
   const skipSet = loadPmSkip(pmFolder);
-  const files = collectMarkdownFiles(pmFolder, skipSet);
+  const files = collectFiles(pmFolder, skipSet);
   const index = buildVaultIndex(vaultRoot);
   const issues = [];
   const manualReview = [];

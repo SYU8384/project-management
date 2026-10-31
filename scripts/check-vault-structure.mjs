@@ -62,6 +62,7 @@ import {
   MILESTONE_REQUIRED_SECTIONS,
   docsGuideDirMap,
   isCanonicalTopLevelLane,
+  isEvidencePath,
 } from "./lib/convention.mjs";
 import { countH2Sections, hasH2, stripFrontmatter, splitByH2Sections, countMeaningfulLines } from "./lib/markdown.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
@@ -561,6 +562,7 @@ function listVisibleFolderNotes() {
       if (isIgnoredDirectory(entry.name)) continue;
       const child = join(abs, entry.name);
       const relDir = relParent ? `${relParent}/${entry.name}` : entry.name;
+      if (isEvidencePath(`${relDir}/`)) continue;
       const parentName = relParent?.split("/").pop();
       out.push({
         relDir,

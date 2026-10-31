@@ -19,8 +19,8 @@ Coding agents have no memory beyond the session. As a project grows, decisions s
 - 🧩 **Decisions stay typed and linked** — architecture, product, market, vendor, policy, rejection, experiment. "Why we chose this" is never lost, and superseded plans cascade to archive.
 - 📚 **Manuals stay honest** — changes route into the right user/admin/developer guide instead of decaying into traps for the next reader.
 - 🐞 **Recurring bugs solved in minutes** — active issues in the roadmap; root causes and fixes in `known-bugs.md`. Known issues, bugs, risks, blockers, limitations, and current gaps are always logged to `roadmap/known-issues.md` first, so nothing falls through.
-- 🧹 **Self-cleaning** — validators repair drift, broken links, and stale schemas; a human-approved reorganization flow keeps a year of growth navigable.
-- ✅ **Traceable close-out guard** — before an agent signs off, it verifies meaningful code changes came with matching status, milestone, history, and scoped implementation-commit references according to local commit_policy. No work silently disappears.
+- 🧹 **Self-cleaning** — validators repair drift, broken links, and stale schemas; lane-aware stale review ignores historical/evidence records, existing JSON/PNG evidence resolves, and human-approved reorganization keeps growth navigable.
+- ✅ **Traceable close-out guard** — before an agent signs off, it verifies affected current-state docs, history, and scoped implementation-commit references. Explicit priority/milestone event flags prevent timestamp-only updates, while live-state checks reject duplicated journals and ledgers.
 - 🔗 **Obsidian-optional** — as an Obsidian vault, every note is structured and interlinked so agents retrieve exactly the relevant context. But the convention is just Markdown plus a small local `projects.json` registry; it works anywhere.
 
 ## 🔓 Open-source aware & plays well with others

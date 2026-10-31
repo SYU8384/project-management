@@ -51,10 +51,11 @@ node <skill_dir>/scripts/check-pm.mjs --config ~/.config/project-management/proj
 The wrapper runs:
 
 - `node <skill_dir>/scripts/check-vault-structure.mjs` — verifies the required folder/file layout
-- `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale docs; `--fix` refreshes `last_reviewed` / `updated` when frontmatter is present
+- `node <skill_dir>/scripts/check-stale-docs.mjs` — surfaces never-reviewed and stale live docs using lane-aware thresholds; excludes history/archive, terminal plans/decisions, and planning evidence; `--fix` refreshes review metadata only for included live notes
 - `node <skill_dir>/scripts/check-pm-consistency.mjs` — verifies visible-file frontmatter, page types, history/archive fields, internal wiki links, planning mirrors, active milestone freshness, and archive/sync-conflict naming. `--fix` repairs deterministic frontmatter, duplicate leading YAML blocks, history `kind`, invalid history `status`, and archive markers.
 - `node <skill_dir>/scripts/check-inbox-conventions.mjs` — verifies `inbox/` raw-intake note filenames, required metadata, status/resolution consistency, destination routing, and `NAME_PLACEHOLDER` handling. `--fix` fills deterministic metadata from the filename/date without inventing destinations or note bodies.
 - `node <skill_dir>/scripts/check-roadmap-conventions.mjs` — verifies the content-level roadmap conventions (D-007 `roadmap/done-pending.md` slug-only H2, D-008 `roadmap/ideas.md` status-color emojis, D-009 `roadmap/known-issues.md` no `## Fixed` + `### <Domain>` H3 in `## Active`, D-012 human-readable done-pending/ideas shape, D-015 active milestone existence and milestone note sections including `## Update Triggers`, D-016 no generic milestone `Related Notes` link dumps, D-018 active/proposed plan-side `## Related` traceability back to done-pending mirrors, D-019 planning-note opening shape, the human archive-confirmation checkbox, and completed planning mirrors that need archive close-out). Supports `--fix` for deterministic parts; completed planning mirrors are archived automatically only when the linked active plan resolves uniquely, the archive target is free, and the human archive-confirmation checkbox is checked. Unsafe archive cases remain hard failures with manual-review messages.
+- `node <skill_dir>/scripts/check-live-state-shape.mjs` — report-only D-028 validation for bounded status/milestone sections, commit-ledger duplication, and identical status/milestone or same-topic feature/system sections. Oversized notes are manual-review warnings; semantic cleanup stays human-approved.
 - `node <skill_dir>/scripts/check-content-semantics.mjs` — checks content-level semantic drift such as placeholder grouping, dead wikilinks, plan status/body mismatch, and theoretical-risk wording.
 - `node <skill_dir>/scripts/check-known-bugs-shape.mjs` — verifies `docs/Developer Guide/known-bugs.md` follows the D-021 engineering bug knowledge shape. `--fix` creates missing top-level sections, moves entries by explicit status, repairs Contents, and inserts missing fields as `TBD` without inventing prose.
 - `node <skill_dir>/scripts/check-supersession-conventions.mjs` — verifies explicitly declared supersession links across plans, decisions, and feature pages. `--fix` only flips an older decision to `status: superseded` when one newer decision declares `supersedes: D-NNN`; it does not infer semantic duplicates.
@@ -85,8 +86,8 @@ Then check the schema and content dimensions:
 1. **Schema compliance** — every note has the right `pageType:`, `status:` (per pageType vocabulary), `archived:` (only on archive files), `kind:` (only on history files), and other recommended fields. The `status: archived` value is **invalid** — `archived` is a separate date field, not a status value.
 2. **Opening heading vs filename** — ordinary notes use useful body headings; planning notes do not repeat the filename, slug, or frontmatter title as a body H1 because Obsidian/file title already provides the title.
 3. **Cross-link integrity** — all rendered `[[wiki-link]]` targets resolve to existing files under the Obsidian vault model. Cross-note PM links are vault-relative when `vault_root` is known; same-note links remain `[[#Heading]]`.
-4. **CURRENT_STATUS and active milestone freshness** — the current snapshot exists, the active milestone exists, and both are refreshed whenever priority-bearing roadmap, decision, feature, issue, blocker, risk, or phase state changes.
-5. **Planning ↔ roadmap mirror** — each active or proposed `roadmap/plans/*.md` note has a matching mirror section in `roadmap/done-pending.md`. The canonical H2 is slug-only; validators also accept date-prefixed legacy H2s. The Contents TOC links only to actual H2s inside `done-pending.md`; the section body links to the planning note and relevant decisions/features/system/docs. The planning note's near-top `## Related` links back to the exact done-pending section and repeats only relevant decision/feature/system/docs links already present in that mirror.
+4. **CURRENT_STATUS and active milestone semantic freshness** — the current snapshot and active milestone exist. Status changes for phase/top-priority/current-blocker events; milestones change for phase-level scope/priority/step/exit-criteria events. Routine plan/feature/issue edits do not justify timestamp-only touches or implementation journals.
+5. **Planning ↔ roadmap mirror** — each proposed, active, verifying, blocked, or deferred `roadmap/plans/*.md` note has a matching mirror section in `roadmap/done-pending.md`. The canonical H2 is slug-only; validators also accept date-prefixed legacy H2s. The Contents TOC links only to actual H2s inside `done-pending.md`; the section body links to the planning note and relevant decisions/features/system/docs. The planning note's near-top `## Related` links back to the exact done-pending section and repeats only relevant decision/feature/system/docs links already present in that mirror.
 6. **History `kind:`** — every `history/YYYY/<Month>/history-YYYY-MM-DD.md` has a `kind: changelog | worklog | mixed` field.
 7. **Archive `archived:` field** — every moved archive file named `archive/*-archived.md` has both a meaningful `status:` (lifecycle) and an `archived: <date>` field. Folder indexes such as `archive/archive.md` must not carry `archived:`.
 8. **Folder structure** — all required folders and root files exist, including the raw-intake `inbox/` lane; feature/ADR/roadmap/index pages exist where needed.
@@ -126,7 +127,7 @@ Use this when the user asks for a PM folder "audit", "quality check", "checkup",
 1. Run `node <skill_dir>/scripts/check-pm.mjs --project <name> --config <path>` and note both FAIL and MANUAL REVIEW findings.
 2. Run targeted validators for the lanes under review: `check-roadmap-conventions.mjs`, `check-live-routing.mjs`, and `check-known-bugs-shape.mjs`. Use `--fix` only for deterministic repairs.
 3. Read live routing docs first: `README.md`, `CURRENT_STATUS.md`, folder notes, feature pages, and current docs guide notes. Replace retired routes with current `roadmap/plans/`, root `decisions/`, and existing wikilinks.
-4. Refresh `CURRENT_STATUS.md` and the active `roadmap/milestones/<phase>.md` note so top priorities, milestone priorities, recent wins, blockers, and risks match the current PM folder.
+4. Review `CURRENT_STATUS.md` and the active `roadmap/milestones/<phase>.md` note for semantic truth. Update status only for phase/top-priority/current-blocker changes and milestones only for phase-level scope/priority/step/exit-criteria changes. Move dated implementation journals to history and duplicated commit ledgers to history/the owning plan through an approved cleanup, not a timestamp refresh.
 5. Compress intake and roadmap lanes for humans: keep raw notes in `inbox/` only until owner triage, keep `roadmap/done-pending.md` focused on active unresolved work and short outcome bullets, move fixed engineering detail to `docs/Developer Guide/known-bugs.md`, and move rough ideas to `roadmap/ideas.md` with real summaries.
 6. Scan for sensitive data. Redact plaintext credentials, tokens, private keys, recovery codes, and credential-bearing URLs; leave purpose/status and the external credential location.
 7. Update current-state docs before history. History is last and uses outcome-first bullets.
@@ -590,9 +591,9 @@ The four standard roadmap notes are active working notes, not folder notes, but 
 
 Concrete plans in `roadmap/plans/` must be reflected in `roadmap/done-pending.md`.
 
-`roadmap/done-pending.md` should mirror active or proposed planning notes first:
+`roadmap/done-pending.md` should mirror proposed, active, verifying, blocked, or deferred planning notes first:
 
-- Create one `## <slug>` section for each active or proposed concrete `roadmap/plans/YYYY-MM-DD_<slug>.md` note except `plans.md`.
+- Create one `## <slug>` section for each open concrete `roadmap/plans/YYYY-MM-DD_<slug>.md` note except `plans.md`.
 - Start each mirrored section with a vault-relative planning-note link, for example `Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]`.
 - End each mirrored checklist with `- [ ] PENDING: Human verification for archival: user has tested the implemented plan and explicitly approved archiving this section and linked plan.`
 - Summarize the plan's current done/pending checklist under that section in human-readable DONE/PENDING bullets.
@@ -786,12 +787,7 @@ Add `source_of_truth: <path>` (pointing to the `system/` doc that documents curr
 - `beta` — newly written, not yet authoritative
 - `deprecated` — replaced by another system doc; cross-link to the replacement
 
-**Planning (`pageType: planning`):** the base `status` field uses the planning lifecycle:
-- `proposed` — drafted, not yet approved
-- `active` — in flight
-- `shipped` — fully done; planning file kept for historical reference
-- `rejected` — proposal declined; planning file kept for the record
-- `superseded` — replaced by a newer planning note or ADR
+**Planning (`pageType: planning`):** open states are `proposed` (drafted, not approved), `active` (implementation underway), `verifying` (implementation exists; acceptance/release verification incomplete), `blocked` (cannot progress), and `deferred` (intentionally paused). Terminal states are `shipped` (fully done), `rejected` (declined), and `superseded` (replaced). All open states retain done-pending mirror traceability; `verifying` is not shipped.
 
 These are planning-specific values. The base `archived:` field is used separately to mark the file's move to `archive/` (see "Status vs archived" below).
 
@@ -813,7 +809,7 @@ These are planning-specific values. The base `archived:` field is used separatel
 
 ### Stale detection
 
-Notes with `last_reviewed` more than 30 days old are flagged as **stale**. Notes never reviewed or more than 90 days old are **very stale**. Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` to generate the full validation report; surface the stale-doc summary in `CURRENT_STATUS.md` under "Stale Docs". `CURRENT_STATUS.md` and the active milestone are also event-driven: refresh both before history whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, phase, or milestone state change. v1.3.0+ resolves `projects.json` from `~/.config/project-management/projects.json` by default.
+Routine stale review covers live notes only: roadmap/inbox defaults to 30 days, docs/features/system to 60 days, and decisions to 90 days; very-stale defaults to twice each lane threshold. `history/`, `archive/`, terminal plans/decisions, and `roadmap/plans/assets/` evidence are excluded. `--strict` uses 7/14 days for all included live notes. Run `check-pm.mjs` and surface only the live summary under `CURRENT_STATUS.md` "Stale Docs". Status and milestone content follows D-028 semantic events, not timestamp-only refreshes.
 
 ### Stale detection is report-only
 
@@ -1131,12 +1127,12 @@ The `access` field is set during Setup Intake or when the project is added to th
 **The pattern after a code change (authoritative):**
 
 1. Resolve commit authority from task restrictions, explicit task authorization, then the matched project commit_policy; missing policy is requires-explicit. Auto-scoped (including legacy scoped-by-default) is standing authorization, not optional permission: do not say no commit was requested. It never authorizes push, merge, deployment, broad staging, or files outside the registered code repo and authoritative PM Git worktree.
-2. Update the relevant system, user, admin, developer, feature, roadmap, issue, decision, inbox, and folder-index records for the implementation.
+2. Update only affected current-state records. System owns technical truth; features link rather than copy it; plans own detailed execution; done-pending mirrors keep open next actions; status/milestones change only for D-028 semantic events. Update folder indexes when notes are added, moved, renamed, archived, or deleted.
 3. Under auto-scoped, inspect git status --short, run verification, stage only named task-owned implementation files, review the staged diff, and commit the implementation without asking again. Never use git add -A, broad path staging, a commit that absorbs unrelated work, or PM-documentation files in the implementation commit. Capture full SHA and subject after the commit exists.
-4. Update current-state PM records before history. Add Implementation commits to each affected history, feature, status, milestone, or plan record. For a recognized GitHub or GitLab remote, use a verified Markdown commit URL with short SHA and subject; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending with a concrete blocker: task restriction, no meaningful implementation change, failed verification, inseparable unrelated changes, or a Git failure. Never use no commit was requested; never fabricate a SHA, subject, or URL.
+4. Update current-state PM records before history. Add Implementation commits to the canonical history entry and, when useful, the owning plan—not to every affected record and never as a status/milestone journal. For a recognized GitHub or GitLab remote, use a verified Markdown commit URL with short SHA and subject; otherwise record full SHA and subject. If no implementation commit exists, write uncommitted / commit pending with a concrete blocker: task restriction, no meaningful implementation change, failed verification, inseparable unrelated changes, or a Git failure. Never use no commit was requested; never fabricate a SHA, subject, or URL.
 5. If commit authority is granted later, verify, narrowly commit the implementation, then replace every matching pending marker. If the user says it was already committed, verify its relevance before replacing markers and do not create another implementation commit. List multiple relevant commits in implementation order.
 6. Add the outcome-first history bullet. Commit PM documentation separately only when the resolved policy permits the authoritative PM Git worktree; otherwise report it as uncommitted.
-7. Run check-pm-closeout.mjs before the final response.
+7. Run check-pm-closeout.mjs before the final response. Add `--priority-change` only for phase/top-priority/current-blocker changes and `--milestone-change` only for milestone scope/priority/step/exit-criteria changes. Routine plan/feature/decision/issue edits require no status/milestone touch.
 
 ### Commit Traceability Examples
 
@@ -1152,7 +1148,7 @@ The `access` field is set during Setup Intake or when the project is added to th
 
 Recognize commit URLs only for GitHub and GitLab remotes that can be converted without guessing. Treat every other remote as full-SHA-plus-subject unless the task supplies a verified URL.
 
-**The pattern after a code change (read-only):****The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
+**The pattern after a code change (read-only):** the agent does not edit the PM folder. Instead, when opening a PR, it fills in the "PM folder impact" section of the PR body template (see `### Contributor Workflow` below). The maintainer applies the PM updates after merge.
 
 **The pattern after a code change (no PM access, contributor side):** the contributor leaves the "PM folder impact" section empty. The maintainer's agent reads the code diff and applies the PM folder updates on their side after merge.
 
@@ -1255,11 +1251,11 @@ If a feature, fix, or change has **multi-step work, multi-session work, or many 
    - `## Supersession Review` with `supersedes`, `related-not-superseded`, or `none found`
    - Context, options considered, decision
    - A step-by-step implementation checklist
-2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with the plan's checklist items, the required human archive-confirmation checkbox, a vault-relative `Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<slug>|YYYY-MM-DD_<slug>]]` line, and linked `Relevant decisions:` / `Relevant features:` lines. Regenerate the Contents TOC from actual H2 headings.
+2. **Mirror in done-pending:** add a slug-only `## <slug>` section to `roadmap/done-pending.md` with open next actions/blockers, the required human archive-confirmation checkbox, a vault-relative planning-note link, and linked `Relevant decisions:` / `Relevant features:` lines. Keep the detailed checklist in the plan and full implementation evidence in history; mirrors carry only short outcome links. Regenerate Contents from actual H2 headings.
 3. **Link back from the plan:** add `Done-pending mirror: [[<ProjectPath>/roadmap/done-pending#<slug>|done-pending#<slug>]]` to the plan's near-top `## Related`, then copy only the relevant decision/feature/system/docs links already present in the done-pending mirror. Do not repeat the plan title as a body H1; start with useful content such as `## Summary`.
 4. **Update plan status** from `proposed` → `active` when implementation begins.
 5. **Handle superseded older plans (D-020).** If the supersession review finds that the new plan absorbs the scope of older planning notes, list each older plan in the new plan's `## Supersession Review` and `## Related` with the annotation `(superseded-by: this plan; covered by <OMR-id>)`. For each such older plan, prepend `**Superseded by [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_<new-slug>|<new-slug>]]** for new work. This section is kept on disk for history; PENDING bullets roll up to <OMR-id>.` to the older mirror in `roadmap/done-pending.md`, and flip the older plan's frontmatter `status` to `superseded`. Do **not** move the older file to `archive/` at supersede time; the archive move is the close-out event.
-6. **Implement step by step.** For each step completed, mark the done-pending checkbox AND add an outcome-first history bullet. Update the planning file's checklist as you go.
+6. **Implement step by step.** Update the plan's canonical checklist and the mirror's open next actions as work progresses. Record each completed outcome and implementation reference in history; compact mirror outcomes to short history links rather than retaining a second full journal.
 7. **Distill + archive** only after human approval: when the user says testing is OK or asks to archive, mark the human archive-confirmation checkbox done, then run `check-roadmap-conventions.mjs --fix`. The fix mode archives the parent (moves the planning note to `archive/<slug>-archived.md`, sets `archived: <date>`, preserves the lifecycle status), distills the durable behavior into `system/`, and **cascades** the archive to all superseded dependents whose rolled-up PENDING bullets are closed — they share a single `history/YYYY/<Month>/history-YYYY-MM-DD-archived-sections.md` entry with the parent. Add the closing history bullets.
 
 **Don't skip the plan for big tasks.** If the user says "this is a big task" but the agent dives in without writing the plan, that's a violation. The trigger phrase is a clear signal to plan first.
@@ -1426,8 +1422,8 @@ Management folders are live. Agents may create notes inside the right folder whe
 | Create `decisions/D-NNN_<type>_<slug>.md` for a significant decision | No | Decision lifecycle: `proposed` → `accepted` → `active` (temporary) → `superseded` / `deprecated`. Include `## Supersession Review`; if superseding, set the new decision's `supersedes:` field and mark the prior decision `status: superseded` |
 | Create a `<topic>.md` `system/` note for durable current state | No | Only when existing system notes are not a good fit |
 | Create `features/features.md` and per-feature pages | No | **Required** for any project past initial planning. Empty index is fine for pre-alpha; seed feature pages as features enter the design phase. Include `## Supersession Review`; if replacing an older feature page, mark the older feature `status: deprecated` |
-| Update `CURRENT_STATUS.md` at the project root | No | Current snapshot of where the project is now; PM agent maintains. Refresh before history whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, phase, or milestone state change |
-| Create or update the active `roadmap/milestones/<phase>.md` note | No | Active milestone comes from `CURRENT_STATUS.md` `## Current Phase`, falling back to `projects.json` phase. Agents maintain it before history whenever plan, done-pending, decision, feature, known issue, blocker, risk, top priority, or phase state changes. If prose does not change after review, refresh `updated` and `last_reviewed` |
+| Update `CURRENT_STATUS.md` at the project root | No | Bounded current snapshot. Update before history for phase/top-priority/current-blocker changes; no dated implementation H2s or commit ledgers |
+| Create or update the active `roadmap/milestones/<phase>.md` note | No | Active milestone comes from `CURRENT_STATUS.md` `## Current Phase`, falling back to `projects.json` phase. Update for milestone scope/priority/step/exit-criteria/deferred/phase changes only; no timestamp-only review or implementation journal |
 | Create a new note inside `docs/` existing guide folders | Usually no | Use when behavior/workflow docs need a clear page |
 | Create a new note inside `roadmap/` | Yes | Prefer the standard roadmap notes. Active milestone creation is exempt and agent-maintained; do not invent vague future milestone notes from ambiguous prose |
 | Create a new content note inside `archive/` | No | Don't. `archive/` is for moved files only. The only in-place note is the folder index `archive/archive.md`, and it must not have `archived:`. Move retired content there with the rename convention `<slug>-archived.md` and add an `archived: <date>` field |
@@ -1472,6 +1468,9 @@ The split keeps the skill portable while letting each project own its specifics.
 ## Pitfalls
 
 - Logging only to `history/` when durable current state changed.
+- Prepending dated implementation journals to `CURRENT_STATUS.md` or milestones instead of using history and the owning plan.
+- Repeating implementation-commit ledgers or identical sections across status/milestones or same-topic feature/system notes.
+- Touching status/milestone dates for routine plan/feature/issue edits without an actual D-028 semantic event.
 - Updating the matching `system/` doc but not the matching `features/<feature>.md` page (the feature page's `source_of_truth` link is stale).
 - Creating a new root note because it feels convenient.
 - Creating a new roadmap note instead of updating the four standard roadmap notes.

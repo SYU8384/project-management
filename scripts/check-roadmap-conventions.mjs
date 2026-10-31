@@ -52,6 +52,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFile
 import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { findVaultRoot, resolveProjectsConfigPath } from "./lib/paths.mjs";
+import { isOpenPlanningStatus, isTerminalPlanningStatus } from "./lib/convention.mjs";
 import {
   historyArchivedSectionsRel,
   historyDateParts,
@@ -281,10 +282,9 @@ function archivedPlanContent(original, { project, linkOptions, date }) {
 
   let fm = split.frontmatter;
   const status = frontmatterValue(fm, "status");
-  const terminal = new Set(["shipped", "rejected", "superseded"]);
-  if (!status || status === "active" || status === "proposed") {
+  if (!status || isOpenPlanningStatus(status)) {
     fm = setFrontmatterValue(fm, "status", "shipped");
-  } else if (!terminal.has(status)) {
+  } else if (!isTerminalPlanningStatus(status)) {
     return { issue: `linked planning note has unsupported status \`${status}\`` };
   }
 
@@ -843,7 +843,7 @@ function runFor(target) {
       const content = readIfExists(abs);
       if (content === null) continue;
       const status = planningNoteStatus(content);
-      if (status !== "active" && status !== "proposed") continue;
+      if (!isOpenPlanningStatus(status)) continue;
       const contentForTraceability = ensurePlanningNoteOpeningShape(content, { planRel: rel }).updated;
 
       const trace = ensurePlanRelatedLinks(contentForTraceability, {

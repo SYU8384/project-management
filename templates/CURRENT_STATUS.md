@@ -14,7 +14,7 @@ owner: PM
 ---
 # <Project Name> Current Status
 
-> **First thing a new agent should read.** This is the current snapshot of where <Project> is now. Refresh it before history whenever priorities, blockers, risks, wins, plans, decisions, features, known issues, or milestone state change. The active milestone is derived from `## Current Phase`; create or update the matching `roadmap/milestones/<phase>.md` note before history when phase, priority, plan, decision, feature, issue, blocker, or risk state changes. For raw intake, see `inbox/`. For durable architecture, see `system/`. For user-facing capabilities, see `features/`. For milestone framing, see `roadmap/milestones/`. For concrete plans in flight, see `roadmap/plans/`. For pending work, see `roadmap/done-pending.md`. For decisions, see `decisions/`. For user/admin/dev docs, see `docs/`. For completed work, see `history/`. For superseded material, see `archive/`.
+> **First thing a new agent should read.** This is a bounded snapshot, not an activity feed. Refresh it before history only when phase, top priorities, or current blockers change; declare that event with `check-pm-closeout.mjs --priority-change`. Keep full implementation evidence and commit references in history and, when useful, the owning plan. Do not add dated implementation H2s. The active milestone is derived from `## Current Phase` and changes only for milestone scope/priority/step/exit-criteria events. For completed work, see `history/`; for open execution, see `roadmap/done-pending.md`; for durable behavior, see `system/` and `features/`.
 
 ## Current Phase
 
@@ -46,7 +46,7 @@ Active milestone: [[<ProjectPath>/roadmap/milestones/<milestone>|<milestone>]]
 
 ## Stale Docs
 
-> Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` and paste the stale-doc summary here, or replace this section with the latest run. (v1.3.0+ resolves `projects.json` from `~/.config/project-management/projects.json` by default.) Notes with `last_reviewed` more than 30 days old are flagged as stale; more than 90 days as very-stale.
+> Run `node <skill_dir>/scripts/check-pm.mjs --project <ProjectName>` and record only the current live-doc summary. Historical history/archive records, terminal plans/decisions, and planning evidence are excluded. Live roadmap/inbox notes default to 30-day review, docs/features/system to 60 days, and decisions to 90 days.
 
 ## Relevant Decisions
 

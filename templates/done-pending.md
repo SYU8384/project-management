@@ -23,9 +23,9 @@ owner: PM
 - [[#Navigation]]
 <!-- vault-maintain:toc:end -->
 
-This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per active or proposed planning note from `roadmap/plans/`, with a DONE/PENDING checklist and relevant decisions/features/system/docs links; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order.
+This file holds two kinds of entries: (a) **planning-note mirrors** — one H2 per proposed, active, verifying, blocked, or deferred planning note from `roadmap/plans/`; (b) **general done/pending items** without a dedicated planning note, organized by date. The two coexist; planning-note mirrors always take priority in the file's order. Mirrors keep open next actions, blockers, short outcome links, and archive confirmation. The plan owns the detailed checklist; history owns full verification and commit evidence.
 
-Planning-note mirror H2 format: `## <slug>` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a `Planning note:` line linking to the plan, then a DONE/PENDING checklist, then the required human archive-confirmation checkbox, then `Relevant decisions:`, `Relevant features:`, and optional `Relevant system:` / `Relevant docs:` lines. The matching active/proposed plan's near-top `## Related` links back to this exact section and repeats the relevant decision/feature/system/docs links already present here. Do not use `Relevant ADRs:`; decisions are the first-class lane.
+Planning-note mirror H2 format: `## <slug>` (slug only, not the date-prefixed stem). Contents links must match the actual H2 headings in this note. Each mirror section starts with a `Planning note:` line linking to the plan, then open PENDING actions and blockers, optional short DONE outcome links, the required human archive-confirmation checkbox, and `Relevant decisions:` / `Relevant features:` / optional `Relevant system:` / `Relevant docs:` lines. The matching open plan's near-top `## Related` links back to this exact section and repeats the relevant decision/feature/system/docs links already present here. Do not use `Relevant ADRs:`; decisions are the first-class lane.
 
 Sections that are fully done should be archived to `history/YYYY/<Month>/history-YYYY-MM-DD-archived-sections.md` only after the user has tested the implemented plan and explicitly approved archiving.
 
@@ -41,7 +41,7 @@ The matching older planning note's frontmatter `status` must move to `superseded
 
 Planning note: [[<ProjectPath>/roadmap/plans/YYYY-MM-DD_example-plan-slug|YYYY-MM-DD_example-plan-slug]]
 
-- [x] DONE: <one-line description of what shipped>.
+- DONE: <one-line outcome linked to the canonical history entry; omit when there is nothing worth scanning>.
 - [ ] PENDING: <one-line description of what's still open>.
 - [ ] PENDING: <another pending item>.
 - [ ] PENDING: Human verification for archival: user has tested the implemented plan and explicitly approved archiving this section and linked plan.

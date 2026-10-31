@@ -45,7 +45,8 @@ Roadmap affected:
 History entries needed:
 - [ ] Commit policy resolved: requires-explicit | auto-scoped | task override
 - [ ] history/YYYY/<Month>/history-YYYY-MM-DD.md — bullet: ...
-- [ ] Implementation commits: `[<short SHA> <subject>](<verified GitHub/GitLab commit URL>)` or `<full SHA> <subject>` for another remote; if uncommitted, `uncommitted / commit pending — <reason>`
+- [ ] Implementation commits: `[<short SHA> <subject>](<verified GitHub/GitLab commit URL>)` or `<full SHA> <subject>` for another remote; if uncommitted, `uncommitted / commit pending — <reason>` (canonical history and, when useful, owning plan only)
+- [ ] CURRENT_STATUS.md changed only for phase/top-priority/current-blocker events (`--priority-change`); milestone changed only for phase-level scope/priority/step/exit-criteria events (`--milestone-change`); no duplicated journals or commit ledgers
 
 Planning notes affected:
 - [ ] roadmap/plans/<date>_slug.md — status change: DONE | SUPERSEDED | PARTIAL

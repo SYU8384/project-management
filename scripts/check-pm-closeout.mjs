@@ -15,6 +15,7 @@ import { isAutoScopedCommitPolicy, isValidAccess } from "./lib/convention.mjs";
 import { resolveProjectsConfigPath } from "./lib/paths.mjs";
 import { activeMilestoneInfo } from "./lib/milestones.mjs";
 import { historyDayRel } from "./lib/history-paths.mjs";
+import { checkLiveNoteShape } from "./lib/live-state-shape.mjs";
 
 const USAGE = `Usage: node scripts/check-pm-closeout.mjs [options]
 
@@ -24,6 +25,8 @@ Options:
   --repo <path>                repo to inspect (default: current git repo)
   --since <ISO datetime>       require PM files modified since this timestamp
   --implementation-commit <SHA> prove and require the implementation commit in PM records
+  --priority-change            declare phase/top-priority/current-blocker changes; require CURRENT_STATUS.md
+  --milestone-change           declare milestone scope/priority/step/exit-criteria changes; require milestone update
   --allow-no-impact <reason>   pass explicitly when changed files do not affect PM docs
   --help, -h                   show this help
 `;
@@ -36,6 +39,8 @@ function parseArgs(argv) {
     repo: null,
     since: null,
     implementationCommit: null,
+    priorityChange: false,
+    milestoneChange: false,
     allowNoImpact: null,
   };
   for (let i = 0; i < args.length; i++) {
@@ -45,6 +50,8 @@ function parseArgs(argv) {
     else if (a === "--repo") out.repo = args[++i];
     else if (a === "--since") out.since = args[++i];
     else if (a === "--implementation-commit") out.implementationCommit = args[++i];
+    else if (a === "--priority-change") out.priorityChange = true;
+    else if (a === "--milestone-change") out.milestoneChange = true;
     else if (a === "--allow-no-impact") out.allowNoImpact = args[++i];
     else if (a === "--help" || a === "-h") {
       process.stdout.write(USAGE + "\n");
@@ -485,10 +492,28 @@ const noRequestPending = autoScoped && /(?:uncommitted\s*\/\s*commit pending|unc
 const hasCommitReference = !commitInfo || pmText.includes(commitInfo.sha);
 const hasCurrentState = evidence.currentState.length > 0;
 const hasHistory = evidence.historyUpdated;
-const needsCurrentStatus = evidence.priorityBearing.length > 0;
-const hasCurrentStatus = evidence.currentStatusUpdated;
-const needsMilestone = evidence.priorityBearing.some((relPath) => !relPath.startsWith("roadmap/milestones/"));
-const hasMilestone = evidence.activeMilestoneUpdated || evidence.linkedMilestonesUpdated.length > 0;
+const needsCurrentStatus = CLI.priorityChange;
+const needsMilestone = CLI.milestoneChange;
+const shapeIssues = [];
+if (CLI.priorityChange && existsSync(join(pmFolder, "CURRENT_STATUS.md"))) {
+  const result = checkLiveNoteShape(readFileSync(join(pmFolder, "CURRENT_STATUS.md"), "utf8"), { kind: "status" });
+  for (const item of result.issues) shapeIssues.push(`CURRENT_STATUS.md: ${item.message}`);
+}
+if (CLI.milestoneChange) {
+  const rels = [...new Set([
+    ...(evidence.activeMilestoneUpdated && evidence.activeMilestone ? [evidence.activeMilestone.rel] : []),
+    ...evidence.linkedMilestonesUpdated,
+  ])];
+  for (const rel of rels) {
+    const abs = join(pmFolder, rel);
+    if (!existsSync(abs)) continue;
+    const result = checkLiveNoteShape(readFileSync(abs, "utf8"), { kind: "milestone" });
+    for (const item of result.issues) shapeIssues.push(`${rel}: ${item.message}`);
+  }
+}
+const hasCurrentStatus = evidence.currentStatusUpdated && shapeIssues.every((issue) => !issue.startsWith("CURRENT_STATUS.md:"));
+const hasMilestone = (evidence.activeMilestoneUpdated || evidence.linkedMilestonesUpdated.length > 0)
+  && shapeIssues.every((issue) => !issue.startsWith("roadmap/milestones/"));
 const indexViolations = folderIndexViolations(pmFolder, evidence.currentState);
 if (autoScoped && changes.length > 0 && !commitInfo) {
   lines.push("**Status:** FAIL", "", "auto-scoped requires a verified implementation commit before PM close-out. Commit narrowly, then rerun with --implementation-commit <SHA>.");
@@ -510,28 +535,37 @@ if (hasCurrentState) {
   lines.push("Current-state PM files updated: none found since baseline.");
 }
 lines.push(`Current-day history log: ${hasHistory ? evidence.historyRel : `${evidence.historyRel} not updated since baseline`}`);
-if (needsCurrentStatus) {
+if (needsCurrentStatus || needsMilestone) {
   lines.push("Priority-bearing PM files updated:");
   for (const relPath of evidence.priorityBearing.slice(0, 20)) lines.push(`- ${relPath}`);
   if (evidence.priorityBearing.length > 20) lines.push(`- ... ${evidence.priorityBearing.length - 20} more`);
+}
+if (needsCurrentStatus) {
   lines.push(`CURRENT_STATUS.md freshness: ${hasCurrentStatus ? "updated since baseline" : "not updated since baseline"}`);
-  if (needsMilestone) {
-    lines.push(
-      `Active milestone freshness: ${
-        evidence.activeMilestone
-          ? `${evidence.activeMilestone.rel} ${evidence.activeMilestoneUpdated ? "updated since baseline" : "not updated since baseline"}`
-          : "no active milestone resolved"
-      }`
-    );
-    if (evidence.linkedMilestones.length > 0) {
-      lines.push("Explicitly linked milestones:");
-      for (const relPath of evidence.linkedMilestones) {
-        lines.push(
-          `- ${relPath}${evidence.linkedMilestonesUpdated.includes(relPath) ? " (updated since baseline)" : ""}`
-        );
-      }
+}
+if (needsMilestone) {
+  lines.push(
+    `Active milestone freshness: ${
+      evidence.activeMilestone
+        ? `${evidence.activeMilestone.rel} ${evidence.activeMilestoneUpdated ? "updated since baseline" : "not updated since baseline"}`
+        : "no active milestone resolved"
+    }`
+  );
+  if (evidence.linkedMilestones.length > 0) {
+    lines.push("Explicitly linked milestones:");
+    for (const relPath of evidence.linkedMilestones) {
+      lines.push(
+        `- ${relPath}${evidence.linkedMilestonesUpdated.includes(relPath) ? " (updated since baseline)" : ""}`
+      );
     }
   }
+}
+if (evidence.priorityBearing.length > 0 && !CLI.priorityChange && !CLI.milestoneChange) {
+  lines.push("Semantic review: routine plan/feature/decision/issue edits do not require status or milestone touches. Use --priority-change or --milestone-change only for the corresponding top-level event.");
+}
+if (shapeIssues.length > 0) {
+  lines.push("Declared live-state shape violations:");
+  for (const issue of shapeIssues) lines.push(`- ${issue}`);
 }
 lines.push("");
 
@@ -541,12 +575,12 @@ if (indexViolations.length > 0) {
   lines.push("");
 }
 
-if (indexViolations.length === 0 && hasCurrentState && hasHistory && hasCommitReference && !noRequestPending && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
+if (indexViolations.length === 0 && shapeIssues.length === 0 && hasCurrentState && hasHistory && hasCommitReference && !noRequestPending && (!needsCurrentStatus || hasCurrentStatus) && (!needsMilestone || hasMilestone)) {
   lines.push("**Status:** PASS");
   lines.push("");
   lines.push("PM close-out evidence found: current-state docs and current-day history were updated.");
-  if (needsCurrentStatus) lines.push("Priority-bearing PM changes also refreshed CURRENT_STATUS.md.");
-  if (needsMilestone) lines.push("Priority-bearing PM changes also refreshed the active or explicitly linked milestone.");
+  if (needsCurrentStatus) lines.push("Declared priority change also refreshed CURRENT_STATUS.md without live-state shape violations.");
+  if (needsMilestone) lines.push("Declared milestone change also refreshed the active or explicitly linked milestone without live-state shape violations.");
   console.log(lines.join("\n"));
   process.exit(0);
 }
@@ -557,12 +591,14 @@ if (noRequestPending) {
   lines.push("PM close-out required. auto-scoped does not accept no commit was requested; commit or record a concrete blocker.");
 } else if (!hasCommitReference) {
   lines.push("PM close-out required. The supplied implementation SHA is not referenced by current PM records.");
+} else if (shapeIssues.length > 0) {
+  lines.push("PM close-out required. Repair declared live-state shape violations; do not close out with implementation journals or duplicated commit ledgers.");
 } else if (indexViolations.length > 0) {
   lines.push("PM close-out required. Notes changed this session are missing from their folder index `## Notes` list — update the index in the same session (see list above).");
 } else if (needsCurrentStatus && !hasCurrentStatus) {
-  lines.push("PM close-out required. Priority-bearing PM files changed, so refresh `CURRENT_STATUS.md` before history.");
+  lines.push("PM close-out required. --priority-change was declared, so update `CURRENT_STATUS.md` before history.");
 } else if (needsMilestone && !hasMilestone) {
-  lines.push("PM close-out required. Priority-bearing PM files changed, so refresh the active or explicitly linked `roadmap/milestones/*.md` note before history.");
+  lines.push("PM close-out required. --milestone-change was declared, so refresh the active or explicitly linked `roadmap/milestones/*.md` note before history.");
 } else {
   lines.push("PM close-out required. Update affected current-state PM docs before history, or rerun with `--allow-no-impact \"<reason>\"` if this work truly has no PM impact.");
 }

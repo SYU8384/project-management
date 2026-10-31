@@ -155,7 +155,7 @@ test("check-pm-closeout: current-state PM update plus current-day history passes
   }
 });
 
-test("check-pm-closeout: priority-bearing PM changes require CURRENT_STATUS refresh", () => {
+test("check-pm-closeout: routine edits pass but declared priority changes require CURRENT_STATUS refresh", () => {
   const dir = freshDir("pm-closeout-");
   try {
     const repo = join(dir, "code");
@@ -182,17 +182,21 @@ test("check-pm-closeout: priority-bearing PM changes require CURRENT_STATUS refr
       NeedsStatus: { code_repo: repo, pm_folder: pmFolder, access: "authoritative" },
     });
 
-    const result = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    const routine = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    assert.equal(routine.status, 0, routine.stderr + routine.stdout);
+    assert.match(routine.stdout, /Semantic review: routine plan\/feature\/decision\/issue edits/);
+
+    const result = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z", "--priority-change"], repo);
     assert.equal(result.status, 1, result.stderr + result.stdout);
     assert.match(result.stdout, /Priority-bearing PM files updated/);
     assert.match(result.stdout, /CURRENT_STATUS\.md freshness: not updated since baseline/);
-    assert.match(result.stdout, /Priority-bearing PM files changed/);
+    assert.match(result.stdout, /--priority-change was declared/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test("check-pm-closeout: priority-bearing PM changes require active milestone refresh", () => {
+test("check-pm-closeout: declared milestone changes require active milestone refresh", () => {
   const dir = freshDir("pm-closeout-");
   try {
     const repo = join(dir, "code");
@@ -226,15 +230,22 @@ beta
       NeedsMilestone: { code_repo: repo, pm_folder: pmFolder, access: "authoritative", phase: "beta" },
     });
 
-    const failing = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    const failing = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z", "--milestone-change"], repo);
     assert.equal(failing.status, 1, failing.stderr + failing.stdout);
     assert.match(failing.stdout, /Active milestone freshness: roadmap\/milestones\/beta\.md not updated since baseline/);
-    assert.match(failing.stdout, /refresh the active or explicitly linked `roadmap\/milestones\/\*\.md` note/);
+    assert.match(failing.stdout, /--milestone-change was declared/);
 
     utimesSync(milestone, newTime, newTime);
-    const passing = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z"], repo);
+    const passing = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z", "--milestone-change"], repo);
     assert.equal(passing.status, 0, passing.stderr + passing.stdout);
-    assert.match(passing.stdout, /Priority-bearing PM changes also refreshed the active or explicitly linked milestone/);
+    assert.match(passing.stdout, /Declared milestone change also refreshed the active or explicitly linked milestone/);
+
+    writeFileSync(milestone, "# beta\n\n## Implementation journal — 2026-11-01\n\nImplementation commits: abc123\n");
+    utimesSync(milestone, newTime, newTime);
+    const shapeFailure = run(["--config", cfgPath, "--since", "2026-06-20T01:00:00.000Z", "--milestone-change"], repo);
+    assert.equal(shapeFailure.status, 1, shapeFailure.stderr + shapeFailure.stdout);
+    assert.match(shapeFailure.stdout, /Declared live-state shape violations/);
+    assert.match(shapeFailure.stdout, /unexpected implementation\/journal section/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

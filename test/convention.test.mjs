@@ -7,9 +7,14 @@ import {
   isAutoScopedCommitPolicy,
   normalizeCommitPolicy,
   OPTIONAL_ROOT_NOTES,
+  PLANNING_OPEN_STATUSES,
+  PLANNING_STATUSES,
   REQUIRED_DIRS,
   expectedPageTypeForPath,
   isFolderNotePath,
+  isEvidencePath,
+  isOpenPlanningStatus,
+  isTerminalPlanningStatus,
   routeRows,
 } from "../scripts/lib/convention.mjs";
 
@@ -50,6 +55,22 @@ test("page type inference follows canonical lanes", () => {
   assert.equal(expectedPageTypeForPath("roadmap/roadmap.md", "Project Management"), "index");
   assert.equal(expectedPageTypeForPath("roadmap/milestones/milestones.md", "Project Management"), "index");
   assert.equal(expectedPageTypeForPath("roadmap/milestones/alpha.md", "Project Management"), "roadmap");
+});
+
+test("planning lifecycle distinguishes open verification states from terminal states", () => {
+  assert.deepEqual(PLANNING_OPEN_STATUSES, ["proposed", "active", "verifying", "blocked", "deferred"]);
+  assert.deepEqual(PLANNING_STATUSES, ["proposed", "active", "verifying", "blocked", "deferred", "shipped", "rejected", "superseded"]);
+  assert.equal(isOpenPlanningStatus("verifying"), true);
+  assert.equal(isOpenPlanningStatus("blocked"), true);
+  assert.equal(isOpenPlanningStatus("deferred"), true);
+  assert.equal(isOpenPlanningStatus("shipped"), false);
+  assert.equal(isOpenPlanningStatus(undefined), false);
+  assert.equal(isTerminalPlanningStatus("superseded"), true);
+});
+
+test("planning evidence paths are centralized", () => {
+  assert.equal(isEvidencePath("roadmap/plans/assets/case/report.json"), true);
+  assert.equal(isEvidencePath("roadmap/plans/2026-11-01_real-plan.md"), false);
 });
 
 test("route table exposes expected lanes for README generation/checking", () => {
