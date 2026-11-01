@@ -5,7 +5,7 @@ import { join, relative } from "node:path";
 import { findVaultRoot } from "../lib/paths.mjs";
 import { parseFrontmatter } from "../lib/markdown.mjs";
 import { ensurePlanRelatedLinks } from "../lib/roadmap-fixers.mjs";
-import { isOpenPlanningStatus } from "../lib/convention.mjs";
+import { isOpenPlanningStatus, isEvidencePath } from "../lib/convention.mjs";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -30,7 +30,8 @@ function listPlanRels(pmFolder) {
       const child = join(abs, entry.name);
       if (entry.isDirectory()) walk(child);
       else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "plans.md") {
-        rels.push(relative(pmFolder, child).split("\\").join("/").replace(/\.md$/, ""));
+        const rel = relative(pmFolder, child).split("\\").join("/");
+        if (!isEvidencePath(rel)) rels.push(rel.replace(/\.md$/, ""));
       }
     }
   }

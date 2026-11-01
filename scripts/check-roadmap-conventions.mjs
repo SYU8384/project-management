@@ -52,7 +52,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFile
 import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { findVaultRoot, resolveProjectsConfigPath } from "./lib/paths.mjs";
-import { isOpenPlanningStatus, isTerminalPlanningStatus } from "./lib/convention.mjs";
+import { isOpenPlanningStatus, isTerminalPlanningStatus, isEvidencePath } from "./lib/convention.mjs";
 import {
   historyArchivedSectionsRel,
   historyDateParts,
@@ -814,7 +814,7 @@ function runFor(target) {
   // ---- D-019: planning notes open with useful content, not repeated titles ----
   {
     const planRels = markdownTargets
-      .filter((rel) => rel.startsWith("roadmap/plans/") && rel !== "roadmap/plans/plans")
+      .filter((rel) => rel.startsWith("roadmap/plans/") && rel !== "roadmap/plans/plans" && !isEvidencePath(rel))
       .sort();
     for (const rel of planRels) {
       const abs = join(target.vault, `${rel}.md`);
@@ -836,7 +836,7 @@ function runFor(target) {
   // ---- D-018: planning notes link back to their done-pending mirror ----
   if (donePendingForPlanTraceability !== null) {
     const planRels = markdownTargets
-      .filter((rel) => rel.startsWith("roadmap/plans/") && rel !== "roadmap/plans/plans")
+      .filter((rel) => rel.startsWith("roadmap/plans/") && rel !== "roadmap/plans/plans" && !isEvidencePath(rel))
       .sort();
     for (const rel of planRels) {
       const abs = join(target.vault, `${rel}.md`);

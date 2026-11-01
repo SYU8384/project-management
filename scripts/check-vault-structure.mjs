@@ -64,7 +64,7 @@ import {
   isCanonicalTopLevelLane,
   isEvidencePath,
 } from "./lib/convention.mjs";
-import { countH2Sections, hasH2, stripFrontmatter, splitByH2Sections, countMeaningfulLines } from "./lib/markdown.mjs";
+import { countH2Sections, hasH2, stripFrontmatter, splitByH2Sections, countMeaningfulLines, countNarrativeLines } from "./lib/markdown.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { TOP_LEVEL_LANES } from "./lib/convention.mjs";
 
@@ -497,7 +497,7 @@ function checkFolderNoteBodyBloat() {
     }
     for (const [name, lines] of Object.entries(sectionMap)) {
       if (name === "_preamble") continue;
-      const lc = countMeaningfulLines(lines);
+      const lc = ["Subfolders", "Notes"].includes(name) ? countNarrativeLines(lines) : countMeaningfulLines(lines);
       if (["Subfolders", "Notes", "Navigation"].includes(name)) {
         if (lc > FOLDER_NOTE_BODY_LIMITS.standardSectionFail) {
           findings.folderNotes.bodyBloat.push({

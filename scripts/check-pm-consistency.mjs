@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 import { findVaultRoot, resolveProjectsConfigPath, findSkillDir } from "./lib/paths.mjs";
 import { loadPmSkip, isSkipped } from "./lib/skip.mjs";
-import { expectedPageTypeForPath, isFolderNotePath } from "./lib/convention.mjs";
+import { expectedPageTypeForPath, isFolderNotePath, isEvidencePath, isOpenPlanningStatus } from "./lib/convention.mjs";
 import { parseFrontmatter, markdownStem, wikiLinks } from "./lib/markdown.mjs";
 import { projectPathFromVault } from "./lib/obsidian-links.mjs";
 import { normalizePmFrontmatter } from "./lib/frontmatter-fixers.mjs";
@@ -79,14 +79,14 @@ function resolveTargets() {
     .map(([project, proj]) => ({ vault: resolve(proj.pm_folder), label: `${project} (${proj.pm_folder})`, project, configPath }));
 }
 
-function walk(root, skipSet) {
+function walk(root, skipSet, { markdownOnly = true } = {}) {
   const out = [];
   function rec(abs) {
     for (const entry of readdirSync(abs, { withFileTypes: true })) {
       if (entry.name.startsWith(".")) continue;
       const child = join(abs, entry.name);
       if (entry.isDirectory()) rec(child);
-      else if (entry.isFile() && entry.name.endsWith(".md")) {
+      else if (entry.isFile() && (!markdownOnly || entry.name.endsWith(".md"))) {
         const rel = relative(root, child).split("\\").join("/");
         if (skipSet && isSkipped(skipSet, rel)) continue;
         out.push(child);
@@ -106,6 +106,7 @@ function isFolderNote(rel, project) {
 }
 
 function expectedPageType(rel, project, existing) {
+  if (isEvidencePath(rel)) return "note";
   return expectedPageTypeForPath(rel, project, existing);
 }
 
@@ -145,7 +146,11 @@ function runFor(target) {
       // malformed projects.json: skip the rule rather than fail the run
     }
   }
-  const targets = new Set(files.map((abs) => relative(target.vault, abs).split("\\").join("/").replace(/\.md$/, "")));
+  const attachmentFiles = walk(target.vault, skipSet, { markdownOnly: false });
+  const targets = new Set([
+    ...files.map((abs) => relative(target.vault, abs).split("\\").join("/").replace(/\.md$/, "")),
+    ...attachmentFiles.map((abs) => relative(target.vault, abs).split("\\").join("/")),
+  ]);
   const issues = [];
   const frontmatterByRel = new Map();
   const donePendingPath = join(target.vault, "roadmap/done-pending.md");
@@ -261,7 +266,7 @@ function runFor(target) {
         }
       }
     }
-    if (rel.startsWith("roadmap/plans/") && !isFolderNote(rel, project)) {
+    if (rel.startsWith("roadmap/plans/") && !isEvidencePath(rel) && !isFolderNote(rel, project) && (!fm.status || isOpenPlanningStatus(fm.status))) {
       const stem_ = stem(rel);
       const date = stem_.match(/^\d{4}-\d{2}-\d{2}/)?.[1];
       const slug = stem_.replace(/^\d{4}-\d{2}-\d{2}_?/, "");

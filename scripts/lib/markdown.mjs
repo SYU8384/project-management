@@ -92,3 +92,12 @@ export function splitByH2Sections(body) {
 export function countMeaningfulLines(sectionLines) {
   return sectionLines.filter((l) => !isSkippableLine(l)).length;
 }
+
+// Folder indexes are required to link every direct child. Count narrative
+// bloat without treating those mandatory wikilink entries as prose.
+export function countNarrativeLines(sectionLines) {
+  return sectionLines.filter((line) => {
+    if (isSkippableLine(line)) return false;
+    return !/^\s*-\s+!?\[\[/.test(line);
+  }).length;
+}

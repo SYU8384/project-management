@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   countMeaningfulLines,
+  countNarrativeLines,
   isSkippableLine,
   splitByH2Sections,
   stripFrontmatter,
@@ -77,6 +78,12 @@ test("stripFrontmatter removes leading YAML frontmatter", () => {
 // Integration-style: simulate the body-bloat guard's check against a
 // stuffed folder note. The shape mirrors what `checkFolderNotes` does
 // in check-vault-structure.mjs.
+test("narrative counting excludes required direct-child wikilink indexes", () => {
+  const lines = Array.from({ length: 80 }, (_, i) => `- [[Projects/Example/roadmap/plans/2026-01-${String(i + 1).padStart(2, "0")}_plan|plan ${i + 1}]]`);
+  assert.equal(countNarrativeLines(lines), 0);
+  assert.equal(countMeaningfulLines(lines), 80);
+});
+
 test("body-bloat detection flags a folder note with 60 lines under ## Notes", () => {
   const stuffed = `# system
 

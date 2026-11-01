@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Exclude `roadmap/plans/assets/` evidence from planning-mirror validation and resolve existing non-Markdown targets in `check-pm-consistency.mjs`, matching the D-028 Obsidian resolver instead of producing false plan/asset debt.
+- Count narrative bloat in folder notes without treating required direct-child wikilink indexes as excessive prose, allowing large active plan libraries to satisfy both index completeness and the 50-line guard.
+- Require done-pending mirrors only for open planning states, so terminal plans do not produce false mirror debt.
 - Normalize native Windows separators when comparing parent-folder links with vault-relative wikilinks. Existing links no longer produce false applied-migration drift or duplicate repair entries; regression tests cover no-op and repeated repair behavior.
 
 ## [1.22.0] - 2026-08-29
