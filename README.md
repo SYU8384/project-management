@@ -20,6 +20,7 @@ Coding agents have no memory beyond the session. As a project grows, decisions s
 - 📚 **Manuals stay honest** — changes route into the right user/admin/developer guide instead of decaying into traps for the next reader.
 - 🐞 **Recurring bugs solved in minutes** — active issues in the roadmap; root causes and fixes in `known-bugs.md`. Known issues, bugs, risks, blockers, limitations, and current gaps are always logged to `roadmap/known-issues.md` first, so nothing falls through.
 - 🧹 **Self-cleaning** — validators repair drift, broken links, and stale schemas; lane-aware stale review ignores historical/evidence records, existing JSON/PNG evidence resolves, and human-approved reorganization keeps growth navigable.
+- 🧪 **Live-state and evidence validation** — D-028 checks reject implementation journals, duplicated live sections, and commit ledgers; oversized notes become review warnings, not auto-rewrites. Planning states include `verifying`, `blocked`, and `deferred`; terminal plans and evidence do not create mirror debt. Existing attachments resolve, and required index links do not count as narrative bloat.
 - ✅ **Traceable close-out guard** — before an agent signs off, it verifies affected current-state docs, history, and scoped implementation-commit references. Explicit priority/milestone event flags prevent timestamp-only updates, while live-state checks reject duplicated journals and ledgers.
 - 🔗 **Obsidian-optional** — as an Obsidian vault, every note is structured and interlinked so agents retrieve exactly the relevant context. But the convention is just Markdown plus a small local `projects.json` registry; it works anywhere.
 
@@ -104,6 +105,7 @@ Every folder has an index note; every note links to its neighbors. Full lane des
 | Path | Purpose |
 |---|---|
 | [`SKILL.md`](./SKILL.md) | Agent entry point: trigger router and highest-risk PM rules. |
+| [`scripts/check-live-state-shape.mjs`](./scripts/check-live-state-shape.mjs) | D-028 live-state shape and duplication checks. |
 | [`REFERENCE.md`](./REFERENCE.md) | Deep reference: schemas, workflows, repair rules, pitfalls. |
 | [`install.sh`](./install.sh) / [`install.ps1`](./install.ps1) | Bash and native PowerShell installers; rerun to update. |
 | [`openclaw-instruction.md`](./openclaw-instruction.md) | Copy-paste instruction for bootstrapping an OpenClaw PM agent. |
